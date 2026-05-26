@@ -98,10 +98,19 @@
   async function saveProducts(p) {
     ensureCaches();
     const list = p.map((x) => ({ ...x }));
+    let toCache = list;
     if (global.MD3Firebase && global.MD3Firebase.isEnabled()) {
-      await global.MD3Firebase.saveProducts(list);
+      const result = await global.MD3Firebase.saveProducts(list);
+      if (result && Array.isArray(result)) toCache = result;
     }
-    setProductsCache(list);
+    try {
+      setProductsCache(toCache);
+    } catch (e) {
+      console.error('saveProducts local cache', e);
+      productsCache = toCache;
+      notifyProductsUpdated();
+      throw e;
+    }
   }
 
   function productVisualInner(p) {

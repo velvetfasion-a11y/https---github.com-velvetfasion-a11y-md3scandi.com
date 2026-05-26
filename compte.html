@@ -1553,7 +1553,8 @@ async function saveProduct() {
     }
     await S.saveProducts(products);
   } catch (err) {
-    alert(L('err-save-image'));
+    console.error(err);
+    alert(err && err.message ? err.message : String(err));
     if (saveBtn) saveBtn.disabled = false;
     return;
   }

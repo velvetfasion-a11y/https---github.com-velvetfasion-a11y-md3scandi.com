@@ -75,13 +75,16 @@
     return out;
   }
 
+  /**
+   * Upload cropped image (data URL) via Storage putString data_url format.
+   * Compat SDK equivalent of modular uploadString(ref, data, 'data_url').
+   */
   async function uploadProductImage(productId, dataUrl) {
-    if (!storage || !dataUrl || !dataUrl.startsWith('data:')) return dataUrl || null;
-    const ref = storage.ref('products/' + String(productId) + '.jpg');
-    const comma = dataUrl.indexOf(',');
-    const base64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
-    await ref.putString(base64, 'base64', { contentType: 'image/jpeg' });
-    return ref.getDownloadURL();
+    if (!storage || !dataUrl) return dataUrl || null;
+    if (!dataUrl.startsWith('data:')) return dataUrl;
+    const storageRef = storage.ref('products/' + String(productId) + '.jpg');
+    await storageRef.putString(dataUrl, 'data_url', { contentType: 'image/jpeg' });
+    return storageRef.getDownloadURL();
   }
 
   async function loadProducts() {
@@ -94,20 +97,24 @@
   }
 
   async function saveProducts(products) {
-    if (!db) return;
-    const list = (products || []).map(normalizeProduct).filter(Boolean);
-    const ids = new Set(list.map((p) => String(p.id)));
+    if (!db) return products;
+    const saved = (products || []).map((p) => ({ ...p }));
+    const ids = new Set(saved.map((p) => String(p.id)));
 
-    for (const p of list) {
-      let image = p.image;
-      const raw = products.find((x) => x.id === p.id);
-      const rawImage = raw && raw.image;
-      if (rawImage && rawImage.startsWith('data:')) {
-        image = await uploadProductImage(p.id, rawImage);
+    for (const raw of saved) {
+      const p = normalizeProduct(raw);
+      if (!p) continue;
+
+      let imageUrl = raw.image;
+      if (imageUrl && imageUrl.startsWith('data:')) {
+        imageUrl = await uploadProductImage(p.id, imageUrl);
+        raw.image = imageUrl;
       }
+
       const data = { ...p };
-      if (image) data.image = image;
-      else delete data.image;
+      if (imageUrl && !String(imageUrl).startsWith('data:')) {
+        data.image = imageUrl;
+      }
       await productDoc(p.id).set(data, { merge: true });
     }
 
@@ -121,6 +128,7 @@
       }
     });
     if (pending) await batch.commit();
+    return saved;
   }
 
   function watchProducts(onChange) {
