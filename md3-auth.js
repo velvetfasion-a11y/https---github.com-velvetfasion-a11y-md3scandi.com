@@ -1,43 +1,67 @@
-import {
-  auth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-} from './firebase.js';
-
-export { auth };
-
-export async function createAccount(email, password) {
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
-  return cred.user;
-}
-
-export async function signIn(email, password) {
-  const cred = await signInWithEmailAndPassword(auth, email, password);
-  return cred.user;
-}
-
-export function firebaseAuthErrorMessage(err) {
-  if (!err) return 'Authentication failed.';
-  const code = err.code || '';
-  if (code === 'auth/api-key-not-valid' || (err.message && err.message.includes('api-key-not-valid'))) {
-    return 'Invalid Firebase API key. In Firebase Console → Project settings → Your apps, copy the Web app config into firebase-config.js, deploy, and hard-refresh.';
+/**
+ * Firebase Auth (compat SDK) — uses MD3_FIREBASE_CONFIG from firebase-config.js
+ * Load order: firebase-config.js → Firebase compat scripts → md3-firebase.js → md3-store.js → this file
+ */
+(function (global) {
+  async function ensureAuthReady() {
+    if (!global.MD3_FIREBASE_CONFIG || !global.MD3_FIREBASE_CONFIG.apiKey) {
+      throw new Error('firebase-config.js is missing or empty.');
+    }
+    if (String(global.MD3_FIREBASE_CONFIG.apiKey).includes('YOUR_')) {
+      throw new Error('Replace YOUR_API_KEY in firebase-config.js with your Firebase Web app config.');
+    }
+    if (!global.MD3Firebase) {
+      throw new Error('md3-firebase.js did not load.');
+    }
+    if (global.MD3Store && global.MD3Store.ready) {
+      await global.MD3Store.ready;
+    }
+    if (!global.MD3Firebase.isEnabled()) {
+      await global.MD3Firebase.init();
+    }
+    const auth = global.MD3Firebase.getAuth();
+    if (!auth) {
+      throw new Error('Firebase Auth did not initialize. Check the browser console.');
+    }
+    return auth;
   }
-  const messages = {
-    'auth/email-already-in-use': 'This email is already in use.',
-    'auth/invalid-email': 'Invalid email address.',
-    'auth/weak-password': 'Password is too weak. Use at least 6 characters.',
-    'auth/wrong-password': 'Incorrect password.',
-    'auth/user-not-found': 'No account found for this email.',
-    'auth/invalid-credential': 'Invalid email or password.',
-    'auth/too-many-requests': 'Too many attempts. Try again later.',
-    'auth/network-request-failed': 'Network error. Check your connection.',
-  };
-  return messages[code] || err.message || 'Authentication failed.';
-}
 
-window.MD3Auth = {
-  auth,
-  createAccount,
-  signIn,
-  firebaseAuthErrorMessage,
-};
+  async function createAccount(email, password) {
+    const auth = await ensureAuthReady();
+    const cred = await auth.createUserWithEmailAndPassword(email, password);
+    return cred.user;
+  }
+
+  async function signIn(email, password) {
+    const auth = await ensureAuthReady();
+    const cred = await auth.signInWithEmailAndPassword(email, password);
+    return cred.user;
+  }
+
+  function firebaseAuthErrorMessage(err) {
+    if (!err) return 'Authentication failed.';
+    const code = err.code ? ` (${err.code})` : '';
+    const msg = err.message || String(err);
+    const friendly = {
+      'auth/email-already-in-use': 'This email is already in use.',
+      'auth/invalid-email': 'Invalid email address.',
+      'auth/weak-password': 'Password is too weak. Use at least 6 characters.',
+      'auth/wrong-password': 'Incorrect password.',
+      'auth/user-not-found': 'No account found for this email.',
+      'auth/invalid-credential': 'Invalid email or password.',
+      'auth/too-many-requests': 'Too many attempts. Try again later.',
+      'auth/network-request-failed': 'Network error. Check your connection.',
+      'auth/api-key-not-valid':
+        'Invalid API key. Copy the config again from Firebase Console → Project settings → Your apps (Web), paste into firebase-config.js, deploy, and hard-refresh. Also check API key restrictions in Google Cloud Console.',
+    };
+    if (err.code && friendly[err.code]) return friendly[err.code];
+    return msg + code;
+  }
+
+  global.MD3Auth = {
+    createAccount,
+    signIn,
+    firebaseAuthErrorMessage,
+    ensureAuthReady,
+  };
+})(typeof window !== 'undefined' ? window : globalThis);

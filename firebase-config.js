@@ -1,9 +1,9 @@
 /**
  * Firebase Web app config — md3scadi
- * From Firebase Console → Project settings → Your apps
+ * From Firebase Console → Project settings → Your apps → Web app → Config
  */
 window.MD3_FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyDr7b9MebBu10DxtC6umoWf1fbOB3cheuQ',
+  apiKey: 'AIzaSyDr7b9MebBu10DxtC6umoWf1fb0B3cheuQ',
   authDomain: 'md3scadi.firebaseapp.com',
   projectId: 'md3scadi',
   storageBucket: 'md3scadi.firebasestorage.app',

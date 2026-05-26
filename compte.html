@@ -885,13 +885,13 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" crossorigin="anonymous"></script>
 <script src="firebase-config.js"></script>
-<script type="module" src="md3-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="md3-firebase.js"></script>
 <script src="md3-store.js"></script>
+<script src="md3-auth.js"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-lang.js"></script>
 <script src="md3-taxonomy.js"></script>
@@ -1149,11 +1149,6 @@ async function doSignup() {
   }
 
   try {
-    let waited = 0;
-    while (!window.MD3Auth && waited < 8000) {
-      await new Promise((r) => setTimeout(r, 50));
-      waited += 50;
-    }
     if (!window.MD3Auth) throw new Error('Authentication module not loaded. Refresh the page.');
 
     await MD3Auth.createAccount(email, pass);
