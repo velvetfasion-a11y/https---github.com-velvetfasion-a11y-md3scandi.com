@@ -1,9 +1,21 @@
-/** Shared product & user storage (localStorage / sessionStorage) */
+/** Shared store — local cache + optional Firebase cloud sync */
 (function (global) {
   const ADMIN_PASS = '1111';
-  /** Admin can log in with any of these (no @ required) */
   const ADMIN_IDS = ['m3dadmin.com', 'md3admin.com', 'md3scandi.com'];
   const ADMIN_EMAIL = ADMIN_IDS[0];
+
+  const PRODUCTS_KEY = 'md3_products';
+  const USERS_KEY = 'md3_users';
+  const CARTS_KEY = 'md3_carts';
+  const SESSION_KEY = 'md3_session';
+
+  let productsCache = null;
+  let usersCache = null;
+  let cartsCache = null;
+  let readyResolve;
+  const ready = new Promise((r) => {
+    readyResolve = r;
+  });
 
   function isAdminLogin(identifier, password) {
     const id = (identifier || '').trim().toLowerCase();
@@ -24,11 +36,11 @@
     ];
   }
 
-  function getProducts() {
-    const raw = localStorage.getItem('md3_products');
+  function loadProductsLocal() {
+    const raw = localStorage.getItem(PRODUCTS_KEY);
     if (!raw) {
       const p = defaultProducts();
-      localStorage.setItem('md3_products', JSON.stringify(p));
+      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(p));
       return p;
     }
     try {
@@ -37,20 +49,61 @@
       return p;
     } catch (_) {
       const p = defaultProducts();
-      localStorage.setItem('md3_products', JSON.stringify(p));
+      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(p));
       return p;
     }
   }
 
-  function saveProducts(p) {
+  function loadUsersLocal() {
     try {
-      localStorage.setItem('md3_products', JSON.stringify(p));
-    } catch (e) {
-      throw new Error('STORAGE_FULL');
+      return JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+    } catch (_) {
+      return {};
     }
   }
 
-  /** HTML for product visual: uploaded image or emoji fallback */
+  function loadCartsLocal() {
+    try {
+      return JSON.parse(localStorage.getItem(CARTS_KEY) || '{}');
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function ensureCaches() {
+    if (!productsCache) productsCache = loadProductsLocal();
+    if (!usersCache) usersCache = loadUsersLocal();
+    if (!cartsCache) cartsCache = loadCartsLocal();
+  }
+
+  function notifyProductsUpdated() {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('md3-products-updated'));
+    }
+  }
+
+  function setProductsCache(p) {
+    productsCache = p;
+    try {
+      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(p));
+    } catch (_) {}
+    notifyProductsUpdated();
+  }
+
+  function getProducts() {
+    ensureCaches();
+    return productsCache.map((x) => ({ ...x }));
+  }
+
+  async function saveProducts(p) {
+    ensureCaches();
+    const list = p.map((x) => ({ ...x }));
+    if (global.MD3Firebase && global.MD3Firebase.isEnabled()) {
+      await global.MD3Firebase.saveProducts(list);
+    }
+    setProductsCache(list);
+  }
+
   function productVisualInner(p) {
     if (p && p.image) {
       return `<img src="${p.image}" alt="" class="product-photo" loading="lazy" />`;
@@ -66,11 +119,19 @@
   }
 
   function getUsers() {
-    return JSON.parse(localStorage.getItem('md3_users') || '{}');
+    ensureCaches();
+    return { ...usersCache };
   }
 
-  function saveUsers(u) {
-    localStorage.setItem('md3_users', JSON.stringify(u));
+  async function saveUsers(u) {
+    ensureCaches();
+    usersCache = { ...u };
+    try {
+      localStorage.setItem(USERS_KEY, JSON.stringify(usersCache));
+    } catch (_) {}
+    if (global.MD3Firebase && global.MD3Firebase.isEnabled()) {
+      await global.MD3Firebase.saveUsersMap(usersCache);
+    }
   }
 
   const PENDING_TTL_MS = 15 * 60 * 1000;
@@ -104,8 +165,6 @@
     delete all[email];
     savePendingSignups(all);
   }
-
-  const SESSION_KEY = 'md3_session';
 
   function getCurrentUser() {
     try {
@@ -147,7 +206,6 @@
   const PROFILE_PAGE = 'compte.html';
   const LOGIN_PAGE = 'login.html';
 
-  /** Profile always opens compte; that page routes to login if needed. */
   function getProfileHref() {
     return PROFILE_PAGE;
   }
@@ -156,7 +214,6 @@
     return !!getCurrentUser();
   }
 
-  /** Send logged-in users away from login (same tab, back button, new tab). */
   function guardLoginPage(redirectTo) {
     const dest = redirectTo || PROFILE_PAGE;
     if (!getCurrentUser()) return false;
@@ -164,15 +221,15 @@
     return true;
   }
 
-  /** Apply profile link + accessible label on the account nav icon. */
   function syncAccountNav(accountEl, user) {
     if (!accountEl) return;
     const u = user !== undefined ? user : getCurrentUser();
     accountEl.href = PROFILE_PAGE;
     const labelKey = !u ? 'nav-login' : u.isAdmin ? 'nav-admin' : 'nav-account';
-    const label = typeof global.MD3Lang !== 'undefined' && global.MD3Lang.t
-      ? global.MD3Lang.t(labelKey)
-      : labelKey;
+    const label =
+      typeof global.MD3Lang !== 'undefined' && global.MD3Lang.t
+        ? global.MD3Lang.t(labelKey)
+        : labelKey;
     accountEl.setAttribute('data-i18n-aria', labelKey);
     accountEl.setAttribute('aria-label', label);
     accountEl.setAttribute('title', label);
@@ -184,7 +241,7 @@
     return liked.includes(productId);
   }
 
-  function toggleLiked(productId) {
+  async function toggleLiked(productId) {
     const user = getCurrentUser();
     if (!user || user.isAdmin) return { ok: false, reason: 'login' };
     const users = getUsers();
@@ -194,7 +251,7 @@
     if (idx === -1) liked.push(productId);
     else liked.splice(idx, 1);
     users[user.email].liked = liked;
-    saveUsers(users);
+    await saveUsers(users);
     return { ok: true, liked: idx === -1 };
   }
 
@@ -205,15 +262,19 @@
   }
 
   function getAllCarts() {
-    try {
-      return JSON.parse(localStorage.getItem('md3_carts') || '{}');
-    } catch (_) {
-      return {};
-    }
+    ensureCaches();
+    return { ...cartsCache };
   }
 
-  function saveAllCarts(carts) {
-    localStorage.setItem('md3_carts', JSON.stringify(carts));
+  async function saveAllCarts(carts) {
+    ensureCaches();
+    cartsCache = { ...carts };
+    try {
+      localStorage.setItem(CARTS_KEY, JSON.stringify(cartsCache));
+    } catch (_) {}
+    if (global.MD3Firebase && global.MD3Firebase.isEnabled()) {
+      await global.MD3Firebase.saveCartsMap(cartsCache);
+    }
   }
 
   function getCart() {
@@ -221,10 +282,10 @@
     return carts[getCartOwnerKey()] || {};
   }
 
-  function setCart(cart) {
+  async function setCart(cart) {
     const carts = getAllCarts();
     carts[getCartOwnerKey()] = cart;
-    saveAllCarts(carts);
+    await saveAllCarts(carts);
   }
 
   function getCartCount() {
@@ -237,7 +298,7 @@
     return (cart[String(productId)] || 0) > 0;
   }
 
-  function addToCart(productId) {
+  async function addToCart(productId) {
     const products = getProducts();
     const p = products.find((x) => x.id === productId);
     if (!p) return { ok: false, reason: 'missing' };
@@ -247,26 +308,23 @@
     const next = (cart[key] || 0) + 1;
     if (next > p.stock) return { ok: false, reason: 'max' };
     cart[key] = next;
-    setCart(cart);
+    await setCart(cart);
     return { ok: true, count: getCartCount() };
   }
 
-  function setCartQty(productId, qty) {
+  async function setCartQty(productId, qty) {
     const products = getProducts();
     const p = products.find((x) => x.id === productId);
     if (!p) return { ok: false };
     const cart = getCart();
     const key = String(productId);
-    if (qty <= 0) {
-      delete cart[key];
-    } else {
-      cart[key] = Math.min(qty, p.stock);
-    }
-    setCart(cart);
+    if (qty <= 0) delete cart[key];
+    else cart[key] = Math.min(qty, p.stock);
+    await setCart(cart);
     return { ok: true, count: getCartCount() };
   }
 
-  function removeFromCart(productId) {
+  async function removeFromCart(productId) {
     return setCartQty(productId, 0);
   }
 
@@ -282,10 +340,92 @@
       .filter(Boolean);
   }
 
+  function isCloudEnabled() {
+    return !!(global.MD3Firebase && global.MD3Firebase.isEnabled());
+  }
+
+  async function init() {
+    ensureCaches();
+
+    if (!global.MD3Firebase || !global.MD3Firebase.isConfigured()) {
+      readyResolve();
+      return;
+    }
+
+    const ok = await global.MD3Firebase.init();
+    if (!ok) {
+      readyResolve();
+      return;
+    }
+
+    const FB = global.MD3Firebase;
+
+    try {
+      const remoteProducts = await FB.loadProducts();
+      if (remoteProducts && remoteProducts.length) {
+        setProductsCache(remoteProducts);
+      } else if (productsCache.length) {
+        await FB.saveProducts(productsCache);
+      }
+
+      FB.watchProducts((list) => {
+        if (list && list.length) setProductsCache(list);
+      });
+
+      const remoteUsers = await FB.loadUsersMap();
+      if (remoteUsers && Object.keys(remoteUsers).length) {
+        usersCache = remoteUsers;
+        localStorage.setItem(USERS_KEY, JSON.stringify(usersCache));
+      } else if (Object.keys(usersCache).length) {
+        await FB.saveUsersMap(usersCache);
+      }
+
+      FB.watchUsers((map) => {
+        usersCache = map;
+        try {
+          localStorage.setItem(USERS_KEY, JSON.stringify(usersCache));
+        } catch (_) {}
+      });
+
+      const remoteCarts = await FB.loadCartsMap();
+      if (remoteCarts && Object.keys(remoteCarts).length) {
+        cartsCache = remoteCarts;
+        localStorage.setItem(CARTS_KEY, JSON.stringify(cartsCache));
+      } else if (Object.keys(cartsCache).length) {
+        await FB.saveCartsMap(cartsCache);
+      }
+
+      FB.watchCarts((map) => {
+        cartsCache = map;
+        try {
+          localStorage.setItem(CARTS_KEY, JSON.stringify(cartsCache));
+        } catch (_) {}
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('md3-carts-updated'));
+        }
+      });
+
+      const remoteTax = await FB.loadTaxonomy();
+      if (remoteTax) {
+        localStorage.setItem('md3_taxonomy', JSON.stringify(remoteTax));
+      } else {
+        const localTax = localStorage.getItem('md3_taxonomy');
+        if (localTax) await FB.saveTaxonomy(JSON.parse(localTax));
+      }
+    } catch (e) {
+      console.error('MD3Store cloud sync', e);
+    }
+
+    readyResolve();
+  }
+
   global.MD3Store = {
     ADMIN_EMAIL,
     ADMIN_IDS,
     ADMIN_PASS,
+    ready,
+    init,
+    isCloudEnabled,
     isAdminLogin,
     defaultProducts,
     getProducts,

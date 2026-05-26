@@ -1,0 +1,19 @@
+// firebase.js
+import { initializeApp } from "firebase/app";
+import { getStorage } from "firebase/storage"; // Import the storage module
+
+// Your specific configuration from the screenshot
+const firebaseConfig = {
+  apiKey: "AIzaSyDr7b9MebBu1ODxtC6umoWf1fb0B3cheuQ",
+  authDomain: "md3scadi.firebaseapp.com",
+  projectId: "md3scadi",
+  storageBucket: "md3scadi.firebasestorage.app",
+  messagingSenderId: "1045238752087",
+  appId: "1:1045238752087:web:133a1110d07ef319bd5412"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+// Initialize Cloud Storage and export it so your other files can use it
+export const storage = getStorage(app);

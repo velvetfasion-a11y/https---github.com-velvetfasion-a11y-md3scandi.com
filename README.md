@@ -30,7 +30,9 @@ Puis : [http://localhost:8080](http://localhost:8080)
 |------------|-------------------|
 | `index.html` | Vitrine + boutique |
 | `compte.html` | Compte, profil, admin |
-| `md3-store.js` | Données partagées (localStorage) |
+| `md3-store.js` | Boutique (cache local + sync Firebase) |
+| `md3-firebase.js` | Sync cloud Firestore + Storage |
+| `firebase-config.js` | Clés Firebase (à remplir) |
 | `md3-email.js` | Envoi du code de confirmation (EmailJS) |
 | `email-config.js` | Clés EmailJS (à remplir) |
 
@@ -47,3 +49,56 @@ Chaque nouvelle inscription envoie un **code à 6 chiffres** par email avant d�
 5. Déployez `email-config.js` avec le site (ne commitez pas de clés privées si le repo est public — la public key EmailJS est faite pour le client)
 
 Sans configuration, l’inscription affichera une erreur ; une fois configuré, l’email part en quelques secondes via l’API EmailJS.
+
+## Firebase (données sur tous les appareils)
+
+Produits, images, comptes clients et paniers sont synchronisés via **Cloud Firestore** et **Firebase Storage** (même catalogue sur téléphone, ordinateur et admin).
+
+### 1. Créer le projet
+
+1. [console.firebase.google.com](https://console.firebase.google.com/) → **Ajouter un projet**
+2. **Build** → **Firestore Database** → créer en mode test (ou production avec règles ci‑dessous)
+3. **Build** → **Storage** → démarrer (bucket par défaut)
+
+### 2. Configurer le site
+
+1. **Paramètres du projet** → vos applications → **Web** `</>` → copier la config
+2. `cp firebase-config.example.js firebase-config.js` et coller `apiKey`, `projectId`, `storageBucket`, etc.
+3. Déployer **`firebase-config.js`** avec le site (comme `email-config.js`)
+
+Sans `firebase-config.js` valide, le site fonctionne encore en **localStorage** (données seulement sur ce navigateur).
+
+### 3. Règles de sécurité (minimum pour démarrer)
+
+**Firestore** → Règles :
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
+
+**Storage** → Règles :
+
+```
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /products/{fileName} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}
+```
+
+> Pour la production, restreignez les écritures (ex. Firebase Auth + custom claims admin). Les mots de passe comptes sont encore gérés côté client — prévoir Auth plus tard pour une vraie sécurité.
+
+### 4. Première visite
+
+Au premier chargement avec Firebase actif, les produits locaux sont envoyés dans le cloud. Les photos admin sont stockées dans **Storage** (URL publique), pas en base64 dans Firestore.

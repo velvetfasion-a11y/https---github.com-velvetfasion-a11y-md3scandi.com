@@ -886,6 +886,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" crossorigin="anonymous"></script>
 <script src="email-config.js"></script>
 <script src="md3-email.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="md3-firebase.js"></script>
 <script src="md3-store.js"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-lang.js"></script>
@@ -898,6 +903,7 @@ let adminFilter = 'Tous';
 let adminTabActive = 'products';
 let productCropper = null;
 let savedProductImage = null;
+let productImageRemoved = false;
 
 function destroyProductCropper() {
   if (productCropper) {
@@ -979,6 +985,7 @@ function getProductImageFromEditor() {
 
 function removeProductImage() {
   resetProductImageUI();
+  productImageRemoved = true;
 }
 
 function cropZoom(ratio) {
@@ -1170,7 +1177,7 @@ async function doSignup() {
   document.getElementById('signup-code').focus();
 }
 
-function confirmSignupCode() {
+async function confirmSignupCode() {
   const email = pendingSignupEmail;
   const code = document.getElementById('signup-code').value.trim();
   const err = document.getElementById('verify-error');
@@ -1184,7 +1191,7 @@ function confirmSignupCode() {
 
   const users = S.getUsers();
   users[email] = { name: pending.name, password: pending.password, liked: [], verified: true };
-  S.saveUsers(users);
+  await S.saveUsers(users);
   S.clearPendingSignup(email);
   pendingSignupEmail = '';
   S.setCurrentUser({ email, name: pending.name, isAdmin: false });
@@ -1300,19 +1307,19 @@ function confirmUnlikeProduct(id) {
   openConfirm(L('confirm-unlike-title'), text, '♥', () => unlikeProduct(id));
 }
 
-function unlikeProduct(id) {
+async function unlikeProduct(id) {
   const user = S.getCurrentUser();
   if (!user) return;
   const users = S.getUsers();
   if (!users[user.email]) return;
   users[user.email].liked = (users[user.email].liked || []).filter(i => i !== id);
-  S.saveUsers(users);
+  await S.saveUsers(users);
   renderProfile();
   updateCartBadge();
 }
 
-function addToCartFromProfile(id) {
-  const res = S.addToCart(id);
+async function addToCartFromProfile(id) {
+  const res = await S.addToCart(id);
   if (!res.ok) {
     if (res.reason === 'out') alert(L('cart-out-stock'));
     else if (res.reason === 'max') alert(L('cart-max-stock'));
@@ -1324,11 +1331,11 @@ function addToCartFromProfile(id) {
 
 function confirmDeleteAccount() {
   closeModal('settingsModal');
-  openConfirm(L('confirm-delete-account'), L('profile-delete-text'), '⚠️', () => {
+  openConfirm(L('confirm-delete-account'), L('profile-delete-text'), '⚠️', async () => {
     const user = S.getCurrentUser();
     const users = S.getUsers();
     delete users[user.email];
-    S.saveUsers(users);
+    await S.saveUsers(users);
     S.clearSession();
     window.location.href = 'login.html';
   });
@@ -1420,12 +1427,16 @@ function renderAdminStats() {
 
 function setAdminFilter(cat) { adminFilter = cat; renderAdminProducts(); }
 
-function updateStock(id, val) {
+async function updateStock(id, val) {
   const products = S.getProducts();
   const idx = products.findIndex(p => p.id === id);
   if (idx !== -1) {
     products[idx].stock = Math.max(0, parseInt(val, 10) || 0);
-    S.saveProducts(products);
+    try {
+      await S.saveProducts(products);
+    } catch (e) {
+      console.error('updateStock', e);
+    }
     renderAdminProducts();
   }
 }
@@ -1468,6 +1479,7 @@ function onProdCatChange() {
 function openAddProduct() {
   document.getElementById('modalTitle').textContent = L('modal-add');
   document.getElementById('editId').value = '';
+  productImageRemoved = false;
   ['prodName','prodPrice','prodStock'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('prodCat').value = 'Mode';
   initProductTaxonomyUI();
@@ -1487,8 +1499,12 @@ function openEditProduct(id) {
   initProductTaxonomyUI(p.sub);
   document.getElementById('prodPrice').value = p.price;
   document.getElementById('prodStock').value = p.stock;
+  productImageRemoved = false;
   resetProductImageUI();
-  if (p.image) loadImageIntoCropper(p.image);
+  if (p.image) {
+    savedProductImage = p.image;
+    loadImageIntoCropper(p.image);
+  }
   setProductModalDeleteVisible(true);
   document.getElementById('productModal').classList.add('open');
   MD3Lang.applySelectOptions(MD3Lang.getLang());
@@ -1500,7 +1516,7 @@ function deleteProductFromModal() {
   confirmDeleteProduct(editId);
 }
 
-function saveProduct() {
+async function saveProduct() {
   const name = document.getElementById('prodName').value.trim();
   const category = document.getElementById('prodCat').value;
   const sub = document.getElementById('prodSub').value.trim();
@@ -1511,16 +1527,21 @@ function saveProduct() {
   if (!name) { alert(L('err-prod-name')); return; }
   if (!sub) { alert(L('err-prod-sub')); return; }
   const products = S.getProducts();
+  const saveBtn = document.querySelector('#productModal .btn-primary');
+  if (saveBtn) saveBtn.disabled = true;
   try {
     if (editId) {
       const idx = products.findIndex(p => p.id === parseInt(editId, 10));
       if (idx !== -1) {
+        const prev = products[idx];
         const next = {
-          ...products[idx],
+          ...prev,
           name, category, sub, price, stock,
-          emoji: products[idx].emoji || '✦',
+          emoji: prev.emoji || '✦',
         };
         if (image) next.image = image;
+        else if (productImageRemoved) delete next.image;
+        else if (prev.image) next.image = prev.image;
         else delete next.image;
         products[idx] = next;
       }
@@ -1530,28 +1551,30 @@ function saveProduct() {
       if (image) item.image = image;
       products.push(item);
     }
-    S.saveProducts(products);
+    await S.saveProducts(products);
   } catch (err) {
     alert(L('err-save-image'));
+    if (saveBtn) saveBtn.disabled = false;
     return;
   }
   destroyProductCropper();
   closeModal('productModal');
   renderAdminProducts();
+  if (saveBtn) saveBtn.disabled = false;
 }
 
 function confirmDeleteProduct(id) {
   const p = S.getProducts().find(x => x.id === id);
   if (!p) return;
   const delMsg = L('confirm-delete-product-named').replace('%s', p.name);
-  openConfirm(L('confirm-delete-product'), delMsg, '🗑️', () => {
+  openConfirm(L('confirm-delete-product'), delMsg, '🗑️', async () => {
     const updated = S.getProducts().filter(x => x.id !== id);
-    S.saveProducts(updated);
+    await S.saveProducts(updated);
     const users = S.getUsers();
     Object.values(users).forEach(u => {
       if (u.liked) u.liked = u.liked.filter(i => i !== id);
     });
-    S.saveUsers(users);
+    await S.saveUsers(users);
     closeModal('productModal');
     renderAdminProducts();
   });
@@ -1593,14 +1616,28 @@ function routeCompte() {
 }
 
 (function init() {
-  S.getProducts();
-  routeCompte();
-  MD3Lang.init({ onChange: refreshCompteView });
+  MD3Store.init().then(function () {
+    routeCompte();
+    MD3Lang.init({ onChange: refreshCompteView });
+  }).catch(function (e) {
+    console.error('MD3Store.init', e);
+    routeCompte();
+    MD3Lang.init({ onChange: refreshCompteView });
+  });
 })();
 
 window.addEventListener('pageshow', function () {
   routeCompte();
   updateNav();
+});
+
+window.addEventListener('md3-products-updated', function () {
+  if (document.getElementById('page-admin')?.classList.contains('active')) {
+    renderAdminProducts();
+  }
+  if (document.getElementById('page-profile')?.classList.contains('active')) {
+    renderProfile();
+  }
 });
 
 window.addEventListener('storage', function (e) {

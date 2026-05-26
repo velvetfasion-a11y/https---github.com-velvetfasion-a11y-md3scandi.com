@@ -32,6 +32,9 @@
 
   function save(data) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    if (global.MD3Firebase && global.MD3Firebase.isEnabled()) {
+      global.MD3Firebase.saveTaxonomy(data).catch((e) => console.error('taxonomy sync', e));
+    }
   }
 
   function getCategories() {

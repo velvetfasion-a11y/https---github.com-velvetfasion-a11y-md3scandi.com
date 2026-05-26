@@ -374,6 +374,11 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="md3-firebase.js"></script>
 <script src="md3-store.js"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-lang.js"></script>
@@ -477,7 +482,7 @@
     openConfirmModal(t('confirm-cart-remove-title'), text, '🛒', () => removeLine(id));
   };
 
-  window.changeQty = function (id, delta) {
+  window.changeQty = async function (id, delta) {
     const lines = S.getCartLines();
     const line = lines.find((l) => l.product.id === id);
     if (!line) return;
@@ -486,14 +491,14 @@
       confirmRemoveFromCart(id);
       return;
     }
-    const res = S.setCartQty(id, next);
+    const res = await S.setCartQty(id, next);
     if (!res.ok && delta > 0) alert(t('cart-max-stock'));
     renderCart();
     updateCartBadge();
   };
 
-  function removeLine(id) {
-    S.removeFromCart(id);
+  async function removeLine(id) {
+    await S.removeFromCart(id);
     renderCart();
     updateCartBadge();
   }
@@ -510,11 +515,28 @@
     }
   });
 
-  setNavAuth(S.getCurrentUser());
-  renderCart();
+  function bootCart() {
+    setNavAuth(S.getCurrentUser());
+    renderCart();
+  }
+
+  MD3Store.init().then(bootCart).catch(function (e) {
+    console.error('MD3Store.init', e);
+    bootCart();
+  });
 
   window.addEventListener('pageshow', function () {
     setNavAuth(S.getCurrentUser());
+    renderCart();
+  });
+
+  window.addEventListener('md3-products-updated', function () {
+    renderCart();
+  });
+
+  window.addEventListener('md3-carts-updated', function () {
+    renderCart();
+    updateCartBadge();
   });
 
   window.addEventListener('storage', (e) => {

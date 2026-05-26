@@ -327,6 +327,11 @@
   </div>
 </main>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="md3-firebase.js"></script>
 <script src="md3-store.js"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-lang.js"></script>
@@ -356,30 +361,37 @@ if (MD3Store.guardLoginPage('compte.html')) { /* redirecting */ }
     updateCartBadge();
   }
 
-  const user = MD3Store.getCurrentUser();
-  setNavAuth(user);
-  MD3Lang.init({
-    onChange() {
-      setNavAuth(MD3Store.getCurrentUser());
-      MD3Lang.refreshUI();
-      const params = new URLSearchParams(location.search);
-      if (params.get('redirect') === 'boutique') {
-        const sub = document.querySelector('.login-sub');
-        if (sub) sub.innerHTML = MD3Lang.t('login-sub-boutique');
+  function bootLogin() {
+    const user = MD3Store.getCurrentUser();
+    setNavAuth(user);
+    MD3Lang.init({
+      onChange() {
+        setNavAuth(MD3Store.getCurrentUser());
+        MD3Lang.refreshUI();
+        const params = new URLSearchParams(location.search);
+        if (params.get('redirect') === 'boutique') {
+          const sub = document.querySelector('.login-sub');
+          if (sub) sub.innerHTML = MD3Lang.t('login-sub-boutique');
+        }
       }
-    }
-  });
+    });
 
-  const params = new URLSearchParams(location.search);
-  const emailField = document.getElementById('login-email');
-  if (params.get('email')) emailField.value = params.get('email');
-  if (params.get('redirect') === 'boutique') {
-    const sub = document.querySelector('.login-sub');
-    if (sub) sub.innerHTML = MD3Lang.t('login-sub-boutique');
+    const params = new URLSearchParams(location.search);
+    const emailField = document.getElementById('login-email');
+    if (params.get('email')) emailField.value = params.get('email');
+    if (params.get('redirect') === 'boutique') {
+      const sub = document.querySelector('.login-sub');
+      if (sub) sub.innerHTML = MD3Lang.t('login-sub-boutique');
+    }
+
+    ['login-email', 'login-password'].forEach(id => {
+      document.getElementById(id).addEventListener('input', clearFieldErrors);
+    });
   }
 
-  ['login-email', 'login-password'].forEach(id => {
-    document.getElementById(id).addEventListener('input', clearFieldErrors);
+  MD3Store.init().then(bootLogin).catch(function (e) {
+    console.error('MD3Store.init', e);
+    bootLogin();
   });
 })();
 

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firebase Storage Upload — MD3</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 32rem;
+      margin: 3rem auto;
+      padding: 0 1.25rem;
+      color: #2b2620;
+      background: #f7f4ef;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .hint {
+      font-size: 0.875rem;
+      color: #6b6560;
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b6560;
+      margin-bottom: 0.35rem;
+    }
+    input[type="file"] {
+      width: 100%;
+      padding: 0.65rem;
+      background: #fff;
+      border: 1px solid #ddd6cc;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      background: #2b2620;
+      color: #f7f4ef;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) { opacity: 0.9; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status {
+      margin-top: 1.25rem;
+      font-size: 0.9rem;
+      min-height: 1.25em;
+    }
+    .status.error { color: #b42318; }
+    .url-wrap {
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      word-break: break-all;
+    }
+    .url-wrap a { color: #5c5348; }
+    .shop-link {
+      display: inline-block;
+      margin-top: 2rem;
+      font-size: 0.875rem;
+      color: #6b6560;
+    }
+  </style>
+</head>
+<body>
+  <h1>Upload to Firebase Storage</h1>
+  <p class="hint">Files are saved under <code>uploads/</code> in your bucket.</p>
+
+  <label for="fileInput">Choose file</label>
+  <input type="file" id="fileInput" />
+
+  <button type="button" id="uploadBtn">Upload</button>
+
+  <p id="status" class="status" aria-live="polite"></p>
+  <p class="url-wrap">
+    <a id="url" href="#"></a>
+  </p>
+
+  <a class="shop-link" href="index.html">← MD3 Scandi boutique</a>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

@@ -1101,6 +1101,11 @@
   <p class="copyright" data-i18n="copyright">©️ 2026 MD3 Scandi — Tous droits réservés</p>
 </footer>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="md3-firebase.js"></script>
 <script src="md3-store.js"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-lang.js"></script>
@@ -1287,8 +1292,8 @@
     updateCartBadge();
   }
 
-  function addToCartProduct(id) {
-    const res = MD3Store.addToCart(id);
+  async function addToCartProduct(id) {
+    const res = await MD3Store.addToCart(id);
     if (!res.ok) {
       if (res.reason === 'out') alert(shopLabel('cart-out-stock'));
       else if (res.reason === 'max') alert(shopLabel('cart-max-stock'));
@@ -1298,8 +1303,8 @@
   }
   window.addToCartProduct = addToCartProduct;
 
-  function toggleSaveProduct(id) {
-    const result = MD3Store.toggleLiked(id);
+  async function toggleSaveProduct(id) {
+    const result = await MD3Store.toggleLiked(id);
     if (!result.ok) {
       alert(shopLabel('shop-login'));
       window.location.href = 'login.html?redirect=boutique';
@@ -1321,12 +1326,29 @@
     updateCartBadge();
   }
 
-  updateNavAuth();
-  try { renderShop(); } catch (e) { console.error('renderShop', e); }
+  function bootShop() {
+    updateNavAuth();
+    try { renderShop(); } catch (e) { console.error('renderShop', e); }
+  }
+
+  MD3Store.init().then(bootShop).catch(function (e) {
+    console.error('MD3Store.init', e);
+    bootShop();
+  });
 
   window.addEventListener('pageshow', function () {
     updateNavAuth();
     updateCartBadge();
+    try { renderShop(); } catch (e) { console.error('renderShop', e); }
+  });
+
+  window.addEventListener('md3-products-updated', function () {
+    try { renderShop(); } catch (e) { console.error('renderShop', e); }
+  });
+
+  window.addEventListener('md3-carts-updated', function () {
+    updateCartBadge();
+    try { renderShop(); } catch (e) { console.error('renderShop', e); }
   });
 
   if (location.hash === '#boutique' || location.hash.startsWith('#boutique?')) {
