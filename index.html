@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>MD3 Scandi — Ton univers, sublimé</title>
 <meta name="description" content="MD3 Scandi — Mode, Maison, Lifestyle. Du dressing au salon, l'élégance partout." />
+<link rel="canonical" href="https://md3scandi.com/" />
+<meta property="og:site_name" content="MD3 Scandi" />
+<meta property="og:url" content="https://md3scandi.com/" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="MD3 Scandi — Ton univers, sublimé" />
+<meta property="og:description" content="MD3 Scandi — Mode, Maison, Lifestyle. Du dressing au salon, l'élégance partout." />
+<meta property="og:locale" content="fr_FR" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="MD3 Scandi — Ton univers, sublimé" />
+<meta name="twitter:description" content="MD3 Scandi — Mode, Maison, Lifestyle. Du dressing au salon, l'élégance partout." />
 
 <!-- Favicon emoji -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
@@ -1001,6 +1011,16 @@
     document.title = t['meta-title'];
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', t['meta-desc']);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (ogTitle) ogTitle.setAttribute('content', t['meta-title']);
+    if (ogDesc) ogDesc.setAttribute('content', t['meta-desc']);
+    if (twTitle) twTitle.setAttribute('content', t['meta-title']);
+    if (twDesc) twDesc.setAttribute('content', t['meta-desc']);
+    const ogLocale = document.querySelector('meta[property="og:locale"]');
+    if (ogLocale) ogLocale.setAttribute('content', lang === 'fr' ? 'fr_FR' : lang === 'en' ? 'en_US' : 'ar_SA');
 
     document.querySelectorAll('.lang-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.lang === lang);

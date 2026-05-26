@@ -2,6 +2,8 @@
 
 Boutique vitrine MD3 Scandi (mode, maison, lifestyle) — page unique HTML/CSS/JS.
 
+**Site en ligne :** [https://md3scandi.com](https://md3scandi.com)
+
 ## Aperçu
 
 - Hero, collections Mode / Maison / Lifestyle / Édition limitée
