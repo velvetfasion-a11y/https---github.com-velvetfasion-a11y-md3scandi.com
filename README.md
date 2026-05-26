@@ -68,9 +68,17 @@ Produits, images, comptes clients et paniers sont synchronisés via **Cloud Fire
 
 Sans `firebase-config.js` valide, le site fonctionne encore en **localStorage** (données seulement sur ce navigateur).
 
-### 3. Règles de sécurité (minimum pour démarrer)
+### 3. Règles de sécurité (obligatoire — sinon `storage/unauthorized`)
 
-**Firestore** → Règles :
+Si l’admin affiche **« User does not have permission to access 'products/…' »**, les règles Storage ne sont pas publiées. Corrigez ainsi :
+
+1. [Firebase Console](https://console.firebase.google.com/) → projet **md3scadi**
+2. **Build** → **Storage** → onglet **Rules**
+3. Remplacez tout le contenu par le fichier **`storage.rules`** de ce repo (ou le bloc ci‑dessous)
+4. Cliquez **Publish** / **Publier**
+5. Attendez ~30 secondes, puis réessayez l’upload dans l’admin
+
+**Firestore** → Règles (même principe, fichier **`firestore.rules`**) :
 
 ```
 rules_version = '2';

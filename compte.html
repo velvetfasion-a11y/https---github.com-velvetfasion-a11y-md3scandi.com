@@ -746,7 +746,7 @@
         <button class="btn-primary" id="signup-submit-btn" onclick="doSignup()" data-i18n="btn-create-account">Créer mon compte</button>
         <p class="auth-switch" data-i18n="link-have-account-html">Déjà un compte ? <a href="login.html">Se connecter</a></p>
       </div>
-      <div id="signup-verify-step" style="display:none">
+      <div id="signup-verify-step" hidden aria-hidden="true">
         <h1 class="auth-title" data-i18n="verify-title">Confirmez votre email</h1>
         <p class="verify-email-hint"><span data-i18n="verify-sub">Un code à 6 chiffres a été envoyé à</span> <strong id="verify-email-display"></strong></p>
         <div class="error-msg" id="verify-error"></div>
@@ -884,9 +884,9 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" crossorigin="anonymous"></script>
-<script src="email-config.js"></script>
-<script src="md3-email.js"></script>
+<script type="module" src="md3-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 <script src="firebase-config.js"></script>
@@ -1005,10 +1005,7 @@ function showPage(name) {
   document.getElementById('page-' + name).classList.add('active');
   if (name !== 'signup') {
     const formStep = document.getElementById('signup-form-step');
-    const verifyStep = document.getElementById('signup-verify-step');
     if (formStep) formStep.style.display = '';
-    if (verifyStep) verifyStep.style.display = 'none';
-    pendingSignupEmail = '';
   }
   if (name === 'profile') renderProfile();
   if (name === 'admin') renderAdminProducts();
@@ -1064,7 +1061,7 @@ function markInputError(inputId, labelId) {
   }
 }
 
-function doLogin() {
+async function doLogin() {
   clearInputErrors('login');
   const email = document.getElementById('login-email').value.trim().toLowerCase();
   const pass = document.getElementById('login-password').value;
@@ -1090,28 +1087,24 @@ function doLogin() {
     showErr(err, L('err-invalid-email'), [['login-email', 'login-label-email']]);
     return;
   }
-  const users = S.getUsers();
-  if (!users[email]) {
-    showErr(err, L('err-no-account'), [['login-email', 'login-label-email']]);
-    return;
-  }
-  if (users[email].password !== pass) {
-    showErr(err, L('err-wrong-pass'), [['login-password', 'login-label-password']]);
-    return;
-  }
-  if (users[email].verified === false) {
-    showErr(err, L('err-not-verified'), [['login-email', 'login-label-email']]);
-    return;
-  }
-  S.setCurrentUser({ email, name: users[email].name, isAdmin: false });
-  if (!S.getCurrentUser()) {
-    showErr(err, L('err-save-session') || 'Session could not be saved.');
-    return;
-  }
-  showPage('profile');
-}
 
-let pendingSignupEmail = '';
+  try {
+    await S.ready;
+    if (!window.MD3Auth) throw new Error('Authentication module not loaded.');
+    await MD3Auth.signIn(email, pass);
+    const users = S.getUsers();
+    const profile = users[email] || { name: email.split('@')[0], liked: [] };
+    S.setCurrentUser({ email, name: profile.name, isAdmin: false });
+    if (!S.getCurrentUser()) {
+      showErr(err, L('err-save-session') || 'Session could not be saved.');
+      return;
+    }
+    showPage('profile');
+  } catch (e) {
+    console.error(e);
+    showErr(err, window.MD3Auth ? MD3Auth.firebaseAuthErrorMessage(e) : e.message);
+  }
+}
 
 async function doSignup() {
   clearInputErrors('signup');
@@ -1121,7 +1114,8 @@ async function doSignup() {
   const conf = document.getElementById('signup-confirm').value;
   const err = document.getElementById('signup-error');
   const succ = document.getElementById('signup-success');
-  err.style.display = 'none'; succ.style.display = 'none';
+  err.style.display = 'none';
+  succ.style.display = 'none';
 
   if (!name) {
     showErr(err, L('err-name'), [['signup-name', null]]);
@@ -1139,81 +1133,40 @@ async function doSignup() {
     showErr(err, L('err-pass-mismatch'), [['signup-confirm', null], ['signup-password', null]]);
     return;
   }
-  const users = S.getUsers();
-  if (users[email]) {
-    showErr(err, L('err-email-exists'), [['signup-email', 'signup-label-email']]);
-    return;
-  }
 
   const btn = document.getElementById('signup-submit-btn');
-  if (btn) { btn.disabled = true; btn.textContent = L('verify-sending'); }
-
-  const code = MD3Email.generateCode();
-  S.setPendingSignup(email, { name, password: pass, code });
-
-  try {
-    await MD3Email.sendVerificationCode(email, code, name);
-  } catch (e) {
-    if (btn) { btn.disabled = false; btn.textContent = L('btn-create-account'); }
-    if (e.code === 'EMAIL_NOT_CONFIGURED') {
-      showErr(err, L('err-email-not-configured'));
-    } else {
-      showErr(err, L('err-email-send'));
-    }
-    return;
+  const btnLabel = L('btn-create-account');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = L('verify-sending');
   }
 
-  if (btn) { btn.disabled = false; btn.textContent = L('btn-create-account'); }
-  pendingSignupEmail = email;
-  document.getElementById('signup-form-step').style.display = 'none';
-  document.getElementById('signup-verify-step').style.display = 'block';
-  document.getElementById('verify-email-display').textContent = email;
-  document.getElementById('signup-code').value = '';
-  document.getElementById('verify-error').style.display = 'none';
-  const vs = document.getElementById('verify-success');
-  vs.textContent = L('verify-sent');
-  vs.style.display = 'block';
-  MD3Lang.refreshUI();
-  document.getElementById('signup-code').focus();
-}
-
-async function confirmSignupCode() {
-  const email = pendingSignupEmail;
-  const code = document.getElementById('signup-code').value.trim();
-  const err = document.getElementById('verify-error');
-  err.style.display = 'none';
-
-  const pending = S.getPendingSignup(email);
-  if (!pending || pending.code !== code) {
-    showErr(err, L('err-verify-code'));
-    return;
-  }
-
-  const users = S.getUsers();
-  users[email] = { name: pending.name, password: pending.password, liked: [], verified: true };
-  await S.saveUsers(users);
-  S.clearPendingSignup(email);
-  pendingSignupEmail = '';
-  S.setCurrentUser({ email, name: pending.name, isAdmin: false });
-  showPage('profile');
-}
-
-async function resendSignupCode() {
-  const email = pendingSignupEmail;
-  const pending = S.getPendingSignup(email);
-  if (!pending) return;
-  const err = document.getElementById('verify-error');
-  const succ = document.getElementById('verify-success');
-  err.style.display = 'none';
-  const code = MD3Email.generateCode();
-  pending.code = code;
-  S.setPendingSignup(email, pending);
   try {
-    await MD3Email.sendVerificationCode(email, code, pending.name);
-    succ.textContent = L('verify-sent');
+    await S.ready;
+    if (!window.MD3Auth) throw new Error('Authentication module not loaded.');
+
+    await MD3Auth.createAccount(email, pass);
+
+    const users = S.getUsers();
+    users[email] = { name, liked: [], verified: true };
+    await S.saveUsers(users);
+
+    S.setCurrentUser({ email, name, isAdmin: false });
+
+    succ.textContent = L('signup-success');
     succ.style.display = 'block';
+    err.style.display = 'none';
+
+    setTimeout(() => {
+      window.location.href = 'index.html';
+    }, 1500);
   } catch (e) {
-    showErr(err, e.code === 'EMAIL_NOT_CONFIGURED' ? L('err-email-not-configured') : L('err-email-send'));
+    console.error(e);
+    showErr(err, window.MD3Auth ? MD3Auth.firebaseAuthErrorMessage(e) : e.message);
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = btnLabel;
+    }
   }
 }
 

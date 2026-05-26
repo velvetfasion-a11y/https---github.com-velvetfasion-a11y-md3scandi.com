@@ -327,7 +327,9 @@
   </div>
 </main>
 
+<script type="module" src="md3-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 <script src="firebase-config.js"></script>
@@ -422,7 +424,7 @@ function showErr(msg, fields) {
   (fields || []).forEach(([inputId, labelId]) => setFieldError(inputId, labelId));
 }
 
-function doLogin(e) {
+async function doLogin(e) {
   e.preventDefault();
   clearFieldErrors();
   const email = document.getElementById('login-email').value.trim().toLowerCase();
@@ -454,32 +456,29 @@ function doLogin(e) {
     return false;
   }
 
-  const users = S.getUsers();
-  if (!users[email]) {
-    showErr(MD3Lang.t('err-no-account'), [['login-email', 'label-email']]);
-    return false;
-  }
-  if (users[email].password !== pass) {
-    showErr(MD3Lang.t('err-wrong-pass'), [['login-password', 'label-password']]);
-    return false;
-  }
-  if (users[email].verified === false) {
-    showErr(MD3Lang.t('err-not-verified'), [['login-email', 'label-email']]);
-    return false;
-  }
+  try {
+    await S.ready;
+    if (!window.MD3Auth) throw new Error('Authentication module not loaded.');
+    await MD3Auth.signIn(email, pass);
 
-  S.setCurrentUser({ email, name: users[email].name, isAdmin: false });
-  if (!S.getCurrentUser()) {
-    showErr(MD3Lang.t('err-save-session') || 'Could not save session. Check browser storage settings.');
-    return false;
-  }
+    const users = S.getUsers();
+    const profile = users[email] || { name: email.split('@')[0], liked: [] };
+    S.setCurrentUser({ email, name: profile.name, isAdmin: false });
+    if (!S.getCurrentUser()) {
+      showErr(MD3Lang.t('err-save-session') || 'Could not save session. Check browser storage settings.');
+      return false;
+    }
 
-  const params = new URLSearchParams(location.search);
-  const redirect = params.get('redirect');
-  if (redirect === 'boutique') {
-    window.location.replace('index.html#boutique');
-  } else {
-    window.location.replace('compte.html');
+    const params = new URLSearchParams(location.search);
+    const redirect = params.get('redirect');
+    if (redirect === 'boutique') {
+      window.location.replace('index.html#boutique');
+    } else {
+      window.location.replace('compte.html');
+    }
+  } catch (err) {
+    console.error(err);
+    showErr(window.MD3Auth ? MD3Auth.firebaseAuthErrorMessage(err) : err.message);
   }
   return false;
 }

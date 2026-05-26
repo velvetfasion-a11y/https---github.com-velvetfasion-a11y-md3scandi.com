@@ -5,6 +5,7 @@
 (function (global) {
   let db = null;
   let storage = null;
+  let auth = null;
   let active = false;
   let productsUnsub = null;
   let usersUnsub = null;
@@ -34,6 +35,7 @@
           : global.firebase.initializeApp(c);
       db = global.firebase.firestore(app);
       storage = global.firebase.storage(app);
+      auth = global.firebase.auth(app);
       active = true;
       return Promise.resolve(true);
     } catch (e) {
@@ -83,8 +85,18 @@
     if (!storage || !dataUrl) return dataUrl || null;
     if (!dataUrl.startsWith('data:')) return dataUrl;
     const storageRef = storage.ref('products/' + String(productId) + '.jpg');
-    await storageRef.putString(dataUrl, 'data_url', { contentType: 'image/jpeg' });
-    return storageRef.getDownloadURL();
+    try {
+      await storageRef.putString(dataUrl, 'data_url', { contentType: 'image/jpeg' });
+      return storageRef.getDownloadURL();
+    } catch (e) {
+      if (e && e.code === 'storage/unauthorized') {
+        const hint =
+          'Storage rules block products/ uploads. Firebase Console → Storage → Rules: allow read,write on products/{fileName} (see storage.rules in the repo), then Publish.';
+        console.error(hint, e);
+        throw new Error(hint);
+      }
+      throw e;
+    }
   }
 
   async function loadProducts() {
@@ -247,10 +259,15 @@
     await db.collection('meta').doc('taxonomy').set(data, { merge: true });
   }
 
+  function getAuth() {
+    return auth;
+  }
+
   global.MD3Firebase = {
     isConfigured,
     isEnabled,
     init,
+    getAuth,
     loadProducts,
     saveProducts,
     watchProducts,

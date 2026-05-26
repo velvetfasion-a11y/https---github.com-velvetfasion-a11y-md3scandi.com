@@ -1,0 +1,14 @@
+rules_version = '2';
+// MD3 Scandi — allow product images (admin upload + public shop display).
+// Deploy: Firebase Console → Storage → Rules → paste → Publish
+// Or: firebase deploy --only storage
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /products/{fileName} {
+      allow read, write: if true;
+    }
+    match /uploads/{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}
