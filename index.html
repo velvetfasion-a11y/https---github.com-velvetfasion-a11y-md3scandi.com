@@ -1104,6 +1104,7 @@
 <script src="md3-store.js"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-lang.js"></script>
+<script src="md3-currency.js"></script>
 <script>
   document.getElementById('navAccount').innerHTML = MD3NavIcons.account;
   document.getElementById('navCart').innerHTML = MD3NavIcons.cart + '<span class="nav-cart-badge" id="navCartBadge" hidden></span>';
@@ -1143,6 +1144,7 @@
 
   MD3Lang.init({
     onChange() {
+      MD3Currency.refreshCurrency();
       updateNavAuth();
       try { renderShop(); } catch (e) { console.error('renderShop', e); }
       updateCartBadge();
@@ -1274,7 +1276,7 @@
           <div class="product-body">
             <div class="product-cat">${catLabel(p.category)} · ${subLabelFr(p.sub)}</div>
             <h3 class="product-name">${p.name}</h3>
-            <p class="product-price">${p.price} €</p>
+            <p class="product-price">${MD3Currency.formatPrice(p.price)}</p>
             <div class="product-body-actions">
               <button type="button" class="btn-cart-add ${inCart ? 'in-cart' : ''}" title="${shopLabel('cart-add')}"
                 onclick="addToCartProduct(${p.id})" aria-label="${shopLabel('cart-add')}" ${out ? 'disabled' : ''}>${cartSvg}</button>

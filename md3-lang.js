@@ -159,6 +159,11 @@
       'label-prod-name': 'Nom du produit',
       'label-category': 'Catégorie',
       'label-subcat': 'Sous-catégorie',
+      'admin-add-sub': '+ sous-catégorie',
+      'admin-add-category': '+ catégorie',
+      'admin-prompt-category': 'Nom de la nouvelle catégorie :',
+      'admin-prompt-sub': 'Nouvelle sous-catégorie :',
+      'err-prod-sub': 'Choisissez une sous-catégorie.',
       'label-price': 'Prix (€)',
       'label-photo': 'Photo du produit',
       'label-stock': 'Stock (inventaire)',
@@ -370,6 +375,11 @@
       'label-prod-name': 'Product name',
       'label-category': 'Category',
       'label-subcat': 'Subcategory',
+      'admin-add-sub': '+ subcategory',
+      'admin-add-category': '+ category',
+      'admin-prompt-category': 'New category name:',
+      'admin-prompt-sub': 'New subcategory:',
+      'err-prod-sub': 'Please choose a subcategory.',
       'label-price': 'Price (€)',
       'label-photo': 'Product photo',
       'label-stock': 'Stock (inventory)',
@@ -581,6 +591,11 @@
       'label-prod-name': 'اسم المنتج',
       'label-category': 'الفئة',
       'label-subcat': 'الفئة الفرعية',
+      'admin-add-sub': '+ فئة فرعية',
+      'admin-add-category': '+ فئة',
+      'admin-prompt-category': 'اسم الفئة الجديدة:',
+      'admin-prompt-sub': 'فئة فرعية جديدة:',
+      'err-prod-sub': 'يرجى اختيار فئة فرعية.',
       'label-price': 'السعر (€)',
       'label-photo': 'صورة المنتج',
       'label-stock': 'المخزون',
@@ -740,6 +755,17 @@
         if (key && dict[key] !== undefined) opt.textContent = dict[key];
       });
     }
+    applySubSelectOptions(lang);
+  }
+
+  function applySubSelectOptions(lang) {
+    const dict = T[lang] || T.fr;
+    document.querySelectorAll('select[data-i18n-sub-options]').forEach((sel) => {
+      Array.from(sel.options).forEach((opt) => {
+        const key = SUB_MAP[opt.value];
+        if (key && dict[key] !== undefined) opt.textContent = dict[key];
+      });
+    });
   }
 
   function applyLang(lang, opts) {
@@ -850,11 +876,14 @@
     translateCategory,
     translateSub,
     applyLang,
+    applySelectOptions,
+    applySubSelectOptions,
     refreshUI,
     init,
     initLangNav,
     applyNavLang,
     CAT_MAP,
     SUB_MAP,
+    OPT_VALUES,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

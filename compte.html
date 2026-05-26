@@ -652,6 +652,28 @@
     outline: none; appearance: none;
   }
   select.field-select:focus { border-color: var(--charcoal); background: white; }
+  .admin-sub-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  .admin-sub-add {
+    align-self: flex-end;
+    font-size: 0.85rem;
+    font-weight: 300;
+    line-height: 1;
+    color: var(--stone);
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.45;
+    padding: 0.1rem 0.35rem;
+    font-family: 'Jost', sans-serif;
+  }
+  .admin-sub-add:hover {
+    opacity: 0.85;
+    color: var(--charcoal);
+  }
   .table-wrap { overflow-x: auto; }
   @media (max-width: 768px) {
     .admin-layout { flex-direction: column; }
@@ -780,18 +802,21 @@
       <label data-i18n="label-prod-name">Nom du produit</label>
       <input type="text" id="prodName" placeholder="ex. Robe Lin Ivoire">
     </div>
-    <div class="field">
+    <div class="field field-taxonomy">
       <label data-i18n="label-category">Catégorie</label>
-      <select id="prodCat" class="field-select" data-i18n-options>
+      <select id="prodCat" class="field-select" data-i18n-options onchange="onProdCatChange()">
         <option value="Mode">Mode</option>
         <option value="Maison">Maison</option>
         <option value="Lifestyle">Lifestyle</option>
         <option value="Édition limitée">Édition limitée</option>
       </select>
     </div>
-    <div class="field">
+    <div class="field field-taxonomy">
       <label data-i18n="label-subcat">Sous-catégorie</label>
-      <input type="text" id="prodSub" placeholder="ex. Vêtements, Lampes, Sacs...">
+      <div class="admin-sub-field">
+        <select id="prodSub" class="field-select" data-i18n-sub-options></select>
+        <button type="button" class="admin-sub-add" id="prodSubAddBtn" onclick="promptAddSubcategory()" aria-label="+">+</button>
+      </div>
     </div>
     <div class="field">
       <label data-i18n="label-price">Prix (€)</label>
@@ -864,6 +889,8 @@
 <script src="md3-store.js"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-lang.js"></script>
+<script src="md3-taxonomy.js"></script>
+<script src="md3-currency.js"></script>
 <script>
 const S = MD3Store;
 const L = (k) => MD3Lang.t(k);
@@ -1005,6 +1032,10 @@ function updateNav() {
 }
 
 function refreshCompteView() {
+  if (typeof MD3Currency !== 'undefined') MD3Currency.refreshCurrency();
+  if (document.getElementById('productModal')?.classList.contains('open')) {
+    initProductTaxonomyUI();
+  }
   updateNav();
   const active = document.querySelector('.page.active');
   if (!active) return;
@@ -1245,7 +1276,7 @@ function renderProfile() {
       <div class="liked-card-body">
         <div class="liked-card-cat">${esc(MD3Lang.translateCategory(p.category))} · ${esc(MD3Lang.translateSub(p.sub))}</div>
         <div class="liked-card-name">${esc(p.name)}</div>
-        <div class="liked-card-price">${p.price} €</div>
+        <div class="liked-card-price">${MD3Currency.formatPrice(p.price)}</div>
       </div>
       <div class="liked-card-actions">
         <button type="button" class="btn-cart-add ${inCart ? 'in-cart' : ''}" title="${L('cart-add')}"
@@ -1404,11 +1435,42 @@ function setProductModalDeleteVisible(show) {
   if (zone) zone.hidden = !show;
 }
 
+function initProductTaxonomyUI(selectedSub) {
+  const catSel = document.getElementById('prodCat');
+  const subSel = document.getElementById('prodSub');
+  if (!catSel || !subSel || typeof MD3Taxonomy === 'undefined') return;
+  const cat = catSel.value || 'Mode';
+  MD3Taxonomy.syncCategorySelect(catSel, cat);
+  MD3Taxonomy.syncSubSelect(subSel, cat, selectedSub != null ? selectedSub : subSel.value);
+}
+
+function promptAddSubcategory() {
+  const catSel = document.getElementById('prodCat');
+  const subSel = document.getElementById('prodSub');
+  if (!catSel || !subSel || typeof MD3Taxonomy === 'undefined') return;
+  const cat = catSel.value;
+  const name = prompt(L('admin-prompt-sub'));
+  const added = MD3Taxonomy.addSub(cat, name);
+  if (added) {
+    MD3Taxonomy.syncSubSelect(subSel, cat, added);
+    MD3Lang.applySubSelectOptions(MD3Lang.getLang());
+  }
+}
+
+function onProdCatChange() {
+  const catSel = document.getElementById('prodCat');
+  const subSel = document.getElementById('prodSub');
+  if (catSel && subSel && typeof MD3Taxonomy !== 'undefined') {
+    MD3Taxonomy.onCategoryChange(catSel, subSel);
+  }
+}
+
 function openAddProduct() {
   document.getElementById('modalTitle').textContent = L('modal-add');
   document.getElementById('editId').value = '';
-  ['prodName','prodSub','prodPrice','prodStock'].forEach(id => document.getElementById(id).value = '');
+  ['prodName','prodPrice','prodStock'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('prodCat').value = 'Mode';
+  initProductTaxonomyUI();
   resetProductImageUI();
   setProductModalDeleteVisible(false);
   document.getElementById('productModal').classList.add('open');
@@ -1422,7 +1484,7 @@ function openEditProduct(id) {
   document.getElementById('editId').value = id;
   document.getElementById('prodName').value = p.name;
   document.getElementById('prodCat').value = p.category;
-  document.getElementById('prodSub').value = p.sub;
+  initProductTaxonomyUI(p.sub);
   document.getElementById('prodPrice').value = p.price;
   document.getElementById('prodStock').value = p.stock;
   resetProductImageUI();
@@ -1447,6 +1509,7 @@ function saveProduct() {
   const editId = document.getElementById('editId').value;
   const image = getProductImageFromEditor();
   if (!name) { alert(L('err-prod-name')); return; }
+  if (!sub) { alert(L('err-prod-sub')); return; }
   const products = S.getProducts();
   try {
     if (editId) {

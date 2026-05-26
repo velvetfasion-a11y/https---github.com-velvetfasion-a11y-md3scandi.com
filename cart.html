@@ -377,6 +377,7 @@
 <script src="md3-store.js"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-lang.js"></script>
+<script src="md3-currency.js"></script>
 <script>
 (function () {
   const S = MD3Store;
@@ -410,6 +411,7 @@
   }
 
   function renderCart() {
+    MD3Currency.refreshCurrency();
     const lines = S.getCartLines();
     const el = document.getElementById('cartContent');
     if (!lines.length) {
@@ -430,7 +432,7 @@
         <div>
           <div class="cart-item-meta">${esc(cat)} · ${esc(sub)}</div>
           <h2 class="cart-item-name">${esc(p.name)}</h2>
-          <p class="cart-item-price">${p.price} €</p>
+          <p class="cart-item-price">${MD3Currency.formatPrice(p.price)}</p>
         </div>
         <div class="cart-item-actions">
           <div class="qty-row">
@@ -443,7 +445,7 @@
       </article>`;
     }).join('')}</div>
     <div class="cart-summary">
-      <p class="cart-total-row"><span data-i18n="cart-total">Total</span>${total.toFixed(2)} €</p>
+      <p class="cart-total-row"><span data-i18n="cart-total">Total</span>${MD3Currency.formatPrice(total)}</p>
       <a href="index.html#boutique" class="btn-continue" data-i18n="cart-continue">Continuer mes achats</a>
     </div>`;
     MD3Lang.refreshUI();
@@ -502,6 +504,7 @@
 
   MD3Lang.init({
     onChange() {
+      MD3Currency.refreshCurrency();
       setNavAuth(S.getCurrentUser());
       renderCart();
     }
