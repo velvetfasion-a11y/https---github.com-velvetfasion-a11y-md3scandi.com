@@ -353,19 +353,10 @@
     return !!(global.MD3Firebase && global.MD3Firebase.isEnabled());
   }
 
-  async function init() {
-    ensureCaches();
-
-    if (!global.MD3Firebase || !global.MD3Firebase.isConfigured()) {
-      readyResolve();
-      return;
-    }
-
+  async function syncCloud() {
+    if (!global.MD3Firebase || !global.MD3Firebase.isConfigured()) return;
     const ok = await global.MD3Firebase.init();
-    if (!ok) {
-      readyResolve();
-      return;
-    }
+    if (!ok) return;
 
     const FB = global.MD3Firebase;
 
@@ -424,8 +415,12 @@
     } catch (e) {
       console.error('MD3Store cloud sync', e);
     }
+  }
 
+  async function init() {
+    ensureCaches();
     readyResolve();
+    syncCloud().catch((e) => console.error('MD3Store cloud sync', e));
   }
 
   global.MD3Store = {

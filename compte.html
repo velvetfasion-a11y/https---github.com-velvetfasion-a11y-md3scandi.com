@@ -1136,14 +1136,25 @@ async function doSignup() {
 
   const btn = document.getElementById('signup-submit-btn');
   const btnLabel = L('btn-create-account');
+
+  function resetSignupBtn() {
+    if (!btn) return;
+    btn.disabled = false;
+    btn.textContent = btnLabel;
+  }
+
   if (btn) {
     btn.disabled = true;
-    btn.textContent = L('verify-sending');
+    btn.textContent = L('signup-signing-in');
   }
 
   try {
-    await S.ready;
-    if (!window.MD3Auth) throw new Error('Authentication module not loaded.');
+    let waited = 0;
+    while (!window.MD3Auth && waited < 8000) {
+      await new Promise((r) => setTimeout(r, 50));
+      waited += 50;
+    }
+    if (!window.MD3Auth) throw new Error('Authentication module not loaded. Refresh the page.');
 
     await MD3Auth.createAccount(email, pass);
 
@@ -1163,10 +1174,7 @@ async function doSignup() {
   } catch (e) {
     console.error(e);
     showErr(err, window.MD3Auth ? MD3Auth.firebaseAuthErrorMessage(e) : e.message);
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = btnLabel;
-    }
+    resetSignupBtn();
   }
 }
 
