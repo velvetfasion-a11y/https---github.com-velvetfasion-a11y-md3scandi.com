@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MD3 Scandi — Ton univers, sublimé</title>
+<meta name="description" content="MD3 Scandi — Mode, Maison, Lifestyle. Du dressing au salon, l'élégance partout." />
+
+<!-- Favicon emoji -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500;600&family=Noto+Sans+Arabic:wght@300;400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --cream-deep: #ebe3d5;
+    --sand: #d9cdb6;
+    --bone: #ffffff;
+    --ink: #2b2620;
+    --ink-soft: #5a5247;
+    --wood: #b8946b;
+    --gold: #b8935a;
+    --gold-bright: #d4a85f;
+    --gold-soft: #e8d4a8;
+    --shadow: 0 1px 2px rgba(43, 38, 32, 0.04), 0 8px 24px rgba(43, 38, 32, 0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    color: var(--ink);
+    background: var(--cream);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  body.lang-ar {
+    font-family: 'Noto Sans Arabic', 'Jost', sans-serif;
+  }
+
+  /* Subtle paper texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(184, 147, 90, 0.06) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(184, 148, 107, 0.05) 0%, transparent 40%);
+    opacity: 0.9;
+  }
+
+  .display { font-family: 'Cormorant Garamond', serif; }
+
+  /* Header */
+  header {
+    position: sticky;
+    top: 0;
+    background: rgba(245, 240, 232, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(184, 147, 90, 0.15);
+    z-index: 100;
+    padding: 18px 24px;
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+  }
+  .logo span {
+    color: var(--gold);
+    font-style: italic;
+  }
+
+  .lang {
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .lang button {
+    background: none;
+    border: none;
+    font: inherit;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    cursor: pointer;
+    padding: 0 0 2px;
+    transition: color 0.3s;
+  }
+  .lang button.active {
+    color: var(--gold);
+    border-bottom: 1px solid var(--gold);
+    padding-bottom: 2px;
+  }
+  .lang button:hover { color: var(--gold); }
+  html[dir="rtl"] .sub-list { text-align: right; }
+  html[dir="rtl"] .collection-card.open .collection-link .chevron {
+    transform: rotate(-90deg);
+  }
+
+  /* Top banner */
+  .banner {
+    background: linear-gradient(90deg, var(--gold-soft) 0%, var(--sand) 50%, var(--gold-soft) 100%);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ink);
+    position: relative;
+  }
+  .banner .dot {
+    width: 6px;
+    height: 6px;
+    background: var(--ink);
+    transform: rotate(45deg);
+  }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    min-height: 90vh;
+    padding: 80px 24px 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  /* Decorative scandi lines */
+  .hero::before, .hero::after {
+    content: '';
+    position: absolute;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, var(--gold) 50%, transparent);
+    opacity: 0.4;
+  }
+  .hero::before { left: 8%; top: 15%; height: 70%; }
+  .hero::after { right: 8%; top: 15%; height: 70%; }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 40px;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold);
+    animation: fadeUp 1s ease both;
+  }
+  .eyebrow .line {
+    width: 40px;
+    height: 1px;
+    background: var(--gold);
+  }
+
+  h1.title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(48px, 11vw, 96px);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    max-width: 900px;
+    margin-bottom: 32px;
+    animation: fadeUp 1s ease 0.15s both;
+  }
+  h1.title em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--gold);
+    display: block;
+    margin-top: 4px;
+  }
+
+  .tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(16px, 4.2vw, 20px);
+    color: var(--ink-soft);
+    max-width: 540px;
+    margin-bottom: 56px;
+    animation: fadeUp 1s ease 0.3s both;
+  }
+
+  /* CTA buttons */
+  .cta-group {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    max-width: 420px;
+    animation: fadeUp 1s ease 0.45s both;
+  }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px 28px;
+    background: var(--bone);
+    border: 1px solid var(--sand);
+    color: var(--ink);
+    text-decoration: none;
+    font-family: 'Jost', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(184, 147, 90, 0.1), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+  }
+  .btn:hover::before { transform: translateX(100%); }
+
+  .btn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+  }
+
+  .btn-primary {
+    background: var(--ink);
+    color: var(--cream);
+    border-color: var(--ink);
+  }
+  .btn-primary:hover {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--bone);
+  }
+
+  .btn .icon { font-size: 18px; }
+
+  /* Sections */
+  section {
+    padding: 100px 24px;
+    position: relative;
+    z-index: 1;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  .section-eyebrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .section-eyebrow .line {
+    width: 30px;
+    height: 1px;
+    background: var(--gold);
+  }
+
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(36px, 7vw, 56px);
+    font-weight: 400;
+    text-align: center;
+    line-height: 1.1;
+    margin-bottom: 60px;
+  }
+  .section-title em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  /* Collections grid */
+  .collections {
+    background: linear-gradient(180deg, var(--cream) 0%, var(--cream-deep) 100%);
+  }
+
+  .collection-grid {
+    display: grid;
+    gap: 24px;
+  }
+
+  .collection-card {
+    background: var(--bone);
+    padding: 48px 32px;
+    text-align: center;
+    border: 1px solid rgba(184, 147, 90, 0.15);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .collection-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--gold);
+    transition: all 0.5s ease;
+    transform: translateX(-50%);
+  }
+  .collection-card:hover::after { width: 60%; }
+
+  .collection-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow);
+  }
+
+  .collection-icon {
+    font-size: 36px;
+    margin-bottom: 20px;
+    display: block;
+  }
+
+  .collection-card h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    letter-spacing: 0.02em;
+  }
+
+  .collection-card p {
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  .collection-link {
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--gold);
+    padding-bottom: 4px;
+    transition: all 0.3s;
+  }
+  .collection-link:hover { letter-spacing: 0.3em; }
+
+  /* Subcategory dropdown */
+  .subcategories {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease, margin-top 0.4s ease;
+    margin-top: 0;
+  }
+
+  .collection-card.open .subcategories {
+    max-height: 500px;
+    opacity: 1;
+    margin-top: 28px;
+  }
+
+  .sub-divider {
+    width: 30px;
+    height: 1px;
+    background: var(--gold);
+    margin: 0 auto 24px;
+  }
+
+  .sub-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    text-align: left;
+  }
+
+  .sub-list li a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--cream);
+    border: 1px solid transparent;
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+  }
+
+  .sub-list li a::before {
+    content: '✦';
+    color: var(--gold);
+    font-size: 10px;
+    transition: transform 0.3s ease;
+  }
+
+  .sub-list li a:hover {
+    border-color: var(--gold);
+    background: var(--bone);
+    color: var(--gold);
+  }
+  .sub-list li a:hover::before {
+    transform: rotate(180deg);
+  }
+
+  .collection-link .chevron {
+    display: inline-block;
+    transition: transform 0.4s ease;
+    margin-left: 4px;
+  }
+  .collection-card.open .collection-link .chevron {
+    transform: rotate(90deg);
+  }
+
+  /* Manifesto */
+  .manifesto {
+    text-align: center;
+    background: var(--ink);
+    color: var(--cream);
+    position: relative;
+  }
+
+  .manifesto::before {
+    content: '✦';
+    display: block;
+    color: var(--gold);
+    font-size: 24px;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+
+  .manifesto-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(22px, 5vw, 32px);
+    font-weight: 300;
+    line-height: 1.4;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .manifesto-text strong {
+    color: var(--gold-bright);
+    font-weight: 500;
+  }
+
+  .signature {
+    margin-top: 40px;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  /* Values */
+  .values-grid {
+    display: grid;
+    gap: 40px;
+    margin-top: 40px;
+  }
+
+  .value {
+    text-align: center;
+    padding: 0 12px;
+  }
+
+  .value-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+
+  .value h4 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  .value p {
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+
+  /* Footer */
+  footer {
+    background: var(--cream-deep);
+    padding: 60px 24px 30px;
+    text-align: center;
+    border-top: 1px solid rgba(184, 147, 90, 0.2);
+  }
+
+  .footer-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+  .footer-logo span { color: var(--gold); font-style: italic; }
+
+  .footer-tag {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: var(--ink-soft);
+    margin-bottom: 32px;
+  }
+
+  .footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .footer-links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(184, 147, 90, 0.3);
+    border-radius: 50%;
+    color: var(--ink-soft);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 18px;
+  }
+  .footer-links a:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(184, 147, 90, 0.2);
+  }
+  .footer-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 28px;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+  }
+  .footer-nav a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  .footer-nav a:hover { color: var(--gold); }
+
+  .footer-divider {
+    width: 40px;
+    height: 1px;
+    background: var(--gold);
+    margin: 0 auto 24px;
+  }
+
+  .copyright {
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.15em;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .reveal.in-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Tablet & desktop */
+  @media (min-width: 720px) {
+    .collection-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .values-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .cta-group {
+      max-width: 560px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero { padding: 120px 24px 100px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top banner -->
+<div class="banner">
+  <span data-i18n="banner-style">Style</span>
+  <span class="dot"></span>
+  <span data-i18n="banner-collection">Nouvelle Collection</span>
+</div>
+
+<!-- Header -->
+<header>
+  <nav class="nav">
+    <div class="logo">MD3 <span>Scandi</span></div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" class="lang-btn active" data-lang="fr">FR</button>
+      <button type="button" class="lang-btn" data-lang="en">EN</button>
+      <button type="button" class="lang-btn" data-lang="ar">AR</button>
+    </div>
+  </nav>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="eyebrow">
+    <span class="line"></span>
+    <span data-i18n="hero-eyebrow">Mode · Maison · Lifestyle</span>
+    <span class="line"></span>
+  </div>
+
+  <h1 class="title">
+    <span data-i18n="hero-t1">Ton univers,</span>
+    <em data-i18n="hero-t2">sublimé</em>
+  </h1>
+
+  <p class="tagline" data-i18n="tagline">Du dressing au salon — l'élégance partout.</p>
+
+  <div class="cta-group">
+    <a href="#collections" class="btn">
+      <span class="icon">👗</span>
+      <span data-i18n="btn-mode">Collection Mode</span>
+    </a>
+    <a href="#collections" class="btn">
+      <span class="icon">🏠</span>
+      <span data-i18n="btn-maison">Collection Maison</span>
+    </a>
+    <a href="#manifesto" class="btn btn-primary">
+      <span data-i18n="btn-cta">Découvrir MD3 Scandi</span>
+      <span class="arr">→</span>
+    </a>
+  </div>
+</section>
+
+<!-- Collections -->
+<section class="collections" id="collections">
+  <div class="container">
+    <div class="section-eyebrow reveal">
+      <span class="line"></span>
+      <span data-i18n="sec-univers-eyebrow">Nos univers</span>
+      <span class="line"></span>
+    </div>
+    <h2 class="section-title reveal"><span data-i18n="sec-univers-a">L'art de </span><em data-i18n="sec-univers-b">vivre beau</em></h2>
+
+    <div class="collection-grid">
+      <div class="collection-card reveal">
+        <span class="collection-icon">👗</span>
+        <h3 data-i18n="mode-title">Mode</h3>
+        <p data-i18n="mode-desc">Des silhouettes pensées pour celles qui aiment la simplicité travaillée. Coupes nettes, matières nobles, intemporalité.</p>
+        <a href="#" class="collection-link" onclick="toggleSub(event, this)"><span data-i18n="explore">Explorer</span> <span class="chevron">→</span></a>
+        <div class="subcategories">
+          <div class="sub-divider"></div>
+          <ul class="sub-list">
+            <li><a href="#" data-i18n="sub-vetements">Vêtements</a></li>
+            <li><a href="#" data-i18n="sub-chaussures">Chaussures</a></li>
+            <li><a href="#" data-i18n="sub-accessoires">Accessoires</a></li>
+            <li><a href="#" data-i18n="sub-sacs">Sacs</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="collection-card reveal">
+        <span class="collection-icon">🏠</span>
+        <h3 data-i18n="maison-title">Maison</h3>
+        <p data-i18n="maison-desc">L'art de l'intérieur scandinave. Lignes épurées, bois clair, textures douces. Une maison qui respire.</p>
+        <a href="#" class="collection-link" onclick="toggleSub(event, this)"><span data-i18n="explore">Explorer</span> <span class="chevron">→</span></a>
+        <div class="subcategories">
+          <div class="sub-divider"></div>
+          <ul class="sub-list">
+            <li><a href="#" data-i18n="sub-canapes">Canapés</a></li>
+            <li><a href="#" data-i18n="sub-lampes">Lampes</a></li>
+            <li><a href="#" data-i18n="sub-deco">Déco</a></li>
+            <li><a href="#" data-i18n="sub-textile">Textile</a></li>
+            <li><a href="#" data-i18n="sub-vaisselle">Vaisselle</a></li>
+            <li><a href="#" data-i18n="sub-mobilier">Mobilier</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="collection-card reveal">
+        <span class="collection-icon">✦</span>
+        <h3 data-i18n="lifestyle-title">Lifestyle</h3>
+        <p data-i18n="lifestyle-desc">Au-delà des objets — un état d'esprit. Le hygge, le luxe discret, le quotidien magnifié.</p>
+        <a href="#" class="collection-link" onclick="noopLink(event)"><span data-i18n="explore">Explorer</span> →</a>
+      </div>
+
+      <div class="collection-card reveal">
+        <span class="collection-icon">✿</span>
+        <h3 data-i18n="limited-title">Édition limitée</h3>
+        <p data-i18n="limited-desc">Des pièces rares, en quantité limitée, pour ceux qui cherchent l'exception au quotidien.</p>
+        <a href="#" class="collection-link" onclick="noopLink(event)"><span data-i18n="explore">Explorer</span> →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Manifesto -->
+<section class="manifesto" id="manifesto">
+  <div class="container">
+    <p class="manifesto-text reveal" data-i18n="manifesto">
+      « Nous croyons à <strong>l'élégance discrète</strong>, celle qui ne s'impose pas mais qui s'installe — dans une robe, dans une lampe, dans un geste. <em>MD3 Scandi</em>, c'est l'art de transformer le quotidien en art de vivre. »
+    </p>
+    <div class="signature reveal" data-i18n="signature">— La maison MD3 Scandi</div>
+  </div>
+</section>
+
+<!-- Values -->
+<section>
+  <div class="container">
+    <div class="section-eyebrow reveal">
+      <span class="line"></span>
+      <span data-i18n="values-eyebrow">Notre signature</span>
+      <span class="line"></span>
+    </div>
+    <h2 class="section-title reveal"><span data-i18n="values-a">Trois </span><em data-i18n="values-b">principes</em></h2>
+
+    <div class="values-grid">
+      <div class="value reveal">
+        <div class="value-number">— I —</div>
+        <h4 data-i18n="val1-title">Épuré</h4>
+        <p data-i18n="val1-desc">Moins, mais mieux. Chaque pièce est choisie pour durer, pour traverser les saisons sans jamais lasser.</p>
+      </div>
+
+      <div class="value reveal">
+        <div class="value-number">— II —</div>
+        <h4 data-i18n="val2-title">Authentique</h4>
+        <p data-i18n="val2-desc">Des matières vraies, des artisans réels. Pas de toc, pas d'effet de mode. Juste du beau, bien fait.</p>
+      </div>
+
+      <div class="value reveal">
+        <div class="value-number">— III —</div>
+        <h4 data-i18n="val3-title">Personnel</h4>
+        <p data-i18n="val3-desc">Ton style, ton univers, ta maison. Nous ne dictons rien — nous proposons des pièces, à toi de composer.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">MD3 <span>Scandi</span></div>
+  <p class="footer-tag" data-i18n="footer-tag">Du dressing au salon</p>
+
+  <div class="footer-nav">
+    <a href="#" onclick="noopLink(event)" data-i18n="footer-shop">Boutique</a>
+    <a href="#" onclick="noopLink(event)" data-i18n="footer-about">À propos</a>
+    <a href="#" onclick="noopLink(event)" data-i18n="footer-contact">Contact</a>
+  </div>
+
+  <!-- Icônes réseaux sociaux -->
+  <div class="footer-links">
+    <!-- Facebook -->
+    <a href="https://www.facebook.com/61583857109047/?http_ref=eyJ0cyI6MTc3OTcwODUzNDAwMCwiciI6IiJ9" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+    </a>
+    <!-- Instagram -->
+    <a href="https://www.instagram.com/md3style?igsh=OTNodGVkNmV1ZDg%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+    </a>
+    <!-- TikTok -->
+    <a href="https://www.tiktok.com/@md3scandi?_r=1&_t=ZN-96eceRNXlDi" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+    </a>
+  </div>
+
+  <div class="footer-divider"></div>
+
+  <p class="copyright" data-i18n="copyright">©️ 2026 MD3 Scandi — Tous droits réservés</p>
+</footer>
+
+<script>
+  const T = {
+    fr: {
+      'meta-title': 'MD3 Scandi — Ton univers, sublimé',
+      'meta-desc': "MD3 Scandi — Mode, Maison, Lifestyle. Du dressing au salon, l'élégance partout.",
+      'banner-style': 'Style',
+      'banner-collection': 'Nouvelle Collection',
+      'hero-eyebrow': 'Mode · Maison · Lifestyle',
+      'hero-t1': 'Ton univers,',
+      'hero-t2': 'sublimé',
+      'tagline': "Du dressing au salon — l'élégance partout.",
+      'btn-mode': 'Collection Mode',
+      'btn-maison': 'Collection Maison',
+      'btn-cta': 'Découvrir MD3 Scandi',
+      'sec-univers-eyebrow': 'Nos univers',
+      'sec-univers-a': "L'art de ",
+      'sec-univers-b': 'vivre beau',
+      'mode-title': 'Mode',
+      'mode-desc': 'Des silhouettes pensées pour celles qui aiment la simplicité travaillée. Coupes nettes, matières nobles, intemporalité.',
+      'maison-title': 'Maison',
+      'maison-desc': "L'art de l'intérieur scandinave. Lignes épurées, bois clair, textures douces. Une maison qui respire.",
+      'lifestyle-title': 'Lifestyle',
+      'lifestyle-desc': "Au-delà des objets — un état d'esprit. Le hygge, le luxe discret, le quotidien magnifié.",
+      'limited-title': 'Édition limitée',
+      'limited-desc': "Des pièces rares, en quantité limitée, pour ceux qui cherchent l'exception au quotidien.",
+      'explore': 'Explorer',
+      'sub-vetements': 'Vêtements',
+      'sub-chaussures': 'Chaussures',
+      'sub-accessoires': 'Accessoires',
+      'sub-sacs': 'Sacs',
+      'sub-canapes': 'Canapés',
+      'sub-lampes': 'Lampes',
+      'sub-deco': 'Déco',
+      'sub-textile': 'Textile',
+      'sub-vaisselle': 'Vaisselle',
+      'sub-mobilier': 'Mobilier',
+      'manifesto': "« Nous croyons à <strong>l'élégance discrète</strong>, celle qui ne s'impose pas mais qui s'installe — dans une robe, dans une lampe, dans un geste. <em>MD3 Scandi</em>, c'est l'art de transformer le quotidien en art de vivre. »",
+      'signature': '— La maison MD3 Scandi',
+      'values-eyebrow': 'Notre signature',
+      'values-a': 'Trois ',
+      'values-b': 'principes',
+      'val1-title': 'Épuré',
+      'val1-desc': 'Moins, mais mieux. Chaque pièce est choisie pour durer, pour traverser les saisons sans jamais lasser.',
+      'val2-title': 'Authentique',
+      'val2-desc': "Des matières vraies, des artisans réels. Pas de toc, pas d'effet de mode. Juste du beau, bien fait.",
+      'val3-title': 'Personnel',
+      'val3-desc': 'Ton style, ton univers, ta maison. Nous ne dictons rien — nous proposons des pièces, à toi de composer.',
+      'footer-tag': 'Du dressing au salon',
+      'footer-shop': 'Boutique',
+      'footer-about': 'À propos',
+      'footer-contact': 'Contact',
+      'copyright': '©️ 2026 MD3 Scandi — Tous droits réservés'
+    },
+    en: {
+      'meta-title': 'MD3 Scandi — Your world, elevated',
+      'meta-desc': 'MD3 Scandi — Fashion, Home, Lifestyle. From wardrobe to living room, elegance everywhere.',
+      'banner-style': 'Style',
+      'banner-collection': 'New Collection',
+      'hero-eyebrow': 'Fashion · Home · Lifestyle',
+      'hero-t1': 'Your world,',
+      'hero-t2': 'elevated',
+      'tagline': 'From wardrobe to living room — elegance everywhere.',
+      'btn-mode': 'Fashion Collection',
+      'btn-maison': 'Home Collection',
+      'btn-cta': 'Discover MD3 Scandi',
+      'sec-univers-eyebrow': 'Our worlds',
+      'sec-univers-a': 'The art of ',
+      'sec-univers-b': 'living beautifully',
+      'mode-title': 'Fashion',
+      'mode-desc': 'Silhouettes for those who love refined simplicity. Clean cuts, noble materials, timeless style.',
+      'maison-title': 'Home',
+      'maison-desc': 'Scandinavian interior art. Clean lines, light wood, soft textures. A home that breathes.',
+      'lifestyle-title': 'Lifestyle',
+      'lifestyle-desc': 'Beyond objects — a state of mind. Hygge, quiet luxury, everyday life elevated.',
+      'limited-title': 'Limited Edition',
+      'limited-desc': 'Rare pieces in limited quantity, for those who seek the exceptional in daily life.',
+      'explore': 'Explore',
+      'sub-vetements': 'Clothing',
+      'sub-chaussures': 'Shoes',
+      'sub-accessoires': 'Accessories',
+      'sub-sacs': 'Bags',
+      'sub-canapes': 'Sofas',
+      'sub-lampes': 'Lamps',
+      'sub-deco': 'Décor',
+      'sub-textile': 'Textiles',
+      'sub-vaisselle': 'Tableware',
+      'sub-mobilier': 'Furniture',
+      'manifesto': '« We believe in <strong>quiet elegance</strong> — the kind that does not impose itself but settles in — in a dress, in a lamp, in a gesture. <em>MD3 Scandi</em> is the art of turning everyday life into an art of living. »',
+      'signature': '— The house of MD3 Scandi',
+      'values-eyebrow': 'Our signature',
+      'values-a': 'Three ',
+      'values-b': 'principles',
+      'val1-title': 'Refined',
+      'val1-desc': 'Less, but better. Every piece is chosen to last and to move through seasons without ever tiring.',
+      'val2-title': 'Authentic',
+      'val2-desc': 'Real materials, real artisans. No fake, no fad. Just beautiful, well-made things.',
+      'val3-title': 'Personal',
+      'val3-desc': 'Your style, your world, your home. We dictate nothing — we offer pieces, you compose.',
+      'footer-tag': 'From wardrobe to living room',
+      'footer-shop': 'Shop',
+      'footer-about': 'About',
+      'footer-contact': 'Contact',
+      'copyright': '©️ 2026 MD3 Scandi — All rights reserved'
+    },
+    ar: {
+      'meta-title': 'MD3 Scandi — عالمك، مُرتقٍ',
+      'meta-desc': 'MD3 Scandi — موضة، منزل، أسلوب حياة. من الخزانة إلى غرفة الجلوس، الأناقة في كل مكان.',
+      'banner-style': 'أسلوب',
+      'banner-collection': 'مجموعة جديدة',
+      'hero-eyebrow': 'موضة · منزل · أسلوب حياة',
+      'hero-t1': 'عالمك،',
+      'hero-t2': 'مُرتقٍ',
+      'tagline': 'من الخزانة إلى غرفة الجلوس — الأناقة في كل مكان.',
+      'btn-mode': 'مجموعة الأزياء',
+      'btn-maison': 'مجموعة المنزل',
+      'btn-cta': 'اكتشف MD3 Scandi',
+      'sec-univers-eyebrow': 'عوالمنا',
+      'sec-univers-a': 'فن ',
+      'sec-univers-b': 'العيش الجميل',
+      'mode-title': 'الموضة',
+      'mode-desc': 'خطوط مصممة لمن تحب البساطة المدروسة. قصات واضحة، خامات نبيلة، أناقة خالدة.',
+      'maison-title': 'المنزل',
+      'maison-desc': 'فن الديكور الاسكندنافي. خطوط نقية، خشب فاتح، ملمس ناعم. منزل يتنفس.',
+      'lifestyle-title': 'أسلوب الحياة',
+      'lifestyle-desc': 'ما وراء الأشياء — حالة ذهنية. الهوغا، الرفاهية الهادئة، يومٌ مُجمّل.',
+      'limited-title': 'إصدار محدود',
+      'limited-desc': 'قطع نادرة بكميات محدودة، لمن يبحث عن الاستثناء في الحياة اليومية.',
+      'explore': 'استكشف',
+      'sub-vetements': 'ملابس',
+      'sub-chaussures': 'أحذية',
+      'sub-accessoires': 'إكسسوارات',
+      'sub-sacs': 'حقائب',
+      'sub-canapes': 'أرائك',
+      'sub-lampes': 'مصابيح',
+      'sub-deco': 'ديكور',
+      'sub-textile': 'منسوجات',
+      'sub-vaisselle': 'أواني',
+      'sub-mobilier': 'أثاث',
+      'manifesto': '« نؤمن بـ<strong>الأناقة الهادئة</strong>، تلك التي لا تفرض نفسها بل تستقر — في فستان، في مصباح، في لحظة. <em>MD3 Scandi</em> هو فن تحويل الحياة اليومية إلى فن عيش. »',
+      'signature': '— بيت MD3 Scandi',
+      'values-eyebrow': 'توقيعنا',
+      'values-a': 'ثلاثة ',
+      'values-b': 'مبادئ',
+      'val1-title': 'نقي',
+      'val1-desc': 'أقل، لكن أفضل. كل قطعة مختارة لتدوم وتعبر المواسم دون ملل.',
+      'val2-title': 'أصيل',
+      'val2-desc': 'خامات حقيقية، حرفيون حقيقيون. بلا تقليد، بلا موضة عابرة. جمالٌ مصنوع بإتقان.',
+      'val3-title': 'شخصي',
+      'val3-desc': 'أسلوبك، عالمك، منزلك. لا نفرض شيئاً — نعرض قطعاً، وأنتِ تنسقين.',
+      'footer-tag': 'من الخزانة إلى غرفة الجلوس',
+      'footer-shop': 'المتجر',
+      'footer-about': 'من نحن',
+      'footer-contact': 'اتصل بنا',
+      'copyright': '©️ 2026 MD3 Scandi — جميع الحقوق محفوظة'
+    }
+  };
+
+  let currentLang = 'fr';
+
+  function setLang(lang) {
+    const scrollY = window.scrollY;
+    const t = T[lang];
+    if (!t) return;
+
+    currentLang = lang;
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.body.className = lang === 'ar' ? 'lang-ar' : '';
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (t[key] !== undefined) el.innerHTML = t[key];
+    });
+
+    document.title = t['meta-title'];
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', t['meta-desc']);
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
+
+    try { localStorage.setItem('md3-lang', lang); } catch (_) {}
+
+    window.scrollTo(0, scrollY);
+    requestAnimationFrame(() => window.scrollTo(0, scrollY));
+  }
+
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => setLang(btn.dataset.lang));
+  });
+
+  function noopLink(e) {
+    e.preventDefault();
+  }
+
+  function toggleSub(e, link) {
+    e.preventDefault();
+    const card = link.closest('.collection-card');
+    card.classList.toggle('open');
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('in-view');
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href');
+      if (!href || href === '#') return;
+      const target = document.querySelector(href);
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  try {
+    const saved = localStorage.getItem('md3-lang');
+    if (saved && T[saved]) setLang(saved);
+  } catch (_) {}
+</script>
+
+</body>
+</html>
