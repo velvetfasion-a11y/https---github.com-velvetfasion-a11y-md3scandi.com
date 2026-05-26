@@ -1,6 +1,11 @@
-import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
-import { getAuth } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { getStorage } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js';
+/** Firebase modular SDK via CDN (plain HTML/JS — no bundler). */
+import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+import { getStorage } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyDr7b9MebBu1ODxtC6umoWf1fb0B3cheuQ',
@@ -14,3 +19,5 @@ const firebaseConfig = {
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+
+export { createUserWithEmailAndPassword, signInWithEmailAndPassword };

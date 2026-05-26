@@ -3,7 +3,7 @@ import {
   ref,
   uploadBytes,
   getDownloadURL,
-} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js';
+} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
 const fileInput = document.getElementById('fileInput');
 const uploadBtn = document.getElementById('uploadBtn');
