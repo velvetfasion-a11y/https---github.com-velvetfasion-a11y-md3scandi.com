@@ -1,5 +1,1 @@
-// firebase.js — use CDN imports (see firebase.js in project root), not bare "firebase/auth".
-
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getStorage } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
-import { getAuth } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+// Use firebase-config.js — single source of truth for MD3_FIREBASE_CONFIG

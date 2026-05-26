@@ -1,4 +1,4 @@
-/** Firebase modular SDK via CDN (plain HTML/JS — no bundler). */
+/** Firebase modular SDK via CDN — config from firebase-config.js (load that script first). */
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import {
   getAuth,
@@ -7,15 +7,17 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { getStorage } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
-const firebaseConfig = {
-  apiKey: 'AIzaSyDr7b9MebBu1ODxtC6umoWf1fb0B3cheuQ',
-  authDomain: 'md3scadi.firebaseapp.com',
-  projectId: 'md3scadi',
-  storageBucket: 'md3scadi.firebasestorage.app',
-  messagingSenderId: '1045238752087',
-  appId: '1:1045238752087:web:133a1110d07ef319bd5412',
-};
+function getFirebaseConfig() {
+  const c = typeof window !== 'undefined' ? window.MD3_FIREBASE_CONFIG : null;
+  if (!c || !c.apiKey || String(c.apiKey).includes('YOUR_')) {
+    throw new Error(
+      'Firebase is not configured. Copy firebase-config.example.js to firebase-config.js and paste your keys from Firebase Console → Project settings → Your apps.'
+    );
+  }
+  return c;
+}
 
+const firebaseConfig = getFirebaseConfig();
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const storage = getStorage(app);

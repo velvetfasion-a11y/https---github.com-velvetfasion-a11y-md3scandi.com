@@ -19,6 +19,9 @@ export async function signIn(email, password) {
 export function firebaseAuthErrorMessage(err) {
   if (!err) return 'Authentication failed.';
   const code = err.code || '';
+  if (code === 'auth/api-key-not-valid' || (err.message && err.message.includes('api-key-not-valid'))) {
+    return 'Invalid Firebase API key. In Firebase Console → Project settings → Your apps, copy the Web app config into firebase-config.js, deploy, and hard-refresh.';
+  }
   const messages = {
     'auth/email-already-in-use': 'This email is already in use.',
     'auth/invalid-email': 'Invalid email address.',

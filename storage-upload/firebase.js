@@ -2,14 +2,17 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { getStorage } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
-const firebaseConfig = {
-  apiKey: 'AIzaSyDr7b9MebBu1ODxtC6umoWf1fb0B3cheuQ',
-  authDomain: 'md3scadi.firebaseapp.com',
-  projectId: 'md3scadi',
-  storageBucket: 'md3scadi.firebasestorage.app',
-  messagingSenderId: '1045238752087',
-  appId: '1:1045238752087:web:133a1110d07ef319bd5412',
-};
+const firebaseConfig =
+  typeof window !== 'undefined' && window.MD3_FIREBASE_CONFIG
+    ? window.MD3_FIREBASE_CONFIG
+    : {
+        apiKey: 'YOUR_API_KEY',
+        authDomain: 'YOUR_PROJECT.firebaseapp.com',
+        projectId: 'YOUR_PROJECT_ID',
+        storageBucket: 'YOUR_PROJECT.appspot.com',
+        messagingSenderId: 'YOUR_SENDER_ID',
+        appId: 'YOUR_APP_ID',
+      };
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
