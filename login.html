@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<script src="md3-lang-boot.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MD3 Scandi — Connexion</title>
+<meta name="description" content="Connectez-vous à votre compte MD3 Scandi pour sauvegarder vos articles favoris." />
+<link rel="canonical" href="https://md3scandi.com/login.html" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --cream-deep: #ebe3d5;
+    --sand: #d9cdb6;
+    --bone: #ffffff;
+    --ink: #2b2620;
+    --ink-soft: #5a5247;
+    --gold: #b8935a;
+    --gold-soft: #e8d4a8;
+    --danger: #c0392b;
+    --shadow: 0 1px 2px rgba(43, 38, 32, 0.04), 0 8px 24px rgba(43, 38, 32, 0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    color: var(--ink);
+    background: var(--cream);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(184, 147, 90, 0.06) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(184, 148, 107, 0.05) 0%, transparent 40%);
+  }
+  .banner {
+    background: linear-gradient(90deg, var(--gold-soft) 0%, var(--sand) 50%, var(--gold-soft) 100%);
+    padding: 14px 20px;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+  }
+  header {
+    position: sticky;
+    top: 0;
+    background: rgba(245, 240, 232, 0.9);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(184, 147, 90, 0.15);
+    z-index: 100;
+    padding: 18px 24px;
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .logo span { color: var(--gold); font-style: italic; }
+  .nav-stack {
+    display: grid;
+    grid-template-columns: repeat(3, 2.25rem);
+    justify-items: center;
+    align-items: center;
+    column-gap: 0.5rem;
+    row-gap: 0.35rem;
+  }
+  .nav-auth { display: contents; }
+  .nav-auth .nav-icon-btn:nth-child(1) { grid-column: 2; grid-row: 2; }
+  .nav-auth .nav-icon-btn:nth-child(2) { grid-column: 3; grid-row: 2; }
+  .lang.lang-compact { display: contents; }
+  .lang.lang-compact .lang-btn:nth-child(1) { grid-column: 1; grid-row: 1; }
+  .lang.lang-compact .lang-btn:nth-child(2) { grid-column: 2; grid-row: 1; }
+  .lang.lang-compact .lang-btn:nth-child(3) { grid-column: 3; grid-row: 1; }
+  .nav-account-link {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  .nav-account-link:hover { color: var(--gold); }
+  .nav-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.3s;
+  }
+  .nav-icon-btn:hover { color: var(--gold); }
+  .nav-icon-svg { width: 22px; height: 22px; display: block; }
+  .nav-icon-btn { position: relative; }
+  .nav-cart-badge {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--ink);
+    color: var(--cream);
+    font-size: 9px;
+    font-weight: 500;
+    line-height: 16px;
+    text-align: center;
+  }
+  .lang { display: flex; gap: 8px; align-items: center; }
+  .lang.lang-compact button {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    cursor: pointer;
+    padding: 0 0 1px;
+    transition: color 0.3s;
+  }
+  .lang.lang-compact button.active {
+    color: var(--gold);
+    border-bottom: 1px solid var(--gold);
+  }
+  .lang.lang-compact button:hover { color: var(--gold); }
+  .login-wrap {
+    position: relative;
+    z-index: 1;
+    min-height: calc(100vh - 120px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px 80px;
+  }
+  .login-card {
+    background: var(--bone);
+    border: 1px solid rgba(184, 147, 90, 0.2);
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 440px;
+    padding: 48px 40px 40px;
+  }
+  .login-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .login-eyebrow .line {
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+  }
+  .login-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 5vw, 2.5rem);
+    font-weight: 300;
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+  }
+  .login-title em { font-style: italic; color: var(--gold); }
+  .login-sub {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+  .error-msg {
+    display: none;
+    background: #fdf0ef;
+    border: 1px solid #e8c5c2;
+    color: var(--danger);
+    padding: 12px 16px;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .field { margin-bottom: 20px; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .field input {
+    width: 100%;
+    border: 1px solid rgba(184, 147, 90, 0.3);
+    padding: 14px 16px;
+    font-family: 'Jost', sans-serif;
+    font-size: 15px;
+    font-weight: 300;
+    background: var(--cream);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .field input:focus {
+    border-color: var(--gold);
+    background: var(--bone);
+  }
+  .btn-login {
+    width: 100%;
+    margin-top: 8px;
+    padding: 16px;
+    background: var(--ink);
+    color: var(--cream);
+    border: none;
+    font-family: 'Jost', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.25s;
+  }
+  .btn-login:hover { background: var(--ink-soft); }
+  .login-footer {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(184, 147, 90, 0.2);
+    text-align: center;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .login-footer a {
+    color: var(--ink);
+    font-weight: 400;
+    text-decoration: none;
+    border-bottom: 1px solid var(--gold);
+    transition: color 0.2s;
+  }
+  .login-footer a:hover { color: var(--gold); }
+  .login-hint {
+    margin-top: 20px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+  .field input.input-error {
+    border-color: var(--danger) !important;
+    background: #fdf5f4 !important;
+  }
+  .field label.label-error { color: var(--danger); }
+</style>
+</head>
+<body data-meta-title="meta-title-login" data-meta-desc="meta-desc-login">
+
+<div class="banner" data-i18n="banner-client">MD3 Scandi — Espace client</div>
+
+<header>
+  <nav class="nav">
+    <a href="index.html" class="logo">MD3 <span>Scandi</span></a>
+    <div class="nav-stack">
+      <div class="nav-auth" id="navAuth">
+        <a href="compte.html" class="nav-icon-btn" id="navAccount" data-i18n-aria="nav-account" aria-label="Mon compte" title="Mon compte"></a>
+        <a href="cart.html" class="nav-icon-btn" id="navCart" data-i18n-aria="nav-cart" aria-label="Panier" title="Panier"></a>
+      </div>
+      <div class="lang lang-compact" role="group" aria-label="Language">
+        <button type="button" class="lang-btn active" data-lang="fr">FR</button>
+        <button type="button" class="lang-btn" data-lang="en">EN</button>
+        <button type="button" class="lang-btn" data-lang="ar">AR</button>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<main class="login-wrap">
+  <div class="login-card">
+    <div class="login-eyebrow">
+      <span class="line"></span>
+      <span data-i18n="login-eyebrow">Connexion</span>
+      <span class="line"></span>
+    </div>
+    <h1 class="login-title" data-i18n="login-welcome-html">Bienvenue, <em>de retour</em></h1>
+    <p class="login-sub" data-i18n="login-sub">Connectez-vous pour retrouver vos articles sauvegardés et votre profil.</p>
+
+    <div class="error-msg" id="login-error" role="alert"></div>
+
+    <form id="login-form" novalidate onsubmit="return doLogin(event)">
+      <div class="field" id="field-email">
+        <label for="login-email" id="label-email" data-i18n="label-email-id">Email ou identifiant</label>
+        <input type="text" id="login-email" name="email" data-i18n-placeholder="ph-email" placeholder="votre@email.com" autocomplete="username" />
+      </div>
+      <div class="field" id="field-password">
+        <label for="login-password" id="label-password" data-i18n="label-password">Mot de passe</label>
+        <input type="password" id="login-password" name="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn-login" data-i18n="btn-connect">Se connecter</button>
+    </form>
+
+    <div class="login-footer" data-i18n="login-footer-html">
+      Pas encore de compte ? <a href="compte.html?page=signup">Créer un compte</a>
+    </div>
+    <p class="login-hint" data-i18n="login-hint">Après connexion, vous serez redirigé vers votre profil ou la boutique.</p>
+  </div>
+</main>
+
+<script src="md3-store.js"></script>
+<script src="md3-nav-icons.js"></script>
+<script src="md3-lang.js"></script>
+<script>
+if (MD3Store.guardLoginPage('compte.html')) { /* redirecting */ }
+
+(function () {
+  const accountEl = document.getElementById('navAccount');
+  const cartEl = document.getElementById('navCart');
+  accountEl.innerHTML = MD3NavIcons.account;
+  cartEl.innerHTML = MD3NavIcons.cart + '<span class="nav-cart-badge" id="navCartBadge" hidden></span>';
+
+  function updateCartBadge() {
+    const badge = document.getElementById('navCartBadge');
+    if (!badge) return;
+    const n = MD3Store.getCartCount();
+    badge.textContent = n;
+    badge.hidden = n <= 0;
+  }
+
+  function setNavAuth(user) {
+    MD3Store.syncAccountNav(accountEl, user);
+    cartEl.href = 'cart.html';
+    const cartLabel = MD3Lang.t('nav-cart');
+    cartEl.setAttribute('aria-label', cartLabel);
+    cartEl.setAttribute('title', cartLabel);
+    updateCartBadge();
+  }
+
+  const user = MD3Store.getCurrentUser();
+  setNavAuth(user);
+  MD3Lang.init({
+    onChange() {
+      setNavAuth(MD3Store.getCurrentUser());
+      MD3Lang.refreshUI();
+      const params = new URLSearchParams(location.search);
+      if (params.get('redirect') === 'boutique') {
+        const sub = document.querySelector('.login-sub');
+        if (sub) sub.innerHTML = MD3Lang.t('login-sub-boutique');
+      }
+    }
+  });
+
+  const params = new URLSearchParams(location.search);
+  const emailField = document.getElementById('login-email');
+  if (params.get('email')) emailField.value = params.get('email');
+  if (params.get('redirect') === 'boutique') {
+    const sub = document.querySelector('.login-sub');
+    if (sub) sub.innerHTML = MD3Lang.t('login-sub-boutique');
+  }
+
+  ['login-email', 'login-password'].forEach(id => {
+    document.getElementById(id).addEventListener('input', clearFieldErrors);
+  });
+})();
+
+window.addEventListener('pageshow', function () {
+  MD3Store.guardLoginPage('compte.html');
+});
+
+function clearFieldErrors() {
+  document.getElementById('login-error').style.display = 'none';
+  ['login-email', 'login-password'].forEach(id => {
+    document.getElementById(id).classList.remove('input-error');
+  });
+  ['label-email', 'label-password'].forEach(id => {
+    document.getElementById(id).classList.remove('label-error');
+  });
+}
+
+function setFieldError(inputId, labelId) {
+  document.getElementById(inputId).classList.add('input-error');
+  if (labelId) document.getElementById(labelId).classList.add('label-error');
+}
+
+function showErr(msg, fields) {
+  clearFieldErrors();
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  (fields || []).forEach(([inputId, labelId]) => setFieldError(inputId, labelId));
+}
+
+function doLogin(e) {
+  e.preventDefault();
+  clearFieldErrors();
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass = document.getElementById('login-password').value;
+
+  if (!email) {
+    showErr(MD3Lang.t('err-email-req'), [['login-email', 'label-email']]);
+    return false;
+  }
+  if (!pass) {
+    showErr(MD3Lang.t('err-pass-req'), [['login-password', 'label-password']]);
+    return false;
+  }
+
+  const S = MD3Store;
+
+  if (S.isAdminLogin(email, pass)) {
+    S.setCurrentUser({ email: S.ADMIN_EMAIL, isAdmin: true });
+    if (!S.getCurrentUser()) {
+      showErr(MD3Lang.t('err-save-session'));
+      return false;
+    }
+    window.location.replace('compte.html');
+    return false;
+  }
+
+  if (!email.includes('@')) {
+    showErr(MD3Lang.t('err-invalid-email'), [['login-email', 'label-email']]);
+    return false;
+  }
+
+  const users = S.getUsers();
+  if (!users[email]) {
+    showErr(MD3Lang.t('err-no-account'), [['login-email', 'label-email']]);
+    return false;
+  }
+  if (users[email].password !== pass) {
+    showErr(MD3Lang.t('err-wrong-pass'), [['login-password', 'label-password']]);
+    return false;
+  }
+  if (users[email].verified === false) {
+    showErr(MD3Lang.t('err-not-verified'), [['login-email', 'label-email']]);
+    return false;
+  }
+
+  S.setCurrentUser({ email, name: users[email].name, isAdmin: false });
+  if (!S.getCurrentUser()) {
+    showErr(MD3Lang.t('err-save-session') || 'Could not save session. Check browser storage settings.');
+    return false;
+  }
+
+  const params = new URLSearchParams(location.search);
+  const redirect = params.get('redirect');
+  if (redirect === 'boutique') {
+    window.location.replace('index.html#boutique');
+  } else {
+    window.location.replace('compte.html');
+  }
+  return false;
+}
+</script>
+</body>
+</html>
