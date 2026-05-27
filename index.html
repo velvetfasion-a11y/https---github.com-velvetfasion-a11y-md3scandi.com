@@ -1108,6 +1108,7 @@
 <script src="firebase-config.js"></script>
 <script src="md3-firebase.js"></script>
 <script src="md3-store.js"></script>
+<script src="md3-auth.js"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-lang.js"></script>
 <script src="md3-currency.js"></script>
@@ -1350,6 +1351,10 @@
   window.addEventListener('md3-carts-updated', function () {
     updateCartBadge();
     try { renderShop(); } catch (e) { console.error('renderShop', e); }
+  });
+
+  window.addEventListener('md3-session-changed', function () {
+    updateNavAuth();
   });
 
   if (location.hash === '#boutique' || location.hash.startsWith('#boutique?')) {

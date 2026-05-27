@@ -58,9 +58,59 @@
     return msg + code;
   }
 
+  let sessionSyncStarted = false;
+
+  function sessionFromFirebaseUser(firebaseUser) {
+    const email = (firebaseUser.email || '').trim().toLowerCase();
+    if (!email) return null;
+    const users = global.MD3Store ? global.MD3Store.getUsers() : {};
+    const profile = users[email] || { name: email.split('@')[0], liked: [] };
+    return { email, name: profile.name || email.split('@')[0], isAdmin: false };
+  }
+
+  async function initSessionSync() {
+    if (sessionSyncStarted) return;
+    sessionSyncStarted = true;
+    let auth;
+    try {
+      auth = await ensureAuthReady();
+    } catch (_) {
+      return;
+    }
+    auth.onAuthStateChanged(function (firebaseUser) {
+      const store = global.MD3Store;
+      if (!store) return;
+      const cur = store.getCurrentUser();
+      if (!firebaseUser) {
+        if (cur && !cur.isAdmin) {
+          store.clearSession();
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('md3-session-changed'));
+          }
+        }
+        return;
+      }
+      if (cur && cur.isAdmin) return;
+      const session = sessionFromFirebaseUser(firebaseUser);
+      if (!session) return;
+      store.setCurrentUser(session);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('md3-session-changed'));
+      }
+    });
+  }
+
+  async function signOut() {
+    const auth = await ensureAuthReady();
+    await auth.signOut();
+    if (global.MD3Store) global.MD3Store.clearSession();
+  }
+
   global.MD3Auth = {
     createAccount,
     signIn,
+    signOut,
+    initSessionSync,
     firebaseAuthErrorMessage,
     ensureAuthReady,
   };

@@ -12,6 +12,8 @@
   let productsCache = null;
   let usersCache = null;
   let cartsCache = null;
+  /** Ignore remote cart snapshots for this owner until (ms) after a local cart write. */
+  let cartWriteGuard = { owner: null, until: 0 };
   let readyResolve;
   const ready = new Promise((r) => {
     readyResolve = r;
@@ -80,6 +82,46 @@
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('md3-products-updated'));
     }
+  }
+
+  function notifyCartsUpdated() {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('md3-carts-updated'));
+    }
+  }
+
+  function notifySessionChanged() {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('md3-session-changed'));
+    }
+  }
+
+  function syncSessionFromUsersCache() {
+    const cur = getCurrentUser();
+    if (!cur || cur.isAdmin) return;
+    const profile = usersCache && usersCache[cur.email];
+    if (!profile) return;
+    const name = profile.name || cur.name;
+    if (name === cur.name) return;
+    setCurrentUser({ email: cur.email, name, isAdmin: false });
+    notifySessionChanged();
+  }
+
+  function applyRemoteCartsMap(remoteMap) {
+    const owner = getCartOwnerKey();
+    const now = Date.now();
+    const guardActive =
+      cartWriteGuard.owner === owner && now < cartWriteGuard.until;
+    if (guardActive) {
+      const localItems = { ...(cartsCache[owner] || {}) };
+      cartsCache = { ...remoteMap, [owner]: localItems };
+    } else {
+      cartsCache = { ...remoteMap };
+    }
+    try {
+      localStorage.setItem(CARTS_KEY, JSON.stringify(cartsCache));
+    } catch (_) {}
+    notifyCartsUpdated();
   }
 
   function setProductsCache(p) {
@@ -275,14 +317,21 @@
     return { ...cartsCache };
   }
 
-  async function saveAllCarts(carts) {
+  async function saveAllCarts(carts, opts) {
     ensureCaches();
+    const owner = getCartOwnerKey();
     cartsCache = { ...carts };
     try {
       localStorage.setItem(CARTS_KEY, JSON.stringify(cartsCache));
     } catch (_) {}
     if (global.MD3Firebase && global.MD3Firebase.isEnabled()) {
-      await global.MD3Firebase.saveCartsMap(cartsCache);
+      cartWriteGuard = { owner, until: Date.now() + 6000 };
+      const items = cartsCache[owner] || {};
+      if (opts && opts.fullMap) {
+        await global.MD3Firebase.saveCartsMap(cartsCache);
+      } else {
+        await global.MD3Firebase.saveCart(owner, items);
+      }
     }
   }
 
@@ -385,24 +434,18 @@
         try {
           localStorage.setItem(USERS_KEY, JSON.stringify(usersCache));
         } catch (_) {}
+        syncSessionFromUsersCache();
       });
 
       const remoteCarts = await FB.loadCartsMap();
       if (remoteCarts && Object.keys(remoteCarts).length) {
-        cartsCache = remoteCarts;
-        localStorage.setItem(CARTS_KEY, JSON.stringify(cartsCache));
+        applyRemoteCartsMap(remoteCarts);
       } else if (Object.keys(cartsCache).length) {
-        await FB.saveCartsMap(cartsCache);
+        await saveAllCarts(cartsCache, { fullMap: true });
       }
 
       FB.watchCarts((map) => {
-        cartsCache = map;
-        try {
-          localStorage.setItem(CARTS_KEY, JSON.stringify(cartsCache));
-        } catch (_) {}
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('md3-carts-updated'));
-        }
+        applyRemoteCartsMap(map);
       });
 
       const remoteTax = await FB.loadTaxonomy();
@@ -412,6 +455,18 @@
         const localTax = localStorage.getItem('md3_taxonomy');
         if (localTax) await FB.saveTaxonomy(JSON.parse(localTax));
       }
+
+      if (FB.watchTaxonomy) {
+        FB.watchTaxonomy((data) => {
+          if (!data) return;
+          try {
+            localStorage.setItem('md3_taxonomy', JSON.stringify(data));
+          } catch (_) {}
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('md3-taxonomy-updated'));
+          }
+        });
+      }
     } catch (e) {
       console.error('MD3Store cloud sync', e);
     }
@@ -420,7 +475,13 @@
   async function init() {
     ensureCaches();
     readyResolve();
-    syncCloud().catch((e) => console.error('MD3Store cloud sync', e));
+    syncCloud()
+      .then(() => {
+        if (global.MD3Auth && global.MD3Auth.initSessionSync) {
+          return global.MD3Auth.initSessionSync();
+        }
+      })
+      .catch((e) => console.error('MD3Store cloud sync', e));
   }
 
   global.MD3Store = {

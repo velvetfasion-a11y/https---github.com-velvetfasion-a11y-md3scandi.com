@@ -1178,8 +1178,14 @@ function openSettingsModal() {
   MD3Lang.refreshUI();
 }
 
-function doLogout() {
-  S.clearSession();
+async function doLogout() {
+  try {
+    if (window.MD3Auth && MD3Auth.signOut) await MD3Auth.signOut();
+    else S.clearSession();
+  } catch (e) {
+    console.error('logout', e);
+    S.clearSession();
+  }
   window.location.href = 'login.html';
 }
 
@@ -1201,16 +1207,11 @@ function renderProfile() {
   }
   const users = S.getUsers();
   const data = users[user.email];
-  if (!data) {
-    S.clearSession();
-    window.location.replace('login.html');
-    return;
-  }
-  document.getElementById('profileName').textContent = data.name || user.email;
+  document.getElementById('profileName').textContent = (data && data.name) || user.name || user.email;
   document.getElementById('profileEmail').textContent = user.email;
-  document.getElementById('profileAvatar').textContent = (data.name || user.email)[0].toUpperCase();
+  document.getElementById('profileAvatar').textContent = ((data && data.name) || user.name || user.email)[0].toUpperCase();
 
-  const liked = data.liked || [];
+  const liked = (data && data.liked) || [];
   const products = S.getProducts();
   const grid = document.getElementById('likedGrid');
   if (liked.length === 0) {
@@ -1599,6 +1600,11 @@ window.addEventListener('md3-products-updated', function () {
 
 window.addEventListener('storage', function (e) {
   if (e.key === 'md3_session') routeCompte();
+});
+
+window.addEventListener('md3-session-changed', function () {
+  routeCompte();
+  updateNav();
 });
 </script>
 </body>

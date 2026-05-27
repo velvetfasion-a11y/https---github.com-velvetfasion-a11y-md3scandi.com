@@ -9,6 +9,7 @@
   let active = false;
   let productsUnsub = null;
   let usersUnsub = null;
+  let cartsUnsub = null;
 
   function config() {
     return global.MD3_FIREBASE_CONFIG;
@@ -214,6 +215,12 @@
     return map;
   }
 
+  /** Replace one cart document entirely (no merge — avoids stale line items). */
+  async function saveCart(ownerKey, items) {
+    if (!db || !ownerKey) return;
+    await cartsCol().doc(ownerKey).set({ items: items || {} });
+  }
+
   async function saveCartsMap(carts) {
     if (!db) return;
     const keys = Object.keys(carts || {});
@@ -221,7 +228,7 @@
     const batch = db.batch();
     let ops = 0;
     keys.forEach((key) => {
-      batch.set(cartsCol().doc(key), { items: carts[key] || {} }, { merge: true });
+      batch.set(cartsCol().doc(key), { items: carts[key] || {} });
       ops++;
     });
     snap.docs.forEach((doc) => {
@@ -235,7 +242,8 @@
 
   function watchCarts(onChange) {
     if (!db) return () => {};
-    return cartsCol().onSnapshot(
+    if (cartsUnsub) cartsUnsub();
+    cartsUnsub = cartsCol().onSnapshot(
       (snap) => {
         const map = {};
         snap.docs.forEach((doc) => {
@@ -245,6 +253,7 @@
       },
       (err) => console.error('carts snapshot', err)
     );
+    return cartsUnsub;
   }
 
   async function loadTaxonomy() {
@@ -257,6 +266,19 @@
   async function saveTaxonomy(data) {
     if (!db) return;
     await db.collection('meta').doc('taxonomy').set(data, { merge: true });
+  }
+
+  function watchTaxonomy(onChange) {
+    if (!db) return () => {};
+    return db
+      .collection('meta')
+      .doc('taxonomy')
+      .onSnapshot(
+        (doc) => {
+          if (doc.exists) onChange(doc.data());
+        },
+        (err) => console.error('taxonomy snapshot', err)
+      );
   }
 
   function getAuth() {
@@ -275,9 +297,11 @@
     saveUsersMap,
     watchUsers,
     loadCartsMap,
+    saveCart,
     saveCartsMap,
     watchCarts,
     loadTaxonomy,
     saveTaxonomy,
+    watchTaxonomy,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
