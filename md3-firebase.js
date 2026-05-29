@@ -57,6 +57,15 @@
     return db.collection('carts');
   }
 
+  const LEGACY_GUEST_CART_KEY = '_guest';
+
+  function stripGuestFromCartsMap(map) {
+    if (!map) return map;
+    const out = { ...map };
+    delete out[LEGACY_GUEST_CART_KEY];
+    return out;
+  }
+
   function productDoc(id) {
     return productsCol().doc(String(id));
   }
@@ -100,6 +109,50 @@
     }
   }
 
+  async function deleteProductImageFile(productId) {
+    if (!storage) return;
+    try {
+      await storage.ref('products/' + String(productId) + '.jpg').delete();
+    } catch (e) {
+      if (!e || e.code !== 'storage/object-not-found') {
+        console.warn('deleteProductImageFile', e);
+      }
+    }
+  }
+
+  let productWatchMutedUntil = 0;
+
+  function muteProductWatch(ms) {
+    productWatchMutedUntil = Date.now() + (ms || 2500);
+  }
+
+  /**
+   * Full document write (no merge) so removing image clears the field in Firestore.
+   */
+  async function writeProductDoc(raw, opts) {
+    const p = normalizeProduct(raw);
+    if (!p) return null;
+
+    let imageUrl = raw.image;
+    if (imageUrl && imageUrl.startsWith('data:')) {
+      imageUrl = await uploadProductImage(p.id, imageUrl);
+      raw.image = imageUrl;
+    }
+
+    const data = { ...p };
+    if (imageUrl && !String(imageUrl).startsWith('data:')) {
+      data.image = imageUrl;
+    }
+
+    await productDoc(p.id).set(data);
+
+    if (opts && opts.clearImage) {
+      await deleteProductImageFile(p.id);
+    }
+
+    return raw;
+  }
+
   async function loadProducts() {
     if (!db) return null;
     const snap = await productsCol().get();
@@ -109,38 +162,45 @@
     return list;
   }
 
-  async function saveProducts(products) {
+  async function saveProducts(products, options) {
     if (!db) return products;
+    muteProductWatch();
     const saved = (products || []).map((p) => ({ ...p }));
     const ids = new Set(saved.map((p) => String(p.id)));
+    const opts = options || {};
+    const onlyIds = opts.onlyIds ? new Set(opts.onlyIds.map((id) => String(id))) : null;
+    const removeImageSet = new Set((opts.removeImageIds || []).map((id) => String(id)));
+    const deletedIds = opts.deletedIds || [];
 
-    for (const raw of saved) {
-      const p = normalizeProduct(raw);
-      if (!p) continue;
-
-      let imageUrl = raw.image;
-      if (imageUrl && imageUrl.startsWith('data:')) {
-        imageUrl = await uploadProductImage(p.id, imageUrl);
-        raw.image = imageUrl;
-      }
-
-      const data = { ...p };
-      if (imageUrl && !String(imageUrl).startsWith('data:')) {
-        data.image = imageUrl;
-      }
-      await productDoc(p.id).set(data, { merge: true });
+    let toWrite = saved;
+    if (onlyIds) {
+      toWrite = saved.filter((p) => onlyIds.has(String(p.id)));
+    } else if (deletedIds.length) {
+      toWrite = [];
     }
 
-    const snap = await productsCol().get();
-    const batch = db.batch();
-    let pending = 0;
-    snap.docs.forEach((doc) => {
-      if (!ids.has(doc.id)) {
-        batch.delete(doc.ref);
-        pending++;
-      }
-    });
-    if (pending) await batch.commit();
+    for (const raw of toWrite) {
+      await writeProductDoc(raw, { clearImage: removeImageSet.has(String(raw.id)) });
+    }
+
+    for (const id of deletedIds) {
+      await productDoc(id).delete();
+      await deleteProductImageFile(id);
+    }
+
+    if (!onlyIds && !deletedIds.length) {
+      const snap = await productsCol().get();
+      const batch = db.batch();
+      let pending = 0;
+      snap.docs.forEach((doc) => {
+        if (!ids.has(doc.id)) {
+          batch.delete(doc.ref);
+          pending++;
+        }
+      });
+      if (pending) await batch.commit();
+    }
+
     return saved;
   }
 
@@ -149,6 +209,7 @@
     if (productsUnsub) productsUnsub();
     productsUnsub = productsCol().onSnapshot(
       (snap) => {
+        if (Date.now() < productWatchMutedUntil) return;
         const list = snap.docs.map((d) => normalizeProduct(d.data())).filter(Boolean);
         list.sort((a, b) => a.id - b.id);
         onChange(list);
@@ -210,14 +271,23 @@
     if (snap.empty) return null;
     const map = {};
     snap.docs.forEach((doc) => {
+      if (doc.id === LEGACY_GUEST_CART_KEY) return;
       map[doc.id] = doc.data().items || {};
     });
     return map;
   }
 
+  /** Remove shared legacy guest doc (guest carts are local-only now). */
+  async function deleteLegacyGuestCart() {
+    if (!db) return;
+    try {
+      await cartsCol().doc(LEGACY_GUEST_CART_KEY).delete();
+    } catch (_) {}
+  }
+
   /** Replace one cart document entirely (no merge — avoids stale line items). */
   async function saveCart(ownerKey, items) {
-    if (!db || !ownerKey) return;
+    if (!db || !ownerKey || ownerKey === LEGACY_GUEST_CART_KEY) return;
     await cartsCol().doc(ownerKey).set({ items: items || {} });
   }
 
@@ -228,6 +298,7 @@
     const batch = db.batch();
     let ops = 0;
     keys.forEach((key) => {
+      if (key === LEGACY_GUEST_CART_KEY) return;
       batch.set(cartsCol().doc(key), { items: carts[key] || {} });
       ops++;
     });
@@ -247,9 +318,10 @@
       (snap) => {
         const map = {};
         snap.docs.forEach((doc) => {
+          if (doc.id === LEGACY_GUEST_CART_KEY) return;
           map[doc.id] = doc.data().items || {};
         });
-        onChange(map);
+        onChange(stripGuestFromCartsMap(map));
       },
       (err) => console.error('carts snapshot', err)
     );
@@ -300,6 +372,7 @@
     saveCart,
     saveCartsMap,
     watchCarts,
+    deleteLegacyGuestCart,
     loadTaxonomy,
     saveTaxonomy,
     watchTaxonomy,

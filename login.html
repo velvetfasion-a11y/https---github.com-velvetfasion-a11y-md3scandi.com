@@ -395,6 +395,11 @@ if (MD3Store.guardLoginPage('compte.html')) { /* redirecting */ }
     console.error('MD3Store.init', e);
     bootLogin();
   });
+
+  window.addEventListener('md3-carts-updated', updateCartBadge);
+  window.addEventListener('md3-session-changed', function () {
+    setNavAuth(MD3Store.getCurrentUser());
+  });
 })();
 
 window.addEventListener('pageshow', function () {

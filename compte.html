@@ -986,6 +986,7 @@ function getProductImageFromEditor() {
 function removeProductImage() {
   resetProductImageUI();
   productImageRemoved = true;
+  savedProductImage = null;
 }
 
 function cropZoom(ratio) {
@@ -1390,7 +1391,7 @@ async function updateStock(id, val) {
   if (idx !== -1) {
     products[idx].stock = Math.max(0, parseInt(val, 10) || 0);
     try {
-      await S.saveProducts(products);
+      await S.saveProducts(products, { onlyIds: [id] });
     } catch (e) {
       console.error('updateStock', e);
     }
@@ -1487,8 +1488,10 @@ async function saveProduct() {
   const saveBtn = document.querySelector('#productModal .btn-primary');
   if (saveBtn) saveBtn.disabled = true;
   try {
+    let saveOpts = {};
     if (editId) {
-      const idx = products.findIndex(p => p.id === parseInt(editId, 10));
+      const id = parseInt(editId, 10);
+      const idx = products.findIndex(p => p.id === id);
       if (idx !== -1) {
         const prev = products[idx];
         const next = {
@@ -1501,23 +1504,26 @@ async function saveProduct() {
         else if (prev.image) next.image = prev.image;
         else delete next.image;
         products[idx] = next;
+        saveOpts = { onlyIds: [id] };
+        if (productImageRemoved) saveOpts.removeImageIds = [id];
       }
     } else {
       const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
       const item = { id: newId, name, category, sub, price, stock, emoji: '✦' };
       if (image) item.image = image;
       products.push(item);
+      saveOpts = { onlyIds: [newId] };
     }
-    await S.saveProducts(products);
+    const savePromise = S.saveProducts(products, saveOpts);
+    destroyProductCropper();
+    closeModal('productModal');
+    renderAdminProducts();
+    await savePromise;
   } catch (err) {
     console.error(err);
     alert(err && err.message ? err.message : String(err));
-    if (saveBtn) saveBtn.disabled = false;
-    return;
+    renderAdminProducts();
   }
-  destroyProductCropper();
-  closeModal('productModal');
-  renderAdminProducts();
   if (saveBtn) saveBtn.disabled = false;
 }
 
@@ -1527,7 +1533,7 @@ function confirmDeleteProduct(id) {
   const delMsg = L('confirm-delete-product-named').replace('%s', p.name);
   openConfirm(L('confirm-delete-product'), delMsg, '🗑️', async () => {
     const updated = S.getProducts().filter(x => x.id !== id);
-    await S.saveProducts(updated);
+    await S.saveProducts(updated, { deletedIds: [id] });
     const users = S.getUsers();
     Object.values(users).forEach(u => {
       if (u.liked) u.liked = u.liked.filter(i => i !== id);
@@ -1589,13 +1595,17 @@ window.addEventListener('pageshow', function () {
   updateNav();
 });
 
+let productsUiTimer = null;
 window.addEventListener('md3-products-updated', function () {
-  if (document.getElementById('page-admin')?.classList.contains('active')) {
-    renderAdminProducts();
-  }
-  if (document.getElementById('page-profile')?.classList.contains('active')) {
-    renderProfile();
-  }
+  clearTimeout(productsUiTimer);
+  productsUiTimer = setTimeout(function () {
+    if (document.getElementById('page-admin')?.classList.contains('active')) {
+      renderAdminProducts();
+    }
+    if (document.getElementById('page-profile')?.classList.contains('active')) {
+      renderProfile();
+    }
+  }, 80);
 });
 
 window.addEventListener('storage', function (e) {
@@ -1605,6 +1615,10 @@ window.addEventListener('storage', function (e) {
 window.addEventListener('md3-session-changed', function () {
   routeCompte();
   updateNav();
+});
+
+window.addEventListener('md3-carts-updated', function () {
+  updateCartBadge();
 });
 </script>
 </body>

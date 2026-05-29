@@ -1301,6 +1301,7 @@
       else if (res.reason === 'max') alert(shopLabel('cart-max-stock'));
       return;
     }
+    updateCartBadge();
     renderShop();
   }
   window.addToCartProduct = addToCartProduct;

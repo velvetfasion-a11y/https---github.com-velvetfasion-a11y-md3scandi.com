@@ -8,6 +8,8 @@
   const USERS_KEY = 'md3_users';
   const CARTS_KEY = 'md3_carts';
   const SESSION_KEY = 'md3_session';
+  /** Guest carts stay in localStorage only — never sync to Firestore (shared doc caused removals to revert). */
+  const GUEST_CART_KEY = '_guest';
 
   let productsCache = null;
   let usersCache = null;
@@ -107,29 +109,55 @@
     notifySessionChanged();
   }
 
+  function cartsSnapshot(carts) {
+    try {
+      return JSON.stringify(carts || {});
+    } catch (_) {
+      return '';
+    }
+  }
+
   function applyRemoteCartsMap(remoteMap) {
+    ensureCaches();
+    const before = cartsSnapshot(cartsCache);
+    const guestCart = { ...(cartsCache[GUEST_CART_KEY] || {}) };
+    const remote = { ...(remoteMap || {}) };
+    delete remote[GUEST_CART_KEY];
+
     const owner = getCartOwnerKey();
     const now = Date.now();
     const guardActive =
       cartWriteGuard.owner === owner && now < cartWriteGuard.until;
     if (guardActive) {
       const localItems = { ...(cartsCache[owner] || {}) };
-      cartsCache = { ...remoteMap, [owner]: localItems };
+      cartsCache = { ...remote, [owner]: localItems, [GUEST_CART_KEY]: guestCart };
     } else {
-      cartsCache = { ...remoteMap };
+      cartsCache = { ...remote, [GUEST_CART_KEY]: guestCart };
     }
+    pruneOwnerCart(GUEST_CART_KEY, false);
+    if (owner !== GUEST_CART_KEY) pruneOwnerCart(owner, false);
     try {
       localStorage.setItem(CARTS_KEY, JSON.stringify(cartsCache));
     } catch (_) {}
-    notifyCartsUpdated();
+    if (cartsSnapshot(cartsCache) !== before) notifyCartsUpdated();
+  }
+
+  function productsSnapshot(list) {
+    try {
+      return JSON.stringify(list || []);
+    } catch (_) {
+      return '';
+    }
   }
 
   function setProductsCache(p) {
+    const prevSnap = productsSnapshot(productsCache);
     productsCache = p;
     try {
       localStorage.setItem(PRODUCTS_KEY, JSON.stringify(p));
     } catch (_) {}
-    notifyProductsUpdated();
+    if (pruneAllCartsLocal()) notifyCartsUpdated();
+    if (productsSnapshot(productsCache) !== prevSnap) notifyProductsUpdated();
   }
 
   function getProducts() {
@@ -137,21 +165,26 @@
     return productsCache.map((x) => ({ ...x }));
   }
 
-  async function saveProducts(p) {
+  async function saveProducts(p, opts) {
     ensureCaches();
     const list = p.map((x) => ({ ...x }));
-    let toCache = list;
+    setProductsCache(list);
     if (global.MD3Firebase && global.MD3Firebase.isEnabled()) {
-      const result = await global.MD3Firebase.saveProducts(list);
-      if (result && Array.isArray(result)) toCache = result;
-    }
-    try {
-      setProductsCache(toCache);
-    } catch (e) {
-      console.error('saveProducts local cache', e);
-      productsCache = toCache;
-      notifyProductsUpdated();
-      throw e;
+      try {
+        const result = await global.MD3Firebase.saveProducts(list, opts);
+        if (result && Array.isArray(result)) {
+          const byId = new Map(result.map((x) => [x.id, x]));
+          const merged = list.map((item) => {
+            const u = byId.get(item.id);
+            if (!u) return item;
+            return { ...item, ...u };
+          });
+          setProductsCache(merged);
+        }
+      } catch (e) {
+        console.error('saveProducts cloud', e);
+        throw e;
+      }
     }
   }
 
@@ -241,10 +274,20 @@
       clearSession();
       return;
     }
+    const prev = getCurrentUser();
     localStorage.setItem(SESSION_KEY, JSON.stringify(u));
     try {
       sessionStorage.removeItem(SESSION_KEY);
     } catch (_) {}
+    if (!u.isAdmin) {
+      ensureCaches();
+      const hasGuest =
+        cartsCache[GUEST_CART_KEY] && Object.keys(cartsCache[GUEST_CART_KEY]).length > 0;
+      const newUser = !prev || prev.isAdmin || prev.email !== u.email;
+      if (newUser || hasGuest) {
+        mergeGuestCartIntoUser(u.email).catch((e) => console.error('mergeGuestCart', e));
+      }
+    }
   }
 
   function clearSession() {
@@ -309,7 +352,61 @@
   function getCartOwnerKey() {
     const user = getCurrentUser();
     if (user && !user.isAdmin) return user.email;
-    return '_guest';
+    return GUEST_CART_KEY;
+  }
+
+  function findProduct(productId) {
+    const id = Number(productId);
+    return getProducts().find((x) => x.id === id || String(x.id) === String(productId));
+  }
+
+  /** Drop unknown products and clamp qty to stock. Returns true if cart changed. */
+  function pruneOwnerCart(owner, persist) {
+    ensureCaches();
+    const cart = cartsCache[owner];
+    if (!cart || typeof cart !== 'object') return false;
+    let changed = false;
+    Object.keys(cart).forEach((id) => {
+      const p = findProduct(id);
+      const qty = Number(cart[id]);
+      if (!p || !Number.isFinite(qty) || qty <= 0) {
+        delete cart[id];
+        changed = true;
+        return;
+      }
+      const capped = Math.min(Math.floor(qty), p.stock);
+      if (capped <= 0) {
+        delete cart[id];
+        changed = true;
+      } else if (capped !== qty) {
+        cart[id] = capped;
+        changed = true;
+      }
+    });
+    if (changed && persist) {
+      saveOwnerCart(owner, cart).catch((e) => console.error('pruneOwnerCart', e));
+    }
+    return changed;
+  }
+
+  async function mergeGuestCartIntoUser(email) {
+    if (!email) return;
+    ensureCaches();
+    const guest = cartsCache[GUEST_CART_KEY];
+    if (!guest || !Object.keys(guest).length) return;
+
+    const userCart = { ...(cartsCache[email] || {}) };
+    Object.entries(guest).forEach(([id, qty]) => {
+      const p = findProduct(id);
+      if (!p || p.stock === 0) return;
+      const key = String(id);
+      const next = (userCart[key] || 0) + Math.max(0, Number(qty) || 0);
+      if (next > 0) userCart[key] = Math.min(next, p.stock);
+    });
+
+    delete cartsCache[GUEST_CART_KEY];
+    await saveOwnerCart(email, userCart);
+    notifyCartsUpdated();
   }
 
   function getAllCarts() {
@@ -317,33 +414,80 @@
     return { ...cartsCache };
   }
 
+  function cartsForCloud(carts) {
+    const out = { ...(carts || {}) };
+    delete out[GUEST_CART_KEY];
+    return out;
+  }
+
+  async function saveOwnerCart(owner, items) {
+    ensureCaches();
+    cartWriteGuard = { owner, until: Date.now() + 8000 };
+    cartsCache[owner] = { ...(items || {}) };
+    pruneOwnerCart(owner, false);
+    try {
+      localStorage.setItem(CARTS_KEY, JSON.stringify(cartsCache));
+    } catch (_) {}
+    notifyCartsUpdated();
+    if (
+      global.MD3Firebase &&
+      global.MD3Firebase.isEnabled() &&
+      owner !== GUEST_CART_KEY
+    ) {
+      await global.MD3Firebase.saveCart(owner, cartsCache[owner]);
+    }
+  }
+
   async function saveAllCarts(carts, opts) {
     ensureCaches();
-    const owner = getCartOwnerKey();
     cartsCache = { ...carts };
     try {
       localStorage.setItem(CARTS_KEY, JSON.stringify(cartsCache));
     } catch (_) {}
     if (global.MD3Firebase && global.MD3Firebase.isEnabled()) {
-      cartWriteGuard = { owner, until: Date.now() + 6000 };
-      const items = cartsCache[owner] || {};
+      const cloudCarts = cartsForCloud(cartsCache);
       if (opts && opts.fullMap) {
-        await global.MD3Firebase.saveCartsMap(cartsCache);
+        if (Object.keys(cloudCarts).length) {
+          await global.MD3Firebase.saveCartsMap(cloudCarts);
+        }
       } else {
-        await global.MD3Firebase.saveCart(owner, items);
+        const owner = getCartOwnerKey();
+        if (owner !== GUEST_CART_KEY) {
+          await saveOwnerCart(owner, cartsCache[owner] || {});
+        }
       }
     }
   }
 
   function getCart() {
-    const carts = getAllCarts();
-    return carts[getCartOwnerKey()] || {};
+    ensureCaches();
+    const owner = getCartOwnerKey();
+    if (!cartsCache[owner] || typeof cartsCache[owner] !== 'object') {
+      cartsCache[owner] = {};
+    }
+    pruneOwnerCart(owner, false);
+    return cartsCache[owner];
+  }
+
+  function persistCartsCache() {
+    try {
+      localStorage.setItem(CARTS_KEY, JSON.stringify(cartsCache));
+    } catch (_) {}
+  }
+
+  function pruneAllCartsLocal() {
+    ensureCaches();
+    let changed = false;
+    Object.keys(cartsCache).forEach((owner) => {
+      if (pruneOwnerCart(owner, false)) changed = true;
+    });
+    if (changed) persistCartsCache();
+    return changed;
   }
 
   async function setCart(cart) {
-    const carts = getAllCarts();
-    carts[getCartOwnerKey()] = cart;
-    await saveAllCarts(carts);
+    const owner = getCartOwnerKey();
+    await saveOwnerCart(owner, cart);
   }
 
   function getCartCount() {
@@ -357,8 +501,7 @@
   }
 
   async function addToCart(productId) {
-    const products = getProducts();
-    const p = products.find((x) => x.id === productId);
+    const p = findProduct(productId);
     if (!p) return { ok: false, reason: 'missing' };
     if (p.stock === 0) return { ok: false, reason: 'out' };
     const cart = getCart();
@@ -371,13 +514,17 @@
   }
 
   async function setCartQty(productId, qty) {
-    const products = getProducts();
-    const p = products.find((x) => x.id === productId);
-    if (!p) return { ok: false };
     const cart = getCart();
     const key = String(productId);
-    if (qty <= 0) delete cart[key];
-    else cart[key] = Math.min(qty, p.stock);
+    if (qty <= 0) {
+      delete cart[key];
+      await setCart(cart);
+      return { ok: true, count: getCartCount() };
+    }
+    const p = findProduct(productId);
+    if (!p) return { ok: false, reason: 'missing' };
+    if (p.stock === 0) return { ok: false, reason: 'out' };
+    cart[key] = Math.min(qty, p.stock);
     await setCart(cart);
     return { ok: true, count: getCartCount() };
   }
@@ -388,14 +535,13 @@
 
   function getCartLines() {
     const cart = getCart();
-    const products = getProducts();
     return Object.entries(cart)
       .map(([id, qty]) => {
-        const p = products.find((x) => x.id === Number(id));
+        const p = findProduct(id);
         if (!p) return null;
-        return { product: p, qty };
+        return { product: p, qty: Number(qty) || 0 };
       })
-      .filter(Boolean);
+      .filter((line) => line && line.qty > 0);
   }
 
   function isCloudEnabled() {
@@ -448,6 +594,10 @@
         applyRemoteCartsMap(map);
       });
 
+      if (FB.deleteLegacyGuestCart) {
+        FB.deleteLegacyGuestCart().catch(() => {});
+      }
+
       const remoteTax = await FB.loadTaxonomy();
       if (remoteTax) {
         localStorage.setItem('md3_taxonomy', JSON.stringify(remoteTax));
@@ -474,6 +624,7 @@
 
   async function init() {
     ensureCaches();
+    pruneAllCartsLocal();
     readyResolve();
     syncCloud()
       .then(() => {
@@ -515,6 +666,7 @@
     setCartQty,
     removeFromCart,
     getCartLines,
+    mergeGuestCartIntoUser,
     productVisualInner,
     productThumbInner,
     getPendingSignups,

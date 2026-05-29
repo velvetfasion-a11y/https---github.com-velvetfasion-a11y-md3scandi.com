@@ -481,7 +481,11 @@
     const text = p
       ? t('confirm-cart-remove-named').replace('%s', p.name)
       : t('confirm-cart-remove-text');
-    openConfirmModal(t('confirm-cart-remove-title'), text, '🛒', () => removeLine(id));
+    openConfirmModal(t('confirm-cart-remove-title'), text, '🛒', () => {
+      removeLine(id).catch(function (e) {
+        console.error('removeFromCart', e);
+      });
+    });
   };
 
   window.changeQty = async function (id, delta) {
@@ -500,7 +504,11 @@
   };
 
   async function removeLine(id) {
-    await S.removeFromCart(id);
+    try {
+      await S.removeFromCart(id);
+    } catch (e) {
+      console.error('removeFromCart', e);
+    }
     renderCart();
     updateCartBadge();
   }
