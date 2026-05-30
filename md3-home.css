@@ -1,0 +1,233 @@
+/* MD3 Scandi — home layout (hero + shop). Header: md3-header.css */
+
+/* Hero */
+#md3-hero {
+  position: relative;
+  width: 100%;
+  height: 580px;
+  background: #000;
+  overflow: hidden;
+  z-index: 1;
+}
+#md3-hero .sticker {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  display: block;
+}
+#md3-hero .sticker img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+#md3-hero .content {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 46%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 80px 4% 0;
+  z-index: 10;
+  text-align: center;
+}
+#md3-hero .hero-heading {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(56px, 7vw, 120px);
+  font-weight: 300;
+  line-height: 1.05;
+  color: #fff;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+#md3-hero .hero-heading em {
+  font-style: italic;
+  color: #c9a96e;
+  display: block;
+}
+#md3-hero .hero-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+  margin-top: 40px;
+}
+#md3-hero .hero-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid rgba(201, 169, 110, 0.8);
+  background: transparent;
+  color: #c9a96e;
+  padding: 13px 10px;
+  text-decoration: none;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition: background 0.2s;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.5;
+}
+#md3-hero .hero-btn:hover {
+  background: rgba(201, 169, 110, 0.08);
+  color: #c9a96e;
+}
+#md3-hero .hero-btn svg {
+  width: 15px;
+  height: 15px;
+  stroke: #c9a96e;
+  fill: none;
+  stroke-width: 1.3;
+  flex-shrink: 0;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+#md3-hero .hero-btn .btn-label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.5;
+}
+
+/* Shop (home) */
+.shop.shop-v2 {
+  background: #f0ebe3;
+  padding: 72px 48px 80px;
+}
+.shop-v2 .shop-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: #c9a96e;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.shop-v2 .shop-label::before,
+.shop-v2 .shop-label::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 1px;
+  background: #c9a96e;
+  opacity: 0.6;
+}
+.shop-v2 .shop-title {
+  text-align: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(40px, 5vw, 72px);
+  font-weight: 300;
+  color: #2c2925;
+  margin-bottom: 16px;
+  line-height: 1.1;
+}
+.shop-v2 .shop-title em {
+  font-style: italic;
+  color: #c9a96e;
+}
+.shop-v2 .shop-sub {
+  text-align: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 16px;
+  color: #6b635a;
+  margin-bottom: 40px;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.shop-v2 .shop-filters {
+  margin-bottom: 48px;
+}
+.shop-v2 .shop-filter {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  border: 1px solid #2c2925;
+  background: transparent;
+  color: #2c2925;
+  padding: 10px 20px;
+}
+.shop-v2 .shop-filter:hover,
+.shop-v2 .shop-filter.active {
+  background: #2c2925;
+  color: #fff;
+  border-color: #2c2925;
+}
+.shop-v2 .shop-filter.active-gold {
+  background: #c9a96e;
+  border-color: #c9a96e;
+  color: #fff;
+}
+.shop-v2 .product-grid {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  max-width: none;
+}
+@media (max-width: 1024px) {
+  .shop-v2 .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .shop-v2 .product-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  #md3-hero {
+    height: auto;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+  #md3-hero .sticker {
+    display: none;
+  }
+  #md3-hero .sticker.mobile-show {
+    display: block !important;
+    position: absolute;
+  }
+  #md3-hero .content {
+    position: relative;
+    width: 100%;
+    min-height: 100svh;
+    padding: 140px 24px 60px;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: transparent;
+    z-index: 5;
+  }
+  #md3-hero .hero-heading {
+    font-size: clamp(48px, 14vw, 80px);
+  }
+  #md3-hero .hero-btns {
+    grid-template-columns: 1fr;
+    margin-top: 36px;
+    max-width: 100%;
+  }
+  #md3-hero .hero-btn {
+    padding: 16px 20px;
+    font-size: 10px;
+  }
+  .shop.shop-v2 {
+    padding: 48px 20px 60px;
+  }
+}
+
+html[dir="rtl"] #md3-hero .content {
+  right: auto;
+  left: 0;
+}

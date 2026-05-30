@@ -10,7 +10,8 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="md3-header.css" />
 <style>
   :root {
     --cream: #f5f0e8;
@@ -42,114 +43,6 @@
       radial-gradient(circle at 20% 30%, rgba(184, 147, 90, 0.06) 0%, transparent 40%),
       radial-gradient(circle at 80% 70%, rgba(184, 148, 107, 0.05) 0%, transparent 40%);
   }
-  .banner {
-    background: linear-gradient(90deg, var(--gold-soft) 0%, var(--sand) 50%, var(--gold-soft) 100%);
-    padding: 14px 20px;
-    text-align: center;
-    font-size: 11px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    position: relative;
-    z-index: 1;
-  }
-  header {
-    position: sticky;
-    top: 0;
-    background: rgba(245, 240, 232, 0.9);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(184, 147, 90, 0.15);
-    z-index: 100;
-    padding: 18px 24px;
-  }
-  .nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  .logo {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 24px;
-    font-weight: 500;
-    color: var(--ink);
-    text-decoration: none;
-  }
-  .logo span { color: var(--gold); font-style: italic; }
-  .nav-stack {
-    display: grid;
-    grid-template-columns: repeat(3, 2.25rem);
-    justify-items: center;
-    align-items: center;
-    column-gap: 0.5rem;
-    row-gap: 0.35rem;
-  }
-  .nav-auth { display: contents; }
-  .nav-auth .nav-icon-btn:nth-child(1) { grid-column: 2; grid-row: 2; }
-  .nav-auth .nav-icon-btn:nth-child(2) { grid-column: 3; grid-row: 2; }
-  .lang.lang-compact { display: contents; }
-  .lang.lang-compact .lang-btn:nth-child(1) { grid-column: 1; grid-row: 1; }
-  .lang.lang-compact .lang-btn:nth-child(2) { grid-column: 2; grid-row: 1; }
-  .lang.lang-compact .lang-btn:nth-child(3) { grid-column: 3; grid-row: 1; }
-  .nav-account-link {
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    text-decoration: none;
-    transition: color 0.3s;
-  }
-  .nav-account-link:hover { color: var(--gold); }
-  .nav-icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    color: var(--ink-soft);
-    text-decoration: none;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    transition: color 0.3s;
-  }
-  .nav-icon-btn:hover { color: var(--gold); }
-  .nav-icon-svg { width: 22px; height: 22px; display: block; }
-  .nav-icon-btn { position: relative; }
-  .nav-cart-badge {
-    position: absolute;
-    top: 2px;
-    right: 0;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    border-radius: 8px;
-    background: var(--ink);
-    color: var(--cream);
-    font-size: 9px;
-    font-weight: 500;
-    line-height: 16px;
-    text-align: center;
-  }
-  .lang { display: flex; gap: 8px; align-items: center; }
-  .lang.lang-compact button {
-    background: none;
-    border: none;
-    font-family: inherit;
-    font-size: 9px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    cursor: pointer;
-    padding: 0 0 1px;
-    transition: color 0.3s;
-  }
-  .lang.lang-compact button.active {
-    color: var(--gold);
-    border-bottom: 1px solid var(--gold);
-  }
-  .lang.lang-compact button:hover { color: var(--gold); }
   .login-wrap {
     position: relative;
     z-index: 1;
@@ -277,24 +170,7 @@
 </head>
 <body data-meta-title="meta-title-login" data-meta-desc="meta-desc-login">
 
-<div class="banner" data-i18n="banner-client">MD3 Scandi — Espace client</div>
-
-<header>
-  <nav class="nav">
-    <a href="index.html" class="logo">MD3 <span>Scandi</span></a>
-    <div class="nav-stack">
-      <div class="nav-auth" id="navAuth">
-        <a href="compte.html" class="nav-icon-btn" id="navAccount" data-i18n-aria="nav-account" aria-label="Mon compte" title="Mon compte"></a>
-        <a href="cart.html" class="nav-icon-btn" id="navCart" data-i18n-aria="nav-cart" aria-label="Panier" title="Panier"></a>
-      </div>
-      <div class="lang lang-compact" role="group" aria-label="Language">
-        <button type="button" class="lang-btn active" data-lang="fr">FR</button>
-        <button type="button" class="lang-btn" data-lang="en">EN</button>
-        <button type="button" class="lang-btn" data-lang="ar">AR</button>
-      </div>
-    </div>
-  </nav>
-</header>
+<div id="md3-site-header"></div>
 
 <main class="login-wrap">
   <div class="login-card">
@@ -336,31 +212,18 @@
 <script src="md3-store.js"></script>
 <script src="md3-auth.js"></script>
 <script src="md3-nav-icons.js"></script>
+<script src="md3-header.js"></script>
 <script src="md3-lang.js"></script>
 <script>
 if (MD3Store.guardLoginPage('compte.html')) { /* redirecting */ }
 
 (function () {
-  const accountEl = document.getElementById('navAccount');
-  const cartEl = document.getElementById('navCart');
-  accountEl.innerHTML = MD3NavIcons.account;
-  cartEl.innerHTML = MD3NavIcons.cart + '<span class="nav-cart-badge" id="navCartBadge" hidden></span>';
-
-  function updateCartBadge() {
-    const badge = document.getElementById('navCartBadge');
-    if (!badge) return;
-    const n = MD3Store.getCartCount();
-    badge.textContent = n;
-    badge.hidden = n <= 0;
+  function setNavAuth() {
+    MD3Header.updateAuth();
   }
 
-  function setNavAuth(user) {
-    MD3Store.syncAccountNav(accountEl, user);
-    cartEl.href = 'cart.html';
-    const cartLabel = MD3Lang.t('nav-cart');
-    cartEl.setAttribute('aria-label', cartLabel);
-    cartEl.setAttribute('title', cartLabel);
-    updateCartBadge();
+  function updateCartBadge() {
+    MD3Header.updateCartBadge();
   }
 
   function bootLogin() {

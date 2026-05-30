@@ -8,7 +8,8 @@
 <link rel="canonical" href="https://md3scandi.com/compte.html" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="md3-header.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" crossorigin="anonymous" />
 <style>
   :root {
@@ -28,99 +29,6 @@
     color: var(--charcoal);
     min-height: 100vh;
   }
-  nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    background: var(--ivory);
-    border-bottom: 1px solid var(--mist);
-    padding: 10px 2.5rem;
-    display: flex; align-items: center; justify-content: space-between;
-    min-height: 64px;
-  }
-  .nav-logo {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.35rem; font-weight: 400; letter-spacing: 0.12em;
-    color: var(--charcoal); text-decoration: none;
-  }
-  .nav-logo span { font-style: italic; font-weight: 300; }
-  .nav-stack {
-    display: grid;
-    grid-template-columns: repeat(3, 2.25rem);
-    justify-items: center;
-    align-items: center;
-    column-gap: 0.5rem;
-    row-gap: 0.35rem;
-  }
-  .nav-auth { display: contents; }
-  .nav-auth .nav-icon-btn:nth-child(1) { grid-column: 2; grid-row: 2; }
-  .nav-auth .nav-icon-btn:nth-child(2) { grid-column: 3; grid-row: 2; }
-  .lang.lang-compact { display: contents; }
-  .lang.lang-compact .lang-btn:nth-child(1) { grid-column: 1; grid-row: 1; }
-  .lang.lang-compact .lang-btn:nth-child(2) { grid-column: 2; grid-row: 1; }
-  .lang.lang-compact .lang-btn:nth-child(3) { grid-column: 3; grid-row: 1; }
-  .nav-account-link {
-    font-family: 'Jost', sans-serif;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--stone);
-    text-decoration: none;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    transition: color 0.2s;
-  }
-  .nav-account-link:hover { color: var(--charcoal); }
-  .nav-icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    color: var(--stone);
-    text-decoration: none;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    transition: color 0.2s;
-  }
-  .nav-icon-btn:hover { color: var(--charcoal); }
-  .nav-icon-svg { width: 22px; height: 22px; display: block; }
-  .nav-icon-btn { position: relative; }
-  .nav-cart-badge {
-    position: absolute;
-    top: 2px;
-    right: 0;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    border-radius: 8px;
-    background: var(--charcoal);
-    color: var(--ivory);
-    font-size: 9px;
-    font-weight: 500;
-    line-height: 16px;
-    text-align: center;
-  }
-  .lang { display: flex; gap: 8px; align-items: center; }
-  .lang.lang-compact button {
-    background: none;
-    border: none;
-    font-family: 'Jost', sans-serif;
-    font-size: 9px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--stone);
-    cursor: pointer;
-    padding: 0 0 1px;
-    transition: color 0.2s;
-  }
-  .lang.lang-compact button.active {
-    color: var(--charcoal);
-    border-bottom: 1px solid var(--charcoal);
-  }
-  .lang.lang-compact button:hover { color: var(--charcoal); }
   body.lang-ar { font-family: 'Jost', sans-serif; }
   .nav-link {
     font-family: 'Jost', sans-serif;
@@ -131,11 +39,11 @@
     transition: color 0.2s;
   }
   .nav-link:hover { color: var(--charcoal); }
-  .page { display: none; padding-top: 76px; min-height: 100vh; }
+  .page { display: none; min-height: 100vh; }
   .page.active { display: block; }
   .auth-wrap {
     display: flex; align-items: center; justify-content: center;
-    min-height: calc(100vh - 76px);
+    min-height: calc(100vh - 140px);
     background: linear-gradient(160deg, var(--ivory) 0%, var(--sand) 100%);
   }
   .auth-card {
@@ -452,12 +360,12 @@
     transition: color 0.2s;
   }
   .btn-delete-subtle:hover { color: var(--danger); }
-  .admin-layout { display: flex; min-height: calc(100vh - 76px); }
+  .admin-layout { display: flex; min-height: calc(100vh - var(--md3-chrome-h, 108px)); }
   .admin-sidebar {
     width: 220px; flex-shrink: 0;
     background: var(--charcoal); color: white;
     padding: 2rem 0;
-    position: sticky; top: 76px; height: calc(100vh - 76px); overflow-y: auto;
+    position: sticky; top: var(--md3-chrome-h, 108px); height: calc(100vh - var(--md3-chrome-h, 108px)); overflow-y: auto;
   }
   .admin-sidebar-title {
     font-family: 'Cormorant Garamond', serif;
@@ -687,17 +595,7 @@
 </head>
 <body data-meta-title="meta-title-compte" data-meta-desc="meta-desc-compte">
 
-<nav>
-  <a class="nav-logo" href="index.html">MD3 <span>Scandi</span></a>
-  <div class="nav-stack">
-    <div class="nav-auth" id="navAuth"></div>
-    <div class="lang lang-compact" role="group" aria-label="Language">
-      <button type="button" class="lang-btn active" data-lang="fr">FR</button>
-      <button type="button" class="lang-btn" data-lang="en">EN</button>
-      <button type="button" class="lang-btn" data-lang="ar">AR</button>
-    </div>
-  </div>
-</nav>
+<div id="md3-site-header"></div>
 
 <div class="page active" id="page-login">
   <div class="auth-wrap">
@@ -893,6 +791,7 @@
 <script src="md3-store.js"></script>
 <script src="md3-auth.js"></script>
 <script src="md3-nav-icons.js"></script>
+<script src="md3-header.js"></script>
 <script src="md3-lang.js"></script>
 <script src="md3-taxonomy.js"></script>
 <script src="md3-currency.js"></script>
@@ -1014,26 +913,12 @@ function showPage(name) {
 }
 
 function updateCartBadge() {
-  const badge = document.getElementById('navCartBadge');
-  if (!badge) return;
-  const n = S.getCartCount();
-  badge.textContent = n;
-  badge.hidden = n <= 0;
+  MD3Header.updateCartBadge();
 }
 
 function updateNav() {
-  const user = S.getCurrentUser();
-  const auth = document.getElementById('navAuth');
-  const I = MD3NavIcons;
-  const t = (k) => L(k);
-  const cartBadge = '<span class="nav-cart-badge" id="navCartBadge" hidden></span>';
-  const cartIcon = I.cart + cartBadge;
-  const profileLink = I.iconLink('compte.html', I.account, t(user ? (user.isAdmin ? 'nav-admin' : 'nav-account') : 'nav-login'), ' id="navAccount" data-i18n-aria="nav-account"');
-  const cartLink = I.iconLink('cart.html', cartIcon, t('nav-cart'), ' id="navCart" data-i18n-aria="nav-cart"');
-  auth.innerHTML = profileLink + cartLink;
-  S.syncAccountNav(document.getElementById('navAccount'), user);
+  MD3Header.updateAuth();
   MD3Lang.refreshUI();
-  updateCartBadge();
 }
 
 function refreshCompteView() {
