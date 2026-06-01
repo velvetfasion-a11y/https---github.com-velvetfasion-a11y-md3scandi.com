@@ -240,10 +240,13 @@
     overflow: hidden;
   }
   .liked-card-img {
-    height: 180px; background: var(--sand);
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: var(--sand);
     display: flex; align-items: center; justify-content: center;
     font-size: 2.5rem;
     position: relative;
+    overflow: hidden;
   }
   .liked-card-img .out-of-stock-badge {
     position: absolute; top: 8px; right: 8px;
@@ -509,11 +512,13 @@
   .product-emoji-cell { font-size: 1.5rem; width: 56px; }
   .product-thumb {
     width: 48px; height: 48px; object-fit: cover;
+    object-position: center center;
     display: block; border: 1px solid var(--mist);
   }
   .product-emoji-fallback { font-size: 1.5rem; line-height: 1; }
   .liked-card-img .product-photo {
     width: 100%; height: 100%; object-fit: cover;
+    object-position: center center;
     position: absolute; inset: 0;
   }
   .image-upload-zone { margin-bottom: 1rem; }
@@ -834,17 +839,31 @@ function loadImageIntoCropper(src) {
   img.src = src;
   img.onload = function () {
     destroyProductCropper();
+    const alreadySquare =
+      img.naturalWidth > 0 &&
+      Math.abs(img.naturalWidth / img.naturalHeight - 1) < 0.02;
     productCropper = new Cropper(img, {
       aspectRatio: 1,
       viewMode: 1,
       dragMode: 'move',
-      autoCropArea: 0.9,
+      autoCropArea: 1,
       responsive: true,
       background: false,
       guides: true,
       movable: true,
       cropBoxMovable: true,
       cropBoxResizable: true,
+      ready: function () {
+        if (!alreadySquare || !productCropper) return;
+        const canvas = productCropper.getCanvasData();
+        const side = Math.min(canvas.width, canvas.height);
+        productCropper.setCropBoxData({
+          left: canvas.left + (canvas.width - side) / 2,
+          top: canvas.top + (canvas.height - side) / 2,
+          width: side,
+          height: side,
+        });
+      },
     });
   };
 }
@@ -872,12 +891,12 @@ function onProductImagePick(e) {
 function getProductImageFromEditor() {
   if (productCropper) {
     const canvas = productCropper.getCroppedCanvas({
-      width: 600,
-      height: 600,
+      width: 800,
+      height: 800,
       imageSmoothingEnabled: true,
       imageSmoothingQuality: 'high',
     });
-    if (canvas) return canvas.toDataURL('image/jpeg', 0.82);
+    if (canvas) return canvas.toDataURL('image/jpeg', 0.88);
   }
   return savedProductImage || null;
 }
