@@ -16,49 +16,30 @@ const MD3_IMGS = {
 };
 
 const layout = [
-  ["ceiling-light",  2,  3, 170, -4],
-  ["burgundy-clutch",27,  2, 140,  3],
-  ["red-heels",       1, 32, 155, -6],
-  ["gold-lamp",      24, 30, 115,  7],
-  ["dress",          35, 25, 105, -3],
-  ["sofa",            2, 62, 210,  2],
-  ["shirt",          25, 60, 120,  5],
-  ["orange-heels",   38, 60, 125, -4],
-  ["pink-lamp",      22, 82, 100, -5],
-  ["brown-heels",    35, 80, 130,  3],
-  ["burgundy-bag",   46, 10, 115, -6],
+  ["ceiling-light",  10,  8, 155, -4],
+  ["burgundy-clutch", 22,  6, 128,  3],
+  ["red-heels",       8, 30, 140, -6],
+  ["gold-lamp",      20, 28, 105,  7],
+  ["dress",          30, 24,  96, -3],
+  ["sofa",            6, 54, 190,  2],
+  ["shirt",          20, 52, 108,  5],
+  ["orange-heels",   32, 52, 112, -4],
+  ["pink-lamp",      38, 72,  85, -5],
+  ["brown-heels",    26, 62, 118,  3],
+  ["burgundy-bag",   34, 12, 105, -6],
 ];
-
-// Mobile sticker positions (shown via CSS media query .mobile-show)
-const mobilePos = {
-  "ceiling-light":   [2,   3, 75],
-  "burgundy-clutch": [22,  2, 72],
-  "red-heels":       [44,  4, 80],
-  "dress":           [64,  2, 68],
-  "burgundy-bag":    [80,  5, 70],
-};
 
 layout.forEach(([key, left, top, w, rot], i) => {
   if (!MD3_IMGS[key]) return;
   const d = document.createElement("div");
   d.className = "sticker";
 
-  const mp = mobilePos[key];
-  if (mp) d.classList.add("mobile-show");
-
-  // Always set desktop position as default
   d.style.cssText = `left:${left}%;top:-20%;width:${w}px;height:${w}px;transform:rotate(${rot}deg);opacity:1;transition:top 0.7s cubic-bezier(0.22,1,0.36,1);`;
 
   d.dataset.dLeft = left;
   d.dataset.dTop = top;
   d.dataset.dW = w;
   d.dataset.dRot = rot;
-
-  if (mp) {
-    d.dataset.mLeft = mp[0];
-    d.dataset.mTop = mp[1];
-    d.dataset.mW = mp[2];
-  }
 
   const img = document.createElement("img");
   img.src = MD3_IMGS[key]; img.alt = "";
@@ -69,37 +50,35 @@ layout.forEach(([key, left, top, w, rot], i) => {
 });
 
 let heroLayoutTimer = null;
-let heroMobileAnimTimer = null;
 
 function applyDesktopSticker(el) {
-  el.style.left = el.dataset.dLeft + "%";
-  el.style.top = el.dataset.dTop + "%";
-  el.style.width = el.dataset.dW + "px";
-  el.style.height = el.dataset.dW + "px";
-  el.style.transform = "rotate(" + el.dataset.dRot + "deg)";
+  const hero = document.getElementById("md3-hero");
+  const rtl = document.documentElement.dir === "rtl";
+  const left = parseFloat(el.dataset.dLeft, 10);
+  const top = el.dataset.dTop;
+  const w = parseFloat(el.dataset.dW, 10);
+  const rot = parseFloat(el.dataset.dRot, 10) || 0;
+  const wPct = hero && hero.offsetWidth ? (w / hero.offsetWidth) * 100 : 0;
+
+  el.style.top = top + "%";
+  el.style.width = w + "px";
+  el.style.height = w + "px";
+  el.style.transform = "rotate(" + (rtl ? -rot : rot) + "deg)";
   el.style.opacity = "1";
+
+  if (rtl) {
+    el.style.left = "auto";
+    el.style.right = Math.max(0, 100 - left - wPct) + "%";
+  } else {
+    el.style.right = "auto";
+    el.style.left = left + "%";
+  }
 }
 
 function applyHeroStickerLayout() {
-  if (heroMobileAnimTimer) {
-    clearTimeout(heroMobileAnimTimer);
-    heroMobileAnimTimer = null;
-  }
-
-  const mobile = window.matchMedia("(max-width: 768px)").matches;
+  if (window.matchMedia("(max-width: 768px)").matches) return;
   document.querySelectorAll("#md3-hero .sticker").forEach((d) => {
-    if (mobile && d.classList.contains("mobile-show") && d.dataset.mLeft) {
-      d.style.left = d.dataset.mLeft + "%";
-      d.style.top = "-15%";
-      d.style.width = d.dataset.mW + "px";
-      d.style.height = d.dataset.mW + "px";
-      d.style.transform = "rotate(0deg)";
-      heroMobileAnimTimer = setTimeout(() => {
-        d.style.top = d.dataset.mTop + "%";
-      }, 300);
-    } else if (d.dataset.dLeft) {
-      applyDesktopSticker(d);
-    }
+    if (d.dataset.dLeft) applyDesktopSticker(d);
   });
 }
 
@@ -108,7 +87,15 @@ function scheduleHeroStickerLayout() {
   heroLayoutTimer = setTimeout(applyHeroStickerLayout, 120);
 }
 
+if (typeof window !== "undefined") {
+  window.scheduleHeroStickerLayout = scheduleHeroStickerLayout;
+}
+
 setTimeout(applyHeroStickerLayout, 100);
 window.addEventListener("resize", scheduleHeroStickerLayout);
 window.matchMedia("(max-width: 768px)").addEventListener("change", scheduleHeroStickerLayout);
+new MutationObserver(scheduleHeroStickerLayout).observe(document.documentElement, {
+  attributes: true,
+  attributeFilter: ["dir"],
+});
 })();
