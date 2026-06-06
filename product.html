@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<script src="md3-lang-boot.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MD3 Scandi — Produit</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500;600&family=Noto+Sans+Arabic:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="md3-header.css" />
+<link rel="stylesheet" href="md3-shop.css" />
+<style>
+  body { font-family: 'Jost', sans-serif; background: #f5f0e8; color: #1a1816; min-height: 100vh; }
+</style>
+</head>
+<body>
+
+<div id="md3-site-header"></div>
+
+<button type="button" class="product-back" onclick="history.back()">
+  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  <span data-i18n="btn-back">Retour</span>
+</button>
+
+<main class="product-page-wrap" id="productWrap">
+  <p class="shop-empty-state" style="grid-column:1/-1" data-i18n="product-loading">Chargement…</p>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="md3-firebase.js"></script>
+<script src="md3-store.js"></script>
+<script src="md3-auth.js"></script>
+<script src="md3-nav-icons.js"></script>
+<script src="md3-header.js"></script>
+<script src="md3-lang.js"></script>
+<script src="md3-currency.js"></script>
+<script src="md3-shop-render.js"></script>
+<script>
+  let qty = 1;
+  const L = (k) => MD3Lang.t(k);
+  const cartSvg = '<svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>';
+
+  function setQty(n) {
+    qty = Math.max(1, n);
+    const el = document.getElementById('productQty');
+    if (el) el.textContent = qty;
+  }
+
+  async function addProductToCart(id) {
+    const p = MD3Store.getProductById(id);
+    if (!p || !p.stock) return;
+    let added = 0;
+    for (let i = 0; i < qty; i++) {
+      const res = await MD3Store.addToCart(id);
+      if (!res.ok) {
+        if (res.reason === 'out') MD3Shop.showToast(L('cart-out-stock'));
+        else if (res.reason === 'max') MD3Shop.showToast(L('cart-max-stock'));
+        break;
+      }
+      added++;
+    }
+    if (added > 0) {
+      MD3Header.updateCartBadge();
+      MD3Shop.showToast(L('cart-added-qty').replace('%n', String(added)));
+    }
+  }
+
+  function renderProduct() {
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    const wrap = document.getElementById('productWrap');
+    const p = MD3Store.getProductById(id);
+    if (!p) {
+      wrap.innerHTML = `<p class="shop-empty-state" style="grid-column:1/-1">${L('product-not-found')}</p>`;
+      return;
+    }
+    document.title = 'MD3 Scandi — ' + p.name;
+    const out = !p.stock;
+    const img = p.image
+      ? `<img src="${MD3Shop.esc(p.image)}" alt="" class="product-photo" />`
+      : `<div class="product-ebig">${MD3Shop.esc(p.emoji || '✦')}</div>`;
+    const catLine = [MD3Lang.translateCategory(p.category), MD3Lang.translateSub(p.sub)].filter(Boolean).join(' · ');
+    const desc = p.desc || L('product-desc-fallback').replace('%s', p.name);
+
+    wrap.innerHTML = `
+      <div class="product-ibox">${img}</div>
+      <div class="product-info">
+        ${catLine ? `<div class="product-pcat">${MD3Shop.esc(catLine)}</div>` : ''}
+        <h1 class="product-ptitle">${MD3Shop.esc(p.name)}</h1>
+        <div class="product-ppr">
+          <span class="product-pp">${MD3Currency.formatPrice(p.price)}</span>
+          <span class="product-ppn">${L('price-incl')}</span>
+        </div>
+        <div class="product-pstk ${out ? 'out' : 'in'}">${out ? L('stock-out-lbl') : L('stock-in')}</div>
+        <p class="product-pdesc">${MD3Shop.esc(desc)}</p>
+        <div class="product-qrow">
+          <span class="product-qlbl">${L('label-qty')}</span>
+          <div class="product-qctl">
+            <button type="button" class="product-qb" onclick="setQty(qty - 1)">−</button>
+            <span class="product-qn" id="productQty">1</span>
+            <button type="button" class="product-qb" onclick="setQty(qty + 1)">+</button>
+          </div>
+        </div>
+        <button type="button" class="product-btn-add" ${out ? 'disabled' : ''} onclick="addProductToCart(${p.id})">
+          ${cartSvg}${L('cart-add')}
+        </button>
+      </div>`;
+  }
+
+  function boot() {
+    renderProduct();
+    MD3Header.updateCartBadge();
+    MD3Header.updateAuth();
+  }
+
+  MD3Lang.init({ onChange: boot });
+  MD3Store.init().then(boot).catch(boot);
+  window.addEventListener('md3-products-updated', renderProduct);
+  window.addEventListener('md3-carts-updated', () => MD3Header.updateCartBadge());
+</script>
+</body>
+</html>

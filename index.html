@@ -26,6 +26,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="md3-header.css" />
 <link rel="stylesheet" href="md3-home.css" />
+<link rel="stylesheet" href="md3-shop.css" />
 
 <style>
   :root {
@@ -760,28 +761,28 @@
       <span class="hero-subtitle" id="heroSubtitle" data-i18n="hero-subtitle">Ton univers, sublimé</span>
     </div>
     <div class="hero-btns">
-      <a href="#boutique" class="hero-btn sub-shop-link" data-shop-cat="Mode">
+      <a href="boutique.html?cat=Mode" class="hero-btn">
         <div class="hero-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
         <div class="hero-btn-text">
           <span class="hero-btn-cat" data-i18n="hero-btn-mode-1">MODE</span>
           <span class="hero-btn-name" data-i18n="hero-btn-mode-2">COLLECTION</span>
         </div>
       </a>
-      <a href="#boutique" class="hero-btn sub-shop-link" data-shop-cat="Maison">
+      <a href="boutique.html?cat=Maison" class="hero-btn">
         <div class="hero-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
         <div class="hero-btn-text">
           <span class="hero-btn-cat" data-i18n="hero-btn-maison-1">MAISON</span>
           <span class="hero-btn-name" data-i18n="hero-btn-maison-2">COLLECTION</span>
         </div>
       </a>
-      <a href="#boutique" class="hero-btn sub-shop-link" data-shop-cat="Lifestyle">
+      <a href="boutique.html?cat=Lifestyle" class="hero-btn">
         <div class="hero-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
         <div class="hero-btn-text">
           <span class="hero-btn-cat" data-i18n="hero-btn-lifestyle-1">LIFESTYLE</span>
           <span class="hero-btn-name" data-i18n="hero-btn-lifestyle-2">COLLECTION</span>
         </div>
       </a>
-      <a href="#boutique" class="hero-btn sub-shop-link" data-shop-cat="Édition limitée">
+      <a href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" class="hero-btn">
         <div class="hero-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
         <div class="hero-btn-text">
           <span class="hero-btn-cat" data-i18n="hero-btn-limited-1">ÉDITION</span>
@@ -792,16 +793,14 @@
   </div>
 </section>
 
-<!-- Boutique -->
-<section class="shop shop-v2" id="boutique">
-  <div class="container">
-    <div class="shop-label reveal" data-i18n="shop-eyebrow">La boutique</div>
-    <h2 class="shop-title reveal"><span data-i18n="shop-a">Nos </span><em data-i18n="shop-b">pièces</em></h2>
-    <p class="shop-sub reveal" data-i18n="shop-desc">Sauvegardez vos coups de cœur — ils restent sur votre profil jusqu'à suppression du compte.</p>
-    <div class="shop-filters reveal" id="shopFilters"></div>
-    <p class="shop-active-filter reveal" id="shopActiveFilter" hidden></p>
-    <div class="product-grid reveal" id="productGrid"></div>
+<!-- Featured -->
+<section class="featured-shop" id="boutique">
+  <div class="featured-hero reveal">
+    <h1 data-i18n="featured-title">Sélection</h1>
+    <p id="featuredCount"></p>
   </div>
+  <div class="sgrid reveal" id="featuredGrid"></div>
+  <p class="shop-empty-state reveal" id="featuredEmpty" hidden data-i18n="featured-empty">Aucun produit en vedette pour le moment.</p>
 </section>
 
 <!-- Collections -->
@@ -823,10 +822,10 @@
         <div class="subcategories">
           <div class="sub-divider"></div>
           <ul class="sub-list">
-            <li><a href="#boutique" class="sub-shop-link" data-shop-cat="Mode" data-shop-sub="Vêtements" data-i18n="sub-vetements">Vêtements</a></li>
-            <li><a href="#boutique" class="sub-shop-link" data-shop-cat="Mode" data-shop-sub="Chaussures" data-i18n="sub-chaussures">Chaussures</a></li>
-            <li><a href="#boutique" class="sub-shop-link" data-shop-cat="Mode" data-shop-sub="Accessoires" data-i18n="sub-accessoires">Accessoires</a></li>
-            <li><a href="#boutique" class="sub-shop-link" data-shop-cat="Mode" data-shop-sub="Sacs" data-i18n="sub-sacs">Sacs</a></li>
+            <li><a href="boutique.html?cat=Mode&amp;sub=V%C3%AAtements" data-i18n="sub-vetements">Vêtements</a></li>
+            <li><a href="boutique.html?cat=Mode&amp;sub=Chaussures" data-i18n="sub-chaussures">Chaussures</a></li>
+            <li><a href="boutique.html?cat=Mode&amp;sub=Accessoires" data-i18n="sub-accessoires">Accessoires</a></li>
+            <li><a href="boutique.html?cat=Mode&amp;sub=Sacs" data-i18n="sub-sacs">Sacs</a></li>
           </ul>
         </div>
       </div>
@@ -839,12 +838,12 @@
         <div class="subcategories">
           <div class="sub-divider"></div>
           <ul class="sub-list">
-            <li><a href="#boutique" class="sub-shop-link" data-shop-cat="Maison" data-shop-sub="Canapés" data-i18n="sub-canapes">Canapés</a></li>
-            <li><a href="#boutique" class="sub-shop-link" data-shop-cat="Maison" data-shop-sub="Lampes" data-i18n="sub-lampes">Lampes</a></li>
-            <li><a href="#boutique" class="sub-shop-link" data-shop-cat="Maison" data-shop-sub="Déco" data-i18n="sub-deco">Déco</a></li>
-            <li><a href="#boutique" class="sub-shop-link" data-shop-cat="Maison" data-shop-sub="Textile" data-i18n="sub-textile">Textile</a></li>
-            <li><a href="#boutique" class="sub-shop-link" data-shop-cat="Lifestyle" data-shop-sub="Vaisselle" data-i18n="sub-vaisselle">Vaisselle</a></li>
-            <li><a href="#boutique" class="sub-shop-link" data-shop-cat="Maison" data-shop-sub="Mobilier" data-i18n="sub-mobilier">Mobilier</a></li>
+            <li><a href="boutique.html?cat=Maison&amp;sub=Canap%C3%A9s" data-i18n="sub-canapes">Canapés</a></li>
+            <li><a href="boutique.html?cat=Maison&amp;sub=Lampes" data-i18n="sub-lampes">Lampes</a></li>
+            <li><a href="boutique.html?cat=Maison&amp;sub=D%C3%A9co" data-i18n="sub-deco">Déco</a></li>
+            <li><a href="boutique.html?cat=Maison&amp;sub=Textile" data-i18n="sub-textile">Textile</a></li>
+            <li><a href="boutique.html?cat=Lifestyle&amp;sub=Vaisselle" data-i18n="sub-vaisselle">Vaisselle</a></li>
+            <li><a href="boutique.html?cat=Maison&amp;sub=Mobilier" data-i18n="sub-mobilier">Mobilier</a></li>
           </ul>
         </div>
       </div>
@@ -853,14 +852,14 @@
         <span class="collection-icon">✦</span>
         <h3 data-i18n="lifestyle-title">Lifestyle</h3>
         <p data-i18n="lifestyle-desc">Au-delà des objets — un état d'esprit. Le hygge, le luxe discret, le quotidien magnifié.</p>
-        <a href="#boutique" class="collection-link sub-shop-link" data-shop-cat="Lifestyle"><span data-i18n="explore">Explorer</span> →</a>
+        <a href="boutique.html?cat=Lifestyle" class="collection-link"><span data-i18n="explore">Explorer</span> →</a>
       </div>
 
       <div class="collection-card reveal">
         <span class="collection-icon">✿</span>
         <h3 data-i18n="limited-title">Édition limitée</h3>
         <p data-i18n="limited-desc">Des pièces rares, en quantité limitée, pour ceux qui cherchent l'exception au quotidien.</p>
-        <a href="#boutique" class="collection-link sub-shop-link" data-shop-cat="Édition limitée"><span data-i18n="explore">Explorer</span> →</a>
+        <a href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" class="collection-link"><span data-i18n="explore">Explorer</span> →</a>
       </div>
     </div>
   </div>
@@ -955,6 +954,7 @@
 <script src="md3-lang.js"></script>
 <script src="md3-currency.js"></script>
 <script src="md3-hero-fit.js"></script>
+<script src="md3-shop-render.js"></script>
 <script>
   function updateCartBadge() {
     MD3Header.updateCartBadge();
@@ -989,7 +989,7 @@
     onChange() {
       MD3Currency.refreshCurrency();
       updateNavAuth();
-      try { renderShop(); } catch (e) { console.error('renderShop', e); }
+      try { renderFeatured(); } catch (e) { console.error('renderFeatured', e); }
       updateCartBadge();
       if (window.MD3HeroFit) MD3HeroFit.fit();
     }
@@ -1007,7 +1007,6 @@
 
   document.querySelectorAll('a[href^="#"]').forEach(link => {
     link.addEventListener('click', (e) => {
-      if (link.classList.contains('sub-shop-link') || link.dataset.shopCat) return;
       const href = link.getAttribute('href');
       if (!href || href === '#') return;
       const target = document.querySelector(href);
@@ -1018,142 +1017,29 @@
     });
   });
 
-  /* Boutique */
-  let shopFilter = 'Tous';
-  let shopSubFilter = null;
-
-  function subLabelFr(sub) {
-    return MD3Lang.translateSub(sub);
-  }
-
-  function catLabel(cat) {
-    return MD3Lang.translateCategory(cat);
-  }
-
-  function browseShop(category, sub, doScroll) {
-    shopFilter = category || 'Tous';
-    shopSubFilter = sub || null;
-    renderShop();
-    if (doScroll !== false) {
-      const el = document.getElementById('boutique');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  window.browseShop = browseShop;
-
-  document.querySelectorAll('.sub-shop-link').forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const cat = link.dataset.shopCat;
-      const sub = link.dataset.shopSub || null;
-      if (cat) browseShop(cat, sub);
-      else browseShop('Tous', null);
-    });
-  });
-
-  function renderShop() {
-    let products;
-    try {
-      products = MD3Store.getProducts();
-    } catch (e) {
-      console.error('getProducts', e);
-      products = [];
-    }
-    if (!Array.isArray(products)) products = [];
-    const cats = ['Tous', ...new Set(products.map(p => p.category))];
-    let filtered = shopFilter === 'Tous' ? products : products.filter(p => p.category === shopFilter);
-    if (shopSubFilter) filtered = filtered.filter(p => p.sub === shopSubFilter);
-    const user = MD3Store.getCurrentUser();
-
-    const filtersEl = document.getElementById('shopFilters');
-    if (filtersEl) {
-      filtersEl.innerHTML = cats.map(c => {
-        const label = c === 'Tous' ? shopLabel('shop-all') : catLabel(c);
-        const activeCls = c === shopFilter
-          ? (c === 'Édition limitée' ? 'active-gold' : 'active')
-          : '';
-        return `<button type="button" class="shop-filter ${activeCls}" data-cat="${c.replace(/"/g, '&quot;')}">${label}</button>`;
-      }).join('');
-      filtersEl.querySelectorAll('.shop-filter').forEach(btn => {
-        btn.addEventListener('click', () => {
-          shopFilter = btn.dataset.cat;
-          shopSubFilter = null;
-          renderShop();
-        });
-      });
-    }
-
-    const activeEl = document.getElementById('shopActiveFilter');
-    if (activeEl) {
-      if (shopSubFilter) {
-        activeEl.hidden = false;
-        activeEl.textContent = `${catLabel(shopFilter)} · ${subLabelFr(shopSubFilter)}`;
-      } else if (shopFilter !== 'Tous') {
-        activeEl.hidden = false;
-        activeEl.textContent = catLabel(shopFilter);
-      } else {
-        activeEl.hidden = true;
-      }
-    }
-
-    const grid = document.getElementById('productGrid');
+  /* Featured products */
+  function renderFeatured() {
+    const products = MD3Store.getFeaturedProducts();
+    const grid = document.getElementById('featuredGrid');
+    const empty = document.getElementById('featuredEmpty');
+    const countEl = document.getElementById('featuredCount');
     if (!grid) return;
-    if (filtered.length === 0) {
-      grid.innerHTML = `<p class="shop-empty">${shopLabel('shop-empty-filter')}</p>`;
-      return;
+
+    const n = products.length;
+    if (countEl) {
+      countEl.textContent = n === 1
+        ? shopLabel('boutique-count-one')
+        : shopLabel('boutique-count').replace('%n', String(n));
     }
 
-    const cartSvg = MD3NavIcons.cartSmall.replace('nav-icon-svg', 'product-cart-svg');
-    const heartSvg = MD3NavIcons.heart;
-    grid.innerHTML = filtered.map(p => {
-      const liked = user && !user.isAdmin && MD3Store.isLiked(user.email, p.id);
-      const inCart = MD3Store.isInCart(p.id);
-      const out = p.stock === 0;
-      return `
-        <article class="product-card">
-          <div class="product-visual">
-            ${MD3Store.productVisualInner(p)}
-            ${out ? `<span class="product-out">${shopLabel('shop-out')}</span>` : ''}
-            <div class="product-actions">
-              <button type="button" class="btn-save ${liked ? 'saved' : ''}" title="${shopLabel('shop-save')}"
-                onclick="toggleSaveProduct(${p.id})" aria-label="${shopLabel('shop-save')}">${heartSvg}</button>
-            </div>
-          </div>
-          <div class="product-body">
-            <div class="product-cat">${catLabel(p.category)} · ${subLabelFr(p.sub)}</div>
-            <h3 class="product-name">${p.name}</h3>
-            <p class="product-price">${MD3Currency.formatPrice(p.price)}</p>
-            <div class="product-body-actions">
-              <button type="button" class="btn-cart-add ${inCart ? 'in-cart' : ''}" title="${shopLabel('cart-add')}"
-                onclick="addToCartProduct(${p.id})" aria-label="${shopLabel('cart-add')}" ${out ? 'disabled' : ''}>${cartSvg}</button>
-            </div>
-          </div>
-        </article>`;
-    }).join('');
+    if (!n) {
+      grid.innerHTML = '';
+      if (empty) empty.hidden = false;
+      return;
+    }
+    if (empty) empty.hidden = true;
+    MD3Shop.renderGrid(grid, products);
     updateCartBadge();
-  }
-
-  async function addToCartProduct(id) {
-    const res = await MD3Store.addToCart(id);
-    if (!res.ok) {
-      if (res.reason === 'out') alert(shopLabel('cart-out-stock'));
-      else if (res.reason === 'max') alert(shopLabel('cart-max-stock'));
-      return;
-    }
-    updateCartBadge();
-    renderShop();
-  }
-  window.addToCartProduct = addToCartProduct;
-
-  async function toggleSaveProduct(id) {
-    const result = await MD3Store.toggleLiked(id);
-    if (!result.ok) {
-      alert(shopLabel('shop-login'));
-      window.location.href = 'login.html?redirect=boutique';
-      return;
-    }
-    renderShop();
   }
 
   function updateNavAuth() {
@@ -1162,7 +1048,7 @@
 
   function bootShop() {
     updateNavAuth();
-    try { renderShop(); } catch (e) { console.error('renderShop', e); }
+    try { renderFeatured(); } catch (e) { console.error('renderFeatured', e); }
   }
 
   MD3Store.init().then(bootShop).catch(function (e) {
@@ -1173,16 +1059,15 @@
   window.addEventListener('pageshow', function () {
     updateNavAuth();
     updateCartBadge();
-    try { renderShop(); } catch (e) { console.error('renderShop', e); }
+    try { renderFeatured(); } catch (e) { console.error('renderFeatured', e); }
   });
 
   window.addEventListener('md3-products-updated', function () {
-    try { renderShop(); } catch (e) { console.error('renderShop', e); }
+    try { renderFeatured(); } catch (e) { console.error('renderFeatured', e); }
   });
 
   window.addEventListener('md3-carts-updated', function () {
     updateCartBadge();
-    try { renderShop(); } catch (e) { console.error('renderShop', e); }
   });
 
   window.addEventListener('md3-session-changed', function () {
@@ -1194,8 +1079,8 @@
   }
 
   window.addEventListener('storage', (e) => {
-    if (e.key === 'md3_products' || e.key === 'md3_users') renderShop();
-    if (e.key === 'md3_carts') { renderShop(); updateCartBadge(); }
+    if (e.key === 'md3_products') renderFeatured();
+    if (e.key === 'md3_carts') updateCartBadge();
     if (e.key === 'md3_session') updateNavAuth();
   });
 </script>

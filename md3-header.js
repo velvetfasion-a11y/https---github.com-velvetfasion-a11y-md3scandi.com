@@ -1,7 +1,5 @@
 /** MD3 Scandi — shared announcement bar + header (all pages) */
 (function (global) {
-  const SHOP = 'index.html#boutique';
-
   const CHROME_HTML =
     '<div class="bar">' +
     '<div class="bar-track">' +
@@ -12,13 +10,13 @@
     '<div class="header-inner">' +
     '<a href="index.html" class="logo"><strong>MD3</strong><em>Scandi</em></a>' +
     '<nav class="header-nav" aria-label="Categories">' +
-    '<a href="' + SHOP + '" class="nav-cat-link sub-shop-link" data-shop-cat="Mode" data-i18n="nav-fashion">Mode</a>' +
+    '<a href="boutique.html?cat=Mode" class="nav-cat-link" data-i18n="nav-fashion">Mode</a>' +
     '<span class="nav-dot" aria-hidden="true"></span>' +
-    '<a href="' + SHOP + '" class="nav-cat-link sub-shop-link" data-shop-cat="Maison" data-i18n="nav-home">Maison</a>' +
+    '<a href="boutique.html?cat=Maison" class="nav-cat-link" data-i18n="nav-home">Maison</a>' +
     '<span class="nav-dot" aria-hidden="true"></span>' +
-    '<a href="' + SHOP + '" class="nav-cat-link sub-shop-link" data-shop-cat="Lifestyle" data-i18n="nav-lifestyle">Lifestyle</a>' +
+    '<a href="boutique.html?cat=Lifestyle" class="nav-cat-link" data-i18n="nav-lifestyle">Lifestyle</a>' +
     '<span class="nav-dot" aria-hidden="true"></span>' +
-    '<a href="' + SHOP + '" class="nav-cat-link sub-shop-link" data-shop-cat="Édition limitée" data-i18n="nav-limited">Édition limitée</a>' +
+    '<a href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" class="nav-cat-link" data-i18n="nav-limited">Édition limitée</a>' +
     '</nav>' +
     '<div class="header-util">' +
     '<div class="header-icons">' +

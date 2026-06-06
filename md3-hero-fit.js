@@ -1,12 +1,14 @@
 /** Hero title sizing + seamless background focal shift on resize */
 (function () {
   const DESKTOP_MQ = window.matchMedia("(min-width: 769px)");
+  /** Slightly under full width so the title isn’t edge-to-edge huge */
+  const TITLE_WIDTH_RATIO = 0.92;
 
   function fitHeroTitle() {
     const el = document.getElementById("heroTitle");
     if (!el) return;
 
-    const containerW = window.innerWidth;
+    const containerW = window.innerWidth * TITLE_WIDTH_RATIO;
     el.style.fontSize = "100px";
     el.style.letterSpacing = "0em";
 

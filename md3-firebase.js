@@ -80,6 +80,8 @@
       price: Number(p.price) || 0,
       stock: Math.max(0, parseInt(p.stock, 10) || 0),
       emoji: p.emoji || '✦',
+      featured: !!p.featured,
+      desc: typeof p.desc === 'string' ? p.desc : '',
     };
     if (p.image && typeof p.image === 'string' && !p.image.startsWith('data:')) {
       out.image = p.image;

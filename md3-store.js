@@ -26,18 +26,27 @@
     return password === ADMIN_PASS && ADMIN_IDS.includes(id);
   }
 
+  function normalizeProductFields(p) {
+    if (!p || typeof p !== 'object') return p;
+    return {
+      ...p,
+      featured: !!p.featured,
+      desc: typeof p.desc === 'string' ? p.desc : '',
+    };
+  }
+
   function defaultProducts() {
     return [
-      { id: 1, name: 'Robe Lin Ivoire', category: 'Mode', sub: 'Vêtements', price: 149, emoji: '👗', stock: 8 },
-      { id: 2, name: 'Sac Tote Naturel', category: 'Mode', sub: 'Sacs', price: 89, emoji: '👜', stock: 5 },
-      { id: 3, name: 'Sneakers Blanches', category: 'Mode', sub: 'Chaussures', price: 195, emoji: '👟', stock: 0 },
-      { id: 4, name: 'Canapé Stockholm', category: 'Maison', sub: 'Canapés', price: 1290, emoji: '🛋️', stock: 3 },
-      { id: 5, name: 'Lampe Bouleau', category: 'Maison', sub: 'Lampes', price: 245, emoji: '💡', stock: 12 },
-      { id: 6, name: 'Vase Grès Gris', category: 'Maison', sub: 'Déco', price: 68, emoji: '🏺', stock: 0 },
-      { id: 7, name: 'Carafe Nordique', category: 'Lifestyle', sub: 'Vaisselle', price: 55, emoji: '🫙', stock: 20 },
-      { id: 8, name: 'Bougie Hygge', category: 'Lifestyle', sub: 'Déco', price: 32, emoji: '🕯️', stock: 2 },
-      { id: 9, name: 'Set Lin Naturel', category: 'Édition limitée', sub: 'Textile', price: 320, emoji: '✨', stock: 1 },
-    ];
+      { id: 1, name: 'Robe Lin Ivoire', category: 'Mode', sub: 'Vêtements', price: 149, emoji: '👗', stock: 8, featured: true, desc: 'Robe en lin lavé, coupe fluide et intemporelle.' },
+      { id: 2, name: 'Sac Tote Naturel', category: 'Mode', sub: 'Sacs', price: 89, emoji: '👜', stock: 5, featured: false, desc: '' },
+      { id: 3, name: 'Sneakers Blanches', category: 'Mode', sub: 'Chaussures', price: 195, emoji: '👟', stock: 0, featured: false, desc: '' },
+      { id: 4, name: 'Canapé Stockholm', category: 'Maison', sub: 'Canapés', price: 1290, emoji: '🛋️', stock: 3, featured: true, desc: 'Canapé scandinave en tissu naturel, lignes épurées.' },
+      { id: 5, name: 'Lampe Bouleau', category: 'Maison', sub: 'Lampes', price: 245, emoji: '💡', stock: 12, featured: false, desc: '' },
+      { id: 6, name: 'Vase Grès Gris', category: 'Maison', sub: 'Déco', price: 68, emoji: '🏺', stock: 0, featured: false, desc: '' },
+      { id: 7, name: 'Carafe Nordique', category: 'Lifestyle', sub: 'Vaisselle', price: 55, emoji: '🫙', stock: 20, featured: true, desc: 'Carafe en verre soufflé, design minimal.' },
+      { id: 8, name: 'Bougie Hygge', category: 'Lifestyle', sub: 'Déco', price: 32, emoji: '🕯️', stock: 2, featured: false, desc: '' },
+      { id: 9, name: 'Set Lin Naturel', category: 'Édition limitée', sub: 'Textile', price: 320, emoji: '✨', stock: 1, featured: true, desc: 'Édition limitée — linge de maison en lin européen.' },
+    ].map(normalizeProductFields);
   }
 
   function loadProductsLocal() {
@@ -50,7 +59,7 @@
     try {
       const p = JSON.parse(raw);
       if (!Array.isArray(p)) throw new Error('INVALID');
-      return p;
+      return p.map(normalizeProductFields);
     } catch (_) {
       const p = defaultProducts();
       localStorage.setItem(PRODUCTS_KEY, JSON.stringify(p));
@@ -200,6 +209,27 @@
       return `<img src="${p.image}" alt="" class="product-thumb" loading="lazy" />`;
     }
     return `<span class="product-emoji-fallback">${(p && p.emoji) || '✦'}</span>`;
+  }
+
+  function getFeaturedProducts() {
+    return getProducts().filter((p) => p.featured);
+  }
+
+  function getProductById(id) {
+    const n = parseInt(id, 10);
+    return getProducts().find((p) => p.id === n) || null;
+  }
+
+  function productHref(id) {
+    return 'product.html?id=' + encodeURIComponent(String(id));
+  }
+
+  function boutiqueHref(cat, sub) {
+    const params = new URLSearchParams();
+    if (cat) params.set('cat', cat);
+    if (sub) params.set('sub', sub);
+    const q = params.toString();
+    return q ? 'boutique.html?' + q : 'boutique.html';
   }
 
   function getUsers() {
@@ -669,6 +699,11 @@
     mergeGuestCartIntoUser,
     productVisualInner,
     productThumbInner,
+    normalizeProductFields,
+    getFeaturedProducts,
+    getProductById,
+    productHref,
+    boutiqueHref,
     getPendingSignups,
     setPendingSignup,
     getPendingSignup,

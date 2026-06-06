@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="md3-header.css" />
+<link rel="stylesheet" href="md3-admin.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" crossorigin="anonymous" />
 <style>
   :root {
@@ -686,11 +687,18 @@
 <div class="page" id="page-admin">
   <div class="admin-layout">
     <aside class="admin-sidebar">
-      <div class="admin-sidebar-title" data-i18n="admin-sidebar">MD3 Admin</div>
+      <div class="admin-sidebar-brand">
+        <h1>M<em>D</em>3 Scandi</h1>
+        <p data-i18n="admin-sidebar">MD3 Admin</p>
+      </div>
+      <div class="admin-sec-lbl" data-i18n="admin-nav-section">Navigation</div>
       <button class="admin-nav-item active" data-tab="products" onclick="adminTab('products')" data-i18n="admin-products">Produits</button>
       <button class="admin-nav-item" data-tab="stats" onclick="adminTab('stats')" data-i18n="admin-stats">Statistiques</button>
-      <a class="admin-nav-item" href="index.html#boutique" style="text-decoration:none" data-i18n="admin-view-boutique">Voir la boutique</a>
-      <button class="admin-nav-item" style="margin-top: auto; color: rgba(255,255,255,0.4);" onclick="doLogout()" data-i18n="nav-logout">Déconnexion</button>
+      <button class="admin-nav-item" onclick="openAddProduct()" data-i18n="admin-add-product-short">+ Nouveau produit</button>
+      <div class="admin-sec-lbl" data-i18n="admin-shop-section">Boutique</div>
+      <a class="admin-store-link" href="index.html#boutique" target="_blank" rel="noopener" data-i18n="admin-view-boutique">Voir la boutique ↗</a>
+      <div class="admin-sidebar-foot">MD3 Scandi · v2</div>
+      <button class="admin-nav-item" style="color: rgba(255,255,255,0.35);" onclick="doLogout()" data-i18n="nav-logout">Déconnexion</button>
     </aside>
     <div class="admin-content" id="adminContent"></div>
   </div>
@@ -722,8 +730,16 @@
       </div>
     </div>
     <div class="field">
+      <label data-i18n="label-desc">Description</label>
+      <textarea id="prodDesc" rows="3" placeholder="" style="width:100%;border:1px solid var(--mist);padding:0.75rem 1rem;font-family:'Jost',sans-serif;font-size:0.9rem;background:var(--ivory);resize:vertical;"></textarea>
+    </div>
+    <div class="field">
       <label data-i18n="label-price">Prix (€)</label>
       <input type="number" id="prodPrice" placeholder="89" min="0" step="0.01">
+    </div>
+    <div class="field" style="display:flex;align-items:center;gap:10px;">
+      <input type="checkbox" id="prodFeatured" style="width:auto;">
+      <label for="prodFeatured" data-i18n="label-featured" style="margin:0;">En vedette sur l'accueil</label>
     </div>
     <div class="field image-upload-zone">
       <label data-i18n="label-photo">Photo du produit</label>
@@ -744,7 +760,7 @@
     </div>
     <div class="field">
       <label data-i18n="label-stock">Stock (inventaire)</label>
-      <input type="number" id="prodStock" placeholder="10" min="0">
+      <input type="number" id="prodStock" placeholder="1" min="0" value="1">
     </div>
     <div class="modal-actions modal-actions-product">
       <div id="productModalDelete" hidden>
@@ -1218,47 +1234,60 @@ function renderAdminProducts() {
   const filtered = adminFilter === 'Tous' ? products : products.filter(p => p.category === adminFilter);
   const total = products.length;
   const outOfStock = products.filter(p => p.stock === 0).length;
-  const lowStock = products.filter(p => p.stock > 0 && p.stock < 4).length;
-  const totalStock = products.reduce((a, p) => a + p.stock, 0);
+  const featured = products.filter(p => p.featured).length;
+  const stockValue = products.reduce((a, p) => a + p.price * p.stock, 0);
 
   const catBtnLabel = (c) => c === 'Tous' ? L('shop-all') : MD3Lang.translateCategory(c);
-  const stockLabel = (p) => p.stock === 0 ? L('stock-out-lbl') : p.stock < 4 ? L('stock-low-lbl') : L('stock-in');
+  const stockBadge = (p) => p.stock === 0 ? L('stock-out-lbl') : L('stock-in');
 
   document.getElementById('adminContent').innerHTML = `
     <div class="admin-header">
-      <h1>${L('admin-manage')}</h1>
-      <button class="btn-add" onclick="openAddProduct()">+ ${L('admin-add-product')}</button>
+      <div>
+        <h1>${L('admin-manage')}</h1>
+        <p>${total} ${L('stat-products-word')}</p>
+      </div>
+      <button class="btn-add" type="button" onclick="openAddProduct()">+ ${L('admin-add-product')}</button>
     </div>
     <div class="admin-stats">
       <div class="stat-card"><div class="stat-label">${L('stat-products')}</div><div class="stat-value">${total}</div></div>
-      <div class="stat-card"><div class="stat-label">${L('stat-total-stock')}</div><div class="stat-value">${totalStock}</div></div>
-      <div class="stat-card"><div class="stat-label">${L('stat-low-stock')}</div><div class="stat-value" style="color:${lowStock>0?'#a06a00':'inherit'}">${lowStock}</div></div>
-      <div class="stat-card"><div class="stat-label">${L('stat-out-stock')}</div><div class="stat-value" style="color:${outOfStock>0?'var(--danger)':'inherit'}">${outOfStock}</div></div>
+      <div class="stat-card"><div class="stat-label">${L('stock-in')}</div><div class="stat-value">${total - outOfStock}</div></div>
+      <div class="stat-card"><div class="stat-label">${L('stat-featured')}</div><div class="stat-value">${featured}</div></div>
+      <div class="stat-card"><div class="stat-label">${L('stat-stock-value')}</div><div class="stat-value">${Math.round(stockValue)}<span>€</span></div></div>
     </div>
     <div class="category-filter">
-      ${cats.map(c => `<button class="filter-btn ${c === adminFilter ? 'active' : ''}" onclick="setAdminFilter('${esc(c).replace(/'/g, "\\'")}')">${esc(catBtnLabel(c))}</button>`).join('')}
+      ${cats.map(c => `<button type="button" class="filter-btn ${c === adminFilter ? 'active' : ''}" onclick="setAdminFilter('${esc(c).replace(/'/g, "\\'")}')">${esc(catBtnLabel(c))}</button>`).join('')}
     </div>
-    <div class="table-wrap">
-    <table class="products-table">
-      <thead><tr>
-        <th></th><th>${L('th-product')}</th><th>${L('th-category')}</th><th>${L('th-sub')}</th><th>${L('th-price')}</th><th>${L('th-stock')}</th><th>${L('th-status')}</th><th>${L('th-actions')}</th>
-      </tr></thead>
-      <tbody>
-        ${filtered.map(p => `
-          <tr>
-            <td class="product-emoji-cell">${S.productThumbInner(p)}</td>
-            <td style="font-weight:500">${esc(p.name)}</td>
-            <td style="color:var(--stone);font-size:0.8rem">${esc(MD3Lang.translateCategory(p.category))}</td>
-            <td style="color:var(--stone);font-size:0.8rem">${esc(MD3Lang.translateSub(p.sub))}</td>
-            <td>${p.price} €</td>
-            <td><input class="inventory-input" type="number" min="0" value="${p.stock}" onchange="updateStock(${p.id}, this.value)"></td>
-            <td><span class="stock-badge ${p.stock === 0 ? 'stock-out' : p.stock < 4 ? 'stock-low' : 'stock-ok'}">${stockLabel(p)}</span></td>
-            <td><div class="tbl-actions">
-              <button class="btn-sm btn-edit" onclick="openEditProduct(${p.id})">${L('btn-modify')}</button>
-            </div></td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
+    <div class="adm-pgrid">
+      ${filtered.map(p => `
+        <article class="adm-pc${p.featured ? ' feat' : ''}">
+          <div class="adm-cim" onclick="openEditProduct(${p.id})">
+            ${p.image ? `<img src="${esc(p.image)}" alt="" class="product-thumb" />` : `<span>${esc(p.emoji || '✦')}</span>`}
+            <div class="adm-cov"><button type="button" class="adm-eib" onclick="event.stopPropagation();openEditProduct(${p.id})">${L('admin-edit-image')}</button></div>
+            ${p.featured ? `<span class="adm-fbadge">★ ${L('stat-featured')}</span>` : ''}
+            <span class="adm-sbadge ${p.stock ? 'in' : 'out'}">${esc(stockBadge(p))}</span>
+          </div>
+          <div class="adm-cb">
+            <div class="adm-fr">
+              <span class="adm-flbl">★ ${L('label-featured')}</span>
+              <label class="adm-tog"><input type="checkbox" ${p.featured ? 'checked' : ''} onchange="toggleFeatured(${p.id}, this.checked)" /><span class="adm-tsl"></span></label>
+            </div>
+            <div class="adm-name">${esc(p.name)}</div>
+            <div class="adm-meta">${esc(MD3Lang.translateCategory(p.category))} · ${esc(MD3Lang.translateSub(p.sub))}</div>
+            <div class="adm-price">${p.price} €</div>
+            <div class="adm-sr">
+              <span class="adm-slb">${L('label-stock')}</span>
+              <div class="adm-qc">
+                <button type="button" class="adm-qbt" onclick="changeStock(${p.id}, -1)" ${p.stock <= 0 ? 'disabled' : ''} aria-label="−">−</button>
+                <span class="adm-qnm" id="adm-q-${p.id}">${p.stock}</span>
+                <button type="button" class="adm-qbt" onclick="changeStock(${p.id}, 1)" aria-label="+">+</button>
+              </div>
+            </div>
+            <div class="adm-cf">
+              <button type="button" class="adm-btn-del" onclick="confirmDeleteProduct(${p.id})">${L('btn-supprimer')}</button>
+              <button type="button" class="adm-btn-edit" onclick="openEditProduct(${p.id})">${L('btn-modify')}</button>
+            </div>
+          </div>
+        </article>`).join('')}
     </div>`;
 }
 
@@ -1288,6 +1317,49 @@ function renderAdminStats() {
 }
 
 function setAdminFilter(cat) { adminFilter = cat; renderAdminProducts(); }
+
+async function toggleFeatured(id, checked) {
+  const products = S.getProducts();
+  const idx = products.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  products[idx].featured = !!checked;
+  try {
+    await S.saveProducts(products, { onlyIds: [id] });
+  } catch (e) {
+    console.error('toggleFeatured', e);
+  }
+  renderAdminProducts();
+}
+
+async function changeStock(id, delta) {
+  const products = S.getProducts();
+  const idx = products.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  const next = Math.max(0, products[idx].stock + delta);
+  if (next === products[idx].stock) return;
+  products[idx].stock = next;
+
+  const qtyEl = document.getElementById('adm-q-' + id);
+  if (qtyEl) qtyEl.textContent = next;
+
+  const card = qtyEl && qtyEl.closest('.adm-pc');
+  if (card) {
+    const badge = card.querySelector('.adm-sbadge');
+    if (badge) {
+      badge.className = 'adm-sbadge ' + (next ? 'in' : 'out');
+      badge.textContent = next ? L('stock-in') : L('stock-out-lbl');
+    }
+    const minusBtn = card.querySelector('.adm-qbt');
+    if (minusBtn) minusBtn.disabled = next <= 0;
+  }
+
+  try {
+    await S.saveProducts(products, { onlyIds: [id] });
+  } catch (e) {
+    console.error('changeStock', e);
+    renderAdminProducts();
+  }
+}
 
 async function updateStock(id, val) {
   const products = S.getProducts();
@@ -1342,7 +1414,11 @@ function openAddProduct() {
   document.getElementById('modalTitle').textContent = L('modal-add');
   document.getElementById('editId').value = '';
   productImageRemoved = false;
-  ['prodName','prodPrice','prodStock'].forEach(id => document.getElementById(id).value = '');
+  ['prodName','prodPrice','prodDesc'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const stockEl = document.getElementById('prodStock');
+  if (stockEl) stockEl.value = '1';
+  const feat = document.getElementById('prodFeatured');
+  if (feat) feat.checked = false;
   document.getElementById('prodCat').value = 'Mode';
   initProductTaxonomyUI();
   resetProductImageUI();
@@ -1361,6 +1437,10 @@ function openEditProduct(id) {
   initProductTaxonomyUI(p.sub);
   document.getElementById('prodPrice').value = p.price;
   document.getElementById('prodStock').value = p.stock;
+  const descEl = document.getElementById('prodDesc');
+  if (descEl) descEl.value = p.desc || '';
+  const featEl = document.getElementById('prodFeatured');
+  if (featEl) featEl.checked = !!p.featured;
   productImageRemoved = false;
   resetProductImageUI();
   if (p.image) {
@@ -1383,7 +1463,12 @@ async function saveProduct() {
   const category = document.getElementById('prodCat').value;
   const sub = document.getElementById('prodSub').value.trim();
   const price = parseFloat(document.getElementById('prodPrice').value) || 0;
-  const stock = parseInt(document.getElementById('prodStock').value, 10) || 0;
+  const stockRaw = parseInt(document.getElementById('prodStock').value, 10);
+  const stock = editId
+    ? Math.max(0, stockRaw || 0)
+    : Math.max(1, stockRaw || 1);
+  const desc = (document.getElementById('prodDesc') && document.getElementById('prodDesc').value.trim()) || '';
+  const featured = !!(document.getElementById('prodFeatured') && document.getElementById('prodFeatured').checked);
   const editId = document.getElementById('editId').value;
   const image = getProductImageFromEditor();
   if (!name) { alert(L('err-prod-name')); return; }
@@ -1400,7 +1485,7 @@ async function saveProduct() {
         const prev = products[idx];
         const next = {
           ...prev,
-          name, category, sub, price, stock,
+          name, category, sub, price, stock, desc, featured,
           emoji: prev.emoji || '✦',
         };
         if (image) next.image = image;
@@ -1413,7 +1498,7 @@ async function saveProduct() {
       }
     } else {
       const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
-      const item = { id: newId, name, category, sub, price, stock, emoji: '✦' };
+      const item = { id: newId, name, category, sub, price, stock, desc, featured, emoji: '✦' };
       if (image) item.image = image;
       products.push(item);
       saveOpts = { onlyIds: [newId] };
