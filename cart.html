@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="md3-header.css" />
+<link rel="stylesheet" href="md3-header.css?v=3" />
 <style>
   :root {
     --cream: #f5f0e8;
@@ -156,7 +156,8 @@
     font-size: 1.5rem;
   }
   .cart-total-row span { color: var(--ink-soft); font-family: 'Jost', sans-serif; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; margin-right: 12px; }
-  .btn-continue {
+  .btn-continue,
+  .btn-checkout {
     padding: 14px 28px;
     background: var(--ink);
     color: var(--cream);
@@ -169,7 +170,8 @@
     cursor: pointer;
     font-family: inherit;
   }
-  .btn-continue:hover { background: var(--gold); }
+  .btn-continue:hover,
+  .btn-checkout:hover { background: var(--gold); }
   @media (max-width: 520px) {
     .cart-item { grid-template-columns: 72px 1fr; }
     .cart-item-actions { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
@@ -269,13 +271,13 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="md3-firebase.js"></script>
-<script src="md3-store.js"></script>
-<script src="md3-auth.js?v=2"></script>
+<script src="md3-firebase.js?v=3"></script>
+<script src="md3-store.js?v=5"></script>
+<script src="md3-auth.js?v=3"></script>
 <script src="md3-nav-icons.js"></script>
-<script src="md3-header.js"></script>
-<script src="md3-lang.js"></script>
-<script src="md3-currency.js"></script>
+<script src="md3-header.js?v=2"></script>
+<script src="md3-lang.js?v=5"></script>
+<script src="md3-currency.js?v=3"></script>
 <script>
 (function () {
   const S = MD3Store;
@@ -331,7 +333,7 @@
     }).join('')}</div>
     <div class="cart-summary">
       <p class="cart-total-row"><span data-i18n="cart-total">Total</span>${MD3Currency.formatPrice(total)}</p>
-      <a href="index.html#boutique" class="btn-continue" data-i18n="cart-continue">Continuer mes achats</a>
+      <a href="checkout.html" class="btn-checkout" data-i18n="cart-checkout">Checkout</a>
     </div>`;
     MD3Lang.refreshUI();
   }

@@ -24,9 +24,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="md3-header.css" />
+<link rel="stylesheet" href="md3-header.css?v=3" />
 <link rel="stylesheet" href="md3-home.css" />
-<link rel="stylesheet" href="md3-shop.css" />
+<link rel="stylesheet" href="md3-shop.css?v=9" />
 
 <style>
   :root {
@@ -186,6 +186,9 @@
     padding: 100px 24px;
     position: relative;
     z-index: 1;
+  }
+  section.featured-shop {
+    padding: 0 0 0;
   }
   .container { max-width: 1100px; margin: 0 auto; }
 
@@ -762,7 +765,7 @@
     </div>
     <div class="hero-btns">
       <a href="boutique.html?cat=Mode" class="hero-btn">
-        <div class="hero-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+        <div class="hero-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 6.5a2.5 2.5 0 10-2.2-3.7"/><path d="M12 6.5v2.2"/><path d="M4 18l8-9 8 9"/><path d="M5.5 18h13"/></svg></div>
         <div class="hero-btn-text">
           <span class="hero-btn-cat" data-i18n="hero-btn-mode-1">MODE</span>
           <span class="hero-btn-name" data-i18n="hero-btn-mode-2">COLLECTION</span>
@@ -926,15 +929,15 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="md3-firebase.js"></script>
-<script src="md3-store.js"></script>
-<script src="md3-auth.js?v=2"></script>
+<script src="md3-firebase.js?v=3"></script>
+<script src="md3-store.js?v=5"></script>
+<script src="md3-auth.js?v=3"></script>
 <script src="md3-nav-icons.js"></script>
-<script src="md3-header.js"></script>
-<script src="md3-lang.js"></script>
-<script src="md3-currency.js"></script>
+<script src="md3-header.js?v=2"></script>
+<script src="md3-lang.js?v=5"></script>
+<script src="md3-currency.js?v=3"></script>
 <script src="md3-hero-fit.js"></script>
-<script src="md3-shop-render.js"></script>
+<script src="md3-shop-render.js?v=3"></script>
 <script>
   function updateCartBadge() {
     MD3Header.updateCartBadge();

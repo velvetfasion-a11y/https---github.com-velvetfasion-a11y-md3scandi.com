@@ -5,5 +5,7 @@
 window.MD3_EMAIL_CONFIG = {
   serviceId: '',
   templateId: '',
+  orderTemplateId: '',
+  ownerOrderTemplateId: '',
   publicKey: '',
 };

@@ -72,6 +72,10 @@
 
   function normalizeProduct(p) {
     if (!p || typeof p !== 'object') return null;
+    const images = (Array.isArray(p.images) ? p.images : [p.image])
+      .filter((img) => typeof img === 'string' && img.trim() && !img.startsWith('data:'))
+      .filter((img, idx, arr) => arr.indexOf(img) === idx)
+      .slice(0, 3);
     const out = {
       id: Number(p.id),
       name: String(p.name || ''),
@@ -83,8 +87,9 @@
       featured: !!p.featured,
       desc: typeof p.desc === 'string' ? p.desc : '',
     };
-    if (p.image && typeof p.image === 'string' && !p.image.startsWith('data:')) {
-      out.image = p.image;
+    if (images.length) {
+      out.images = images;
+      out.image = images[0];
     }
     return out;
   }
@@ -93,10 +98,11 @@
    * Upload cropped image (data URL) via Storage putString data_url format.
    * Compat SDK equivalent of modular uploadString(ref, data, 'data_url').
    */
-  async function uploadProductImage(productId, dataUrl) {
+  async function uploadProductImage(productId, dataUrl, index) {
     if (!storage || !dataUrl) return dataUrl || null;
     if (!dataUrl.startsWith('data:')) return dataUrl;
-    const storageRef = storage.ref('products/' + String(productId) + '.jpg');
+    const suffix = index ? '-' + String(index + 1) : '';
+    const storageRef = storage.ref('products/' + String(productId) + suffix + '.jpg');
     try {
       await storageRef.putString(dataUrl, 'data_url', { contentType: 'image/jpeg' });
       return storageRef.getDownloadURL();
@@ -113,11 +119,18 @@
 
   async function deleteProductImageFile(productId) {
     if (!storage) return;
-    try {
-      await storage.ref('products/' + String(productId) + '.jpg').delete();
-    } catch (e) {
-      if (!e || e.code !== 'storage/object-not-found') {
-        console.warn('deleteProductImageFile', e);
+    const refs = [
+      'products/' + String(productId) + '.jpg',
+      'products/' + String(productId) + '-2.jpg',
+      'products/' + String(productId) + '-3.jpg',
+    ];
+    for (const path of refs) {
+      try {
+        await storage.ref(path).delete();
+      } catch (e) {
+        if (!e || e.code !== 'storage/object-not-found') {
+          console.warn('deleteProductImageFile', e);
+        }
       }
     }
   }
@@ -135,15 +148,23 @@
     const p = normalizeProduct(raw);
     if (!p) return null;
 
-    let imageUrl = raw.image;
-    if (imageUrl && imageUrl.startsWith('data:')) {
-      imageUrl = await uploadProductImage(p.id, imageUrl);
-      raw.image = imageUrl;
+    const rawImages = (Array.isArray(raw.images) ? raw.images : [raw.image])
+      .filter((img) => typeof img === 'string' && img.trim())
+      .slice(0, 3);
+    const imageUrls = [];
+    for (let i = 0; i < rawImages.length; i++) {
+      imageUrls.push(await uploadProductImage(p.id, rawImages[i], i));
     }
+    raw.images = imageUrls;
+    raw.image = imageUrls[0];
 
     const data = { ...p };
-    if (imageUrl && !String(imageUrl).startsWith('data:')) {
-      data.image = imageUrl;
+    if (imageUrls.length) {
+      data.images = imageUrls;
+      data.image = imageUrls[0];
+    } else {
+      delete data.images;
+      delete data.image;
     }
 
     await productDoc(p.id).set(data);

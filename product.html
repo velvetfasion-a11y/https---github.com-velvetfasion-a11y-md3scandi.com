@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500;600&family=Noto+Sans+Arabic:wght@300;400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="md3-header.css" />
-<link rel="stylesheet" href="md3-shop.css" />
+<link rel="stylesheet" href="md3-header.css?v=3" />
+<link rel="stylesheet" href="md3-shop.css?v=12" />
 <style>
   body { font-family: 'Jost', sans-serif; background: #f5f0e8; color: #1a1816; min-height: 100vh; }
 </style>
@@ -33,21 +33,35 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="md3-firebase.js"></script>
-<script src="md3-store.js"></script>
-<script src="md3-auth.js?v=2"></script>
+<script src="md3-firebase.js?v=3"></script>
+<script src="md3-store.js?v=5"></script>
+<script src="md3-auth.js?v=3"></script>
 <script src="md3-nav-icons.js"></script>
-<script src="md3-header.js"></script>
-<script src="md3-lang.js"></script>
-<script src="md3-currency.js"></script>
-<script src="md3-shop-render.js"></script>
+<script src="md3-header.js?v=2"></script>
+<script src="md3-lang.js?v=5"></script>
+<script src="md3-currency.js?v=3"></script>
+<script src="md3-shop-render.js?v=3"></script>
 <script>
   let qty = 1;
+  let currentProductImages = [];
+  let currentProductImageIndex = 0;
+  let currentProductStock = 0;
   const L = (k) => MD3Lang.t(k);
   const cartSvg = '<svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>';
 
   function setQty(n) {
-    qty = Math.max(1, n);
+    const msg = document.getElementById('productQtyMsg');
+    const max = Math.max(1, Number(currentProductStock) || 1);
+    if (n > max) {
+      qty = max;
+      if (msg) {
+        msg.textContent = L('product-last-item');
+        msg.hidden = false;
+      }
+    } else {
+      qty = Math.max(1, n);
+      if (msg) msg.hidden = true;
+    }
     const el = document.getElementById('productQty');
     if (el) el.textContent = qty;
   }
@@ -82,14 +96,31 @@
     }
     document.title = 'MD3 Scandi — ' + p.name;
     const out = !p.stock;
-    const img = p.image
-      ? `<img src="${MD3Shop.esc(p.image)}" alt="" class="product-photo" />`
+    currentProductStock = Number(p.stock) || 0;
+    qty = 1;
+    const images = MD3Store.normalizeProductImages ? MD3Store.normalizeProductImages(p) : (p.image ? [p.image] : []);
+    currentProductImages = images;
+    currentProductImageIndex = 0;
+    const img = images[0]
+      ? `<img src="${MD3Shop.esc(images[0])}" alt="" class="product-photo" id="productMainPhoto" />`
       : `<div class="product-ebig">${MD3Shop.esc(p.emoji || '✦')}</div>`;
+    const thumbs = images.length > 1
+      ? `<div class="product-thumbs">${images.map((src, idx) => `
+          <button type="button" class="product-thumb-btn${idx === 0 ? ' active' : ''}" onclick="setProductPhoto(${idx})">
+            <img src="${MD3Shop.esc(src)}" alt="" />
+          </button>`).join('')}</div>`
+      : '';
+    const arrows = images.length > 1
+      ? `<button type="button" class="product-gallery-arrow product-gallery-prev" id="productGalleryPrev" onclick="navigateProductPhoto(-1)">&lt;</button>
+         <button type="button" class="product-gallery-arrow product-gallery-next" id="productGalleryNext" onclick="navigateProductPhoto(1)">&gt;</button>`
+      : '';
     const catLine = [MD3Lang.translateCategory(p.category), MD3Lang.translateSub(p.sub)].filter(Boolean).join(' · ');
     const desc = p.desc || L('product-desc-fallback').replace('%s', p.name);
 
     wrap.innerHTML = `
-      <div class="product-ibox">${img}</div>
+      <div class="product-gallery">
+        <div class="product-ibox">${img}${arrows}${thumbs}</div>
+      </div>
       <div class="product-info">
         ${catLine ? `<div class="product-pcat">${MD3Shop.esc(catLine)}</div>` : ''}
         <h1 class="product-ptitle">${MD3Shop.esc(p.name)}</h1>
@@ -107,11 +138,41 @@
             <button type="button" class="product-qb" onclick="setQty(qty + 1)">+</button>
           </div>
         </div>
+        <p class="product-qmsg" id="productQtyMsg" hidden></p>
         <button type="button" class="product-btn-add" ${out ? 'disabled' : ''} onclick="addProductToCart(${p.id})">
           ${cartSvg}${L('cart-add')}
         </button>
       </div>`;
   }
+
+  function refreshProductGalleryControls() {
+    document.querySelectorAll('.product-thumb-btn').forEach((el, idx) => {
+      el.classList.toggle('active', idx === currentProductImageIndex);
+    });
+    const prev = document.getElementById('productGalleryPrev');
+    const next = document.getElementById('productGalleryNext');
+    if (prev) prev.hidden = currentProductImages.length <= 1;
+    if (next) next.hidden = currentProductImages.length <= 1;
+  }
+
+  function setProductPhoto(index) {
+    const img = document.getElementById('productMainPhoto');
+    const src = currentProductImages[index];
+    if (!src) return;
+    currentProductImageIndex = index;
+    if (img) img.src = src;
+    refreshProductGalleryControls();
+  }
+
+  function navigateProductPhoto(delta) {
+    const total = currentProductImages.length;
+    if (total <= 1) return;
+    const nextIndex = (currentProductImageIndex + delta + total) % total;
+    setProductPhoto(nextIndex);
+  }
+
+  window.setProductPhoto = setProductPhoto;
+  window.navigateProductPhoto = navigateProductPhoto;
 
   function boot() {
     renderProduct();

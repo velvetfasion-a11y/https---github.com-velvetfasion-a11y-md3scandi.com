@@ -28,7 +28,8 @@
     '<button type="button" class="lang-btn active" data-lang="fr">FR</button>' +
     '<button type="button" class="lang-btn" data-lang="en">EN</button>' +
     '<button type="button" class="lang-btn" data-lang="ar">AR</button>' +
-    '</div></div></div></header>';
+    '</div></div></div></header>' +
+    '<a href="login.html" class="bottom-login-link" id="bottomLoginLink">Login</a>';
 
   function mount() {
     let root = document.getElementById('md3-site-header');
@@ -69,10 +70,16 @@
     initIcons();
     const accountEl = document.getElementById('navAccount');
     const cartEl = document.getElementById('navCart');
+    const bottomLogin = document.getElementById('bottomLoginLink');
     if (!accountEl || !cartEl) return;
     const S = global.MD3Store;
     if (S && S.syncAccountNav) {
       S.syncAccountNav(accountEl, S.getCurrentUser ? S.getCurrentUser() : null);
+    }
+    if (bottomLogin && S) {
+      const user = S.getCurrentUser ? S.getCurrentUser() : null;
+      bottomLogin.href = user ? 'compte.html' : 'login.html';
+      bottomLogin.textContent = user ? 'My Account' : 'Login';
     }
     cartEl.href = 'cart.html';
     if (global.MD3Lang && global.MD3Lang.t) {

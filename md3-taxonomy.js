@@ -32,8 +32,14 @@
 
   function save(data) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    if (global.MD3Firebase && global.MD3Firebase.isEnabled()) {
-      global.MD3Firebase.saveTaxonomy(data).catch((e) => console.error('taxonomy sync', e));
+    if (global.MD3Firebase && global.MD3Firebase.isConfigured()) {
+      const push = () => {
+        if (global.MD3Firebase.isEnabled()) {
+          global.MD3Firebase.saveTaxonomy(data).catch((e) => console.error('taxonomy sync', e));
+        }
+      };
+      if (global.MD3Firebase.isEnabled()) push();
+      else global.MD3Firebase.init().then(push).catch((e) => console.error('taxonomy init', e));
     }
   }
 

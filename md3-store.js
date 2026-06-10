@@ -5,6 +5,7 @@
   const ADMIN_EMAIL = ADMIN_IDS[0];
 
   const PRODUCTS_KEY = 'md3_products';
+  const PENDING_PRODUCTS_KEY = 'md3_products_pending_cloud';
   const USERS_KEY = 'md3_users';
   const CARTS_KEY = 'md3_carts';
   const SESSION_KEY = 'md3_session';
@@ -52,14 +53,32 @@
     return CATEGORY_ALIASES[categoryKey(raw)] || raw;
   }
 
+  function normalizeProductImages(p) {
+    const list = Array.isArray(p.images) ? p.images : [];
+    const images = [...list, p.image]
+      .filter((img) => typeof img === 'string' && img.trim())
+      .filter((img, idx, arr) => arr.indexOf(img) === idx)
+      .slice(0, 3);
+    return images;
+  }
+
   function normalizeProductFields(p) {
     if (!p || typeof p !== 'object') return p;
-    return {
+    const images = normalizeProductImages(p);
+    const out = {
       ...p,
       category: canonicalCategory(p.category),
       featured: !!p.featured,
       desc: typeof p.desc === 'string' ? p.desc : '',
     };
+    if (images.length) {
+      out.images = images;
+      out.image = images[0];
+    } else {
+      delete out.images;
+      delete out.image;
+    }
+    return out;
   }
 
   function defaultProducts() {
@@ -201,39 +220,84 @@
     return productsCache.map((x) => ({ ...x }));
   }
 
+  function markProductsPendingCloud(list) {
+    try {
+      localStorage.setItem(PENDING_PRODUCTS_KEY, JSON.stringify(list || productsCache || []));
+    } catch (_) {}
+  }
+
+  function clearProductsPendingCloud() {
+    try {
+      localStorage.removeItem(PENDING_PRODUCTS_KEY);
+    } catch (_) {}
+  }
+
+  function readProductsPendingCloud() {
+    try {
+      const raw = localStorage.getItem(PENDING_PRODUCTS_KEY);
+      if (!raw) return null;
+      const list = JSON.parse(raw);
+      return Array.isArray(list) ? list.map(normalizeProductFields) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function ensureCloudReady() {
+    if (!global.MD3Firebase || !global.MD3Firebase.isConfigured()) return false;
+    if (global.MD3Firebase.isEnabled()) return true;
+    return global.MD3Firebase.init();
+  }
+
+  async function flushPendingProductsCloud() {
+    const pending = readProductsPendingCloud();
+    if (!pending) return false;
+    const ok = await ensureCloudReady();
+    if (!ok || !global.MD3Firebase.isEnabled()) return false;
+    await global.MD3Firebase.saveProducts(pending);
+    clearProductsPendingCloud();
+    return true;
+  }
+
   async function saveProducts(p, opts) {
     ensureCaches();
     const list = p.map((x) => ({ ...x }));
     setProductsCache(list);
-    if (global.MD3Firebase && global.MD3Firebase.isEnabled()) {
-      try {
-        const result = await global.MD3Firebase.saveProducts(list, opts);
-        if (result && Array.isArray(result)) {
-          const byId = new Map(result.map((x) => [x.id, x]));
-          const merged = list.map((item) => {
-            const u = byId.get(item.id);
-            if (!u) return item;
-            return { ...item, ...u };
-          });
-          setProductsCache(merged);
-        }
-      } catch (e) {
-        console.error('saveProducts cloud', e);
-        throw e;
+    const ok = await ensureCloudReady();
+    if (!ok || !global.MD3Firebase.isEnabled()) {
+      markProductsPendingCloud(list);
+      return;
+    }
+    try {
+      const result = await global.MD3Firebase.saveProducts(list, opts);
+      clearProductsPendingCloud();
+      if (result && Array.isArray(result)) {
+        const byId = new Map(result.map((x) => [x.id, x]));
+        const merged = list.map((item) => {
+          const u = byId.get(item.id);
+          if (!u) return item;
+          return { ...item, ...u };
+        });
+        setProductsCache(merged);
       }
+    } catch (e) {
+      markProductsPendingCloud(list);
+      console.error('saveProducts cloud queued for retry', e);
     }
   }
 
   function productVisualInner(p) {
-    if (p && p.image) {
-      return `<img src="${p.image}" alt="" class="product-photo" loading="lazy" />`;
+    const image = p && normalizeProductImages(p)[0];
+    if (image) {
+      return `<img src="${image}" alt="" class="product-photo" loading="lazy" />`;
     }
     return `<span class="product-emoji-fallback">${(p && p.emoji) || '✦'}</span>`;
   }
 
   function productThumbInner(p) {
-    if (p && p.image) {
-      return `<img src="${p.image}" alt="" class="product-thumb" loading="lazy" />`;
+    const image = p && normalizeProductImages(p)[0];
+    if (image) {
+      return `<img src="${image}" alt="" class="product-thumb" loading="lazy" />`;
     }
     return `<span class="product-emoji-fallback">${(p && p.emoji) || '✦'}</span>`;
   }
@@ -270,7 +334,8 @@
     try {
       localStorage.setItem(USERS_KEY, JSON.stringify(usersCache));
     } catch (_) {}
-    if (global.MD3Firebase && global.MD3Firebase.isEnabled()) {
+    const ok = await ensureCloudReady();
+    if (ok && global.MD3Firebase.isEnabled()) {
       await global.MD3Firebase.saveUsersMap(usersCache);
     }
   }
@@ -278,7 +343,11 @@
   const PENDING_TTL_MS = 15 * 60 * 1000;
 
   function getPendingSignups() {
-    return JSON.parse(localStorage.getItem('md3_pending_signups') || '{}');
+    try {
+      return JSON.parse(localStorage.getItem('md3_pending_signups') || '{}');
+    } catch (_) {
+      return {};
+    }
   }
 
   function savePendingSignups(p) {
@@ -392,6 +461,12 @@
     return liked.includes(productId);
   }
 
+  function isWishlisted(email, productId) {
+    const users = getUsers();
+    const wishlist = users[email]?.wishlist || [];
+    return wishlist.includes(productId);
+  }
+
   async function toggleLiked(productId) {
     const user = getCurrentUser();
     if (!user || user.isAdmin) return { ok: false, reason: 'login' };
@@ -404,6 +479,20 @@
     users[user.email].liked = liked;
     await saveUsers(users);
     return { ok: true, liked: idx === -1 };
+  }
+
+  async function toggleWishlist(productId) {
+    const user = getCurrentUser();
+    if (!user || user.isAdmin) return { ok: false, reason: 'login' };
+    const users = getUsers();
+    if (!users[user.email]) return { ok: false, reason: 'login' };
+    const wishlist = users[user.email].wishlist || [];
+    const idx = wishlist.indexOf(productId);
+    if (idx === -1) wishlist.push(productId);
+    else wishlist.splice(idx, 1);
+    users[user.email].wishlist = wishlist;
+    await saveUsers(users);
+    return { ok: true, wishlisted: idx === -1 };
   }
 
   function getCartOwnerKey() {
@@ -613,6 +702,7 @@
     const FB = global.MD3Firebase;
 
     try {
+      await flushPendingProductsCloud();
       const remoteProducts = await FB.loadProducts();
       if (remoteProducts && remoteProducts.length) {
         // Merge: keep any local-only products not yet in Firebase
@@ -739,7 +829,9 @@
     guardLoginPage,
     syncAccountNav,
     isLiked,
+    isWishlisted,
     toggleLiked,
+    toggleWishlist,
     getCart,
     getCartCount,
     isInCart,
@@ -751,6 +843,7 @@
     productVisualInner,
     productThumbInner,
     canonicalCategory,
+    normalizeProductImages,
     normalizeProductFields,
     getFeaturedProducts,
     getProductById,

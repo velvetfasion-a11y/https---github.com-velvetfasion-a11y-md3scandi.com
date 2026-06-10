@@ -52,7 +52,7 @@
 .site-header .logo {
   grid-column: 1;
   justify-self: start;
-  align-self: start;
+  align-self: center;
   font-family: 'Cormorant Garamond', serif;
   font-size: 24px;
   font-weight: 300;
@@ -195,6 +195,26 @@
   border-bottom: 1.5px solid #c9a96e;
 }
 .site-header .lang.lang-compact button:hover {
+  color: #c9a96e;
+}
+.bottom-login-link {
+  position: fixed;
+  right: 18px;
+  bottom: 16px;
+  z-index: 80;
+  border: 1px solid rgba(44, 41, 37, 0.22);
+  background: rgba(250, 248, 244, 0.82);
+  backdrop-filter: blur(10px);
+  color: #2c2925;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  padding: 9px 13px;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+.bottom-login-link:hover {
+  border-color: rgba(201, 169, 110, 0.75);
   color: #c9a96e;
 }
 

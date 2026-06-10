@@ -32,6 +32,34 @@
     return cred.user;
   }
 
+  async function sendSignupLink(email, url) {
+    const auth = await ensureAuthReady();
+    await auth.sendSignInLinkToEmail(email, {
+      url,
+      handleCodeInApp: true,
+    });
+    try {
+      localStorage.setItem('md3_email_link_signup', email);
+    } catch (_) {}
+  }
+
+  function isSignInWithEmailLink(url) {
+    if (typeof global.firebase === 'undefined' || !global.firebase.auth) return false;
+    return global.firebase.auth().isSignInWithEmailLink(url);
+  }
+
+  async function completeSignupLink(email, url, password) {
+    const auth = await ensureAuthReady();
+    const cred = await auth.signInWithEmailLink(email, url);
+    if (password && cred.user && typeof cred.user.updatePassword === 'function') {
+      await cred.user.updatePassword(password);
+    }
+    try {
+      localStorage.removeItem('md3_email_link_signup');
+    } catch (_) {}
+    return cred.user;
+  }
+
   async function signIn(email, password) {
     const auth = await ensureAuthReady();
     const cred = await auth.signInWithEmailAndPassword(email, password);
@@ -79,7 +107,7 @@
     if (!store) return { email, name };
     const users = store.getUsers();
     if (!users[email]) {
-      users[email] = { name, liked: [], verified: true };
+      users[email] = { name, liked: [], wishlist: [], orders: 0, verified: true };
       await store.saveUsers(users);
     } else if (!users[email].name && name) {
       users[email].name = name;
@@ -165,13 +193,24 @@
     if (global.MD3Store) global.MD3Store.clearSession();
   }
 
+  async function deleteCurrentUser() {
+    const auth = await ensureAuthReady();
+    if (!auth.currentUser) return false;
+    await auth.currentUser.delete();
+    return true;
+  }
+
   global.MD3Auth = {
     createAccount,
+    sendSignupLink,
+    isSignInWithEmailLink,
+    completeSignupLink,
     signIn,
     signInWithGoogle,
     handleGoogleRedirectResult,
     ensureUserProfileFromFirebase,
     signOut,
+    deleteCurrentUser,
     initSessionSync,
     firebaseAuthErrorMessage,
     ensureAuthReady,

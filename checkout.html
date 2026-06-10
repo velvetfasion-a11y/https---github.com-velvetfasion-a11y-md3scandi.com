@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<script src="md3-lang-boot.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MD3 Scandi — Checkout</title>
+<meta name="description" content="Checkout MD3 Scandi." />
+<link rel="canonical" href="https://md3scandi.com/checkout.html" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="md3-header.css?v=3" />
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --bone: #fff;
+    --ink: #2b2620;
+    --ink-soft: #6b635a;
+    --gold: #b8935a;
+    --mist: rgba(184, 147, 90, 0.24);
+    --shadow: 0 1px 2px rgba(43, 38, 32, 0.04), 0 8px 24px rgba(43, 38, 32, 0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Jost', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    font-weight: 300;
+  }
+  main {
+    width: min(980px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 48px 0 80px;
+  }
+  .checkout-head {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+  .checkout-eyebrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 18px;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .checkout-eyebrow .line { width: 32px; height: 1px; background: var(--gold); }
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.1rem, 5vw, 3rem);
+    font-weight: 300;
+  }
+  .checkout-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 28px;
+    align-items: start;
+  }
+  .checkout-card {
+    background: var(--bone);
+    border: 1px solid var(--mist);
+    box-shadow: var(--shadow);
+    padding: 28px;
+  }
+  .checkout-card h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.7rem;
+    font-weight: 300;
+    margin-bottom: 18px;
+  }
+  .checkout-note {
+    color: var(--ink-soft);
+    font-size: 13px;
+    line-height: 1.6;
+    margin: -8px 0 18px;
+  }
+  .field { margin-bottom: 16px; position: relative; }
+  .field label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .field input {
+    width: 100%;
+    border: 1px solid var(--mist);
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Jost', sans-serif;
+    font-size: 15px;
+    padding: 13px 14px;
+    outline: none;
+  }
+  .field input:focus { border-color: var(--gold); background: #fff; }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .address-results {
+    display: none;
+    position: absolute;
+    z-index: 10;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid var(--mist);
+    box-shadow: var(--shadow);
+    max-height: 240px;
+    overflow: auto;
+  }
+  .address-results.show { display: block; }
+  .address-option {
+    width: 100%;
+    border: 0;
+    background: #fff;
+    text-align: left;
+    padding: 12px 14px;
+    color: var(--ink);
+    font-family: 'Jost', sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    cursor: pointer;
+  }
+  .address-option:hover { background: var(--cream); }
+  .summary-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(184, 147, 90, 0.14);
+    font-size: 14px;
+  }
+  .summary-line small { color: var(--ink-soft); }
+  .summary-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-top: 18px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.7rem;
+  }
+  .summary-total span:first-child {
+    font-family: 'Jost', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .payment-options {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: 12px;
+  }
+  .payment-option {
+    min-height: 58px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: #f8f8f8;
+    box-shadow: 0 3px 8px rgba(43, 38, 32, 0.18);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    color: #111;
+    cursor: pointer;
+    font-family: 'Jost', sans-serif;
+    padding: 0;
+  }
+  .payment-option:hover { transform: translateY(-1px); }
+  .payment-option.mastercard > span {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .payment-option.mastercard .circles {
+    position: relative;
+    width: 50px;
+    height: 28px;
+    margin: 0 auto 4px;
+  }
+  .payment-option.mastercard .circles::before,
+  .payment-option.mastercard .circles::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+  }
+  .payment-option.mastercard .circles::before { left: 2px; background: #eb001b; }
+  .payment-option.mastercard .circles::after { right: 2px; background: #ff9f1c; mix-blend-mode: multiply; }
+  .payment-option.mastercard small {
+    display: block;
+    font-size: 7px;
+    line-height: 1;
+    text-align: center;
+    color: #555;
+  }
+  .payment-option.paypal {
+    color: #003087;
+    font-size: 23px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  .payment-option.paypal .pay-pal { color: #009cde; }
+  .payment-option.apple,
+  .payment-option.google {
+    font-size: 25px;
+    gap: 5px;
+  }
+  .payment-option.apple .apple-pay-logo {
+    width: 23px;
+    height: 26px;
+    fill: #000;
+    display: block;
+  }
+  .payment-option.apple b,
+  .payment-option.google b { font-weight: 500; }
+  .payment-option.google .g { color: #4285f4; font-weight: 700; }
+  .save-details {
+    margin: -2px 0 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: var(--ink-soft);
+    font-size: 13px;
+    line-height: 1.45;
+    cursor: pointer;
+  }
+  .save-details input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 3px;
+    border-radius: 4px;
+    background: transparent;
+    border: 1.5px solid var(--ink);
+    flex: 0 0 auto;
+    position: relative;
+    cursor: pointer;
+  }
+  .save-details input:checked {
+    background: #2e7d32;
+    border-color: #2e7d32;
+  }
+  .save-details input:checked::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 18px;
+    text-align: center;
+  }
+  .save-details strong {
+    display: block;
+    color: var(--ink);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .checkout-submit {
+    width: 100%;
+    margin-top: 22px;
+    border: 0;
+    background: var(--ink);
+    color: var(--cream);
+    padding: 16px;
+    font-family: 'Jost', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .checkout-submit:hover { background: var(--gold); }
+  .checkout-bottom {
+    margin-top: 24px;
+  }
+  .checkout-empty {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--ink-soft);
+  }
+  .checkout-empty a {
+    display: inline-block;
+    margin-top: 22px;
+    background: var(--ink);
+    color: var(--cream);
+    text-decoration: none;
+    padding: 14px 28px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  @media (max-width: 760px) {
+    .checkout-grid { grid-template-columns: 1fr; }
+    .field-row { grid-template-columns: 1fr; }
+    .payment-options { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body data-meta-title="meta-title-cart" data-meta-desc="meta-desc-cart">
+<div id="md3-site-header"></div>
+
+<main>
+  <div class="checkout-head">
+    <div class="checkout-eyebrow">
+      <span class="line"></span>
+      <span data-i18n="checkout-eyebrow">Checkout</span>
+      <span class="line"></span>
+    </div>
+    <h1 data-i18n="checkout-title">Checkout</h1>
+  </div>
+  <div id="checkoutContent"></div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="md3-firebase.js?v=3"></script>
+<script src="md3-store.js?v=5"></script>
+<script src="md3-auth.js?v=3"></script>
+<script src="md3-nav-icons.js"></script>
+<script src="md3-header.js?v=2"></script>
+<script src="md3-lang.js?v=8"></script>
+<script src="md3-currency.js?v=3"></script>
+<script src="email-config.js?v=3"></script>
+<script src="md3-email.js?v=4"></script>
+<script>
+(function () {
+  const S = MD3Store;
+  const t = (k) => MD3Lang.t(k);
+  const CHECKOUT_DETAILS_KEY = 'md3_checkout_details';
+  const CHECKOUT_SESSION_KEY = 'md3_checkout_details_session';
+  const CHECKOUT_SAVE_PREF_KEY = 'md3_checkout_save_details_pref';
+  let addressTimer = null;
+  let addressAbort = null;
+
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  }
+
+  function renderCheckout() {
+    MD3Currency.refreshCurrency();
+    const lines = S.getCartLines();
+    const el = document.getElementById('checkoutContent');
+    if (!lines.length) {
+      el.innerHTML = `<div class="checkout-empty">
+        <p>${t('checkout-empty')}</p>
+        <a href="index.html#boutique">${t('cart-continue')}</a>
+      </div>`;
+      return;
+    }
+
+    let total = 0;
+    const summary = lines.map(({ product: p, qty }) => {
+      total += p.price * qty;
+      return `<div class="summary-line">
+        <div>${esc(p.name)}<br><small>${qty} x ${MD3Currency.formatPrice(p.price)}</small></div>
+        <strong>${MD3Currency.formatPrice(p.price * qty)}</strong>
+      </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="checkout-grid">
+        <section class="checkout-card">
+          <h2>${t('checkout-address-title')}</h2>
+          <p class="checkout-note">${t('checkout-address-note')}</p>
+          <form id="checkoutForm" onsubmit="return false;">
+            <div class="field">
+              <label for="addressSearch">${t('checkout-address-search')}</label>
+              <input id="addressSearch" autocomplete="off" required placeholder="${esc(t('checkout-address-placeholder'))}" oninput="searchAddress(this.value)" />
+              <div class="address-results" id="addressResults"></div>
+            </div>
+            <input id="street" type="hidden" />
+            <div class="field-row">
+              <div class="field">
+                <label for="postal">${t('checkout-postal')}</label>
+                <input id="postal" required />
+              </div>
+              <div class="field">
+                <label for="city">${t('checkout-city')}</label>
+                <input id="city" required />
+              </div>
+            </div>
+            <div class="field">
+              <label for="country">${t('checkout-country')}</label>
+              <input id="country" required />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="customerName">${t('checkout-name')}</label>
+                <input id="customerName" required autocomplete="name" />
+              </div>
+              <div class="field">
+                <label for="email">${t('checkout-email')}</label>
+                <input id="email" type="email" required autocomplete="email" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="phone">${t('checkout-phone')}</label>
+                <input id="phone" type="tel" required autocomplete="tel" />
+              </div>
+            </div>
+            <label class="save-details">
+              <input type="checkbox" id="saveDetails" checked onchange="onSaveDetailsChange()" />
+              <span><strong>${t('checkout-save-details')}</strong>${t('checkout-save-details-note')}</span>
+            </label>
+          </form>
+        </section>
+        <aside class="checkout-card">
+          <h2>${t('checkout-summary-title')}</h2>
+          ${summary}
+          <div class="summary-total"><span>${t('cart-total')}</span><strong>${MD3Currency.formatPrice(total)}</strong></div>
+          <div class="payment-options" aria-label="${esc(t('checkout-payment-options'))}">
+            <button type="button" class="payment-option mastercard" onclick="submitCheckout('mastercard', this)"><span><span class="circles"></span><small>mastercard</small></span></button>
+            <button type="button" class="payment-option apple" onclick="submitCheckout('apple', this)">
+              <svg class="apple-pay-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.2 12.6c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.8-1.4-.1-2.7.8-3.4.8-.7 0-1.8-.8-3-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3.1-.7 1.4 0 1.8.7 3.1.7 1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.7 0 0-2.9-1.1-3-3.6z"/><path d="M15 5.9c.7-.8 1.1-1.9 1-3-.9.1-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2-.5 2.7-1.2z"/></svg>
+              <b>Pay</b>
+            </button>
+            <button type="button" class="payment-option paypal" onclick="submitCheckout('paypal', this)">Pay<span class="pay-pal">Pal</span></button>
+            <button type="button" class="payment-option google" onclick="submitCheckout('google', this)"><span class="g">G</span><b>Pay</b></button>
+          </div>
+        </aside>
+      </div>`;
+
+    const user = S.getCurrentUser();
+    if (user && user.email) {
+      const email = document.getElementById('email');
+      if (email) email.value = user.email;
+    }
+    restoreCheckoutDetails();
+    restoreSaveDetailsPreference();
+    bindCheckoutDetailSaving();
+  }
+
+  function checkoutFieldIds() {
+    return ['addressSearch', 'street', 'postal', 'city', 'country', 'customerName', 'email', 'phone'];
+  }
+
+  function collectCheckoutDetails() {
+    return checkoutFieldIds().reduce((out, id) => {
+      const el = document.getElementById(id);
+      out[id] = el ? el.value : '';
+      return out;
+    }, {});
+  }
+
+  function fillCheckoutDetails(data) {
+    if (!data) return;
+    checkoutFieldIds().forEach((id) => {
+      const el = document.getElementById(id);
+      if (el && data[id]) el.value = data[id];
+    });
+  }
+
+  function readSavedCheckoutDetails() {
+    try {
+      return JSON.parse(localStorage.getItem(CHECKOUT_DETAILS_KEY) || sessionStorage.getItem(CHECKOUT_SESSION_KEY) || 'null');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function persistCheckoutDetails() {
+    const data = collectCheckoutDetails();
+    const save = document.getElementById('saveDetails');
+    try {
+      sessionStorage.setItem(CHECKOUT_SESSION_KEY, JSON.stringify(data));
+      if (save && save.checked) localStorage.setItem(CHECKOUT_DETAILS_KEY, JSON.stringify(data));
+      else localStorage.removeItem(CHECKOUT_DETAILS_KEY);
+    } catch (_) {}
+  }
+
+  function restoreCheckoutDetails() {
+    fillCheckoutDetails(readSavedCheckoutDetails());
+  }
+
+  function restoreSaveDetailsPreference() {
+    const save = document.getElementById('saveDetails');
+    if (!save) return;
+    try {
+      save.checked = sessionStorage.getItem(CHECKOUT_SAVE_PREF_KEY) !== '0';
+    } catch (_) {}
+  }
+
+  function bindCheckoutDetailSaving() {
+    checkoutFieldIds().forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el || el.dataset.saveBound === '1') return;
+      el.dataset.saveBound = '1';
+      el.addEventListener('input', persistCheckoutDetails);
+      el.addEventListener('change', persistCheckoutDetails);
+    });
+  }
+
+  function onSaveDetailsChange() {
+    const save = document.getElementById('saveDetails');
+    try {
+      sessionStorage.setItem(CHECKOUT_SAVE_PREF_KEY, save && save.checked ? '1' : '0');
+    } catch (_) {}
+    persistCheckoutDetails();
+  }
+
+  function normalizePhotonFeature(feature) {
+    const p = (feature && feature.properties) || {};
+    const street = [p.housenumber, p.street || p.name].filter(Boolean).join(' ');
+    const city = p.city || p.county || p.state || '';
+    const display = [street, p.postcode, city, p.country].filter(Boolean).join(', ');
+    return {
+      display_name: display,
+      address: {
+        house_number: p.housenumber || '',
+        road: p.street || p.name || '',
+        postcode: p.postcode || '',
+        city: city,
+        country: p.country || '',
+      },
+    };
+  }
+
+  function uniqueAddressResults(results) {
+    const seen = new Set();
+    return results.filter((item) => {
+      const key = String(item.display_name || '').toLowerCase().replace(/\s+/g, ' ').trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  async function searchAddress(query) {
+    const resultsEl = document.getElementById('addressResults');
+    if (!resultsEl) return;
+    clearTimeout(addressTimer);
+    if (addressAbort) addressAbort.abort();
+    const q = (query || '').trim();
+    if (q.length < 4) {
+      resultsEl.classList.remove('show');
+      resultsEl.innerHTML = '';
+      return;
+    }
+    addressTimer = setTimeout(async () => {
+      try {
+        addressAbort = new AbortController();
+        const nominatimUrl =
+          'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&dedupe=1&limit=10&accept-language=en&q=' +
+          encodeURIComponent(q);
+        const photonUrl = 'https://photon.komoot.io/api/?limit=10&q=' + encodeURIComponent(q);
+        const [nominatimRes, photonRes] = await Promise.allSettled([
+          fetch(nominatimUrl, { signal: addressAbort.signal, headers: { Accept: 'application/json' } }).then((res) => res.json()),
+          fetch(photonUrl, { signal: addressAbort.signal, headers: { Accept: 'application/json' } }).then((res) => res.json()),
+        ]);
+        const nominatim = nominatimRes.status === 'fulfilled' && Array.isArray(nominatimRes.value) ? nominatimRes.value : [];
+        const photon =
+          photonRes.status === 'fulfilled' && photonRes.value && Array.isArray(photonRes.value.features)
+            ? photonRes.value.features.map(normalizePhotonFeature)
+            : [];
+        const data = uniqueAddressResults([...nominatim, ...photon]).slice(0, 12);
+        if (!data.length) {
+          data.push({ display_name: q, manual: true, address: { road: q } });
+        }
+        resultsEl.innerHTML = data.map((item, idx) =>
+          `<button type="button" class="address-option" onclick="selectAddress(${idx})">${esc(item.display_name)}</button>`
+        ).join('');
+        window.__md3AddressResults = data;
+        resultsEl.classList.add('show');
+      } catch (e) {
+        if (e.name !== 'AbortError') console.error('address search', e);
+      }
+    }, 350);
+  }
+
+  function selectAddress(index) {
+    const item = (window.__md3AddressResults || [])[index];
+    if (!item) return;
+    const a = item.address || {};
+    if (item.manual) {
+      document.getElementById('addressSearch').value = item.display_name || '';
+      document.getElementById('street').value = item.display_name || '';
+      document.getElementById('addressResults').classList.remove('show');
+      persistCheckoutDetails();
+      return;
+    }
+    const street = [a.house_number, a.road || a.pedestrian || a.footway].filter(Boolean).join(' ');
+    document.getElementById('addressSearch').value = item.display_name || '';
+    document.getElementById('street').value = street || item.display_name || '';
+    document.getElementById('postal').value = a.postcode || '';
+    document.getElementById('city').value = a.city || a.town || a.village || a.municipality || '';
+    document.getElementById('country').value = a.country || '';
+    document.getElementById('addressResults').classList.remove('show');
+    persistCheckoutDetails();
+  }
+
+  function getCheckoutValue(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  }
+
+  function createOrderNumber() {
+    const d = new Date();
+    const stamp = [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, '0'),
+      String(d.getDate()).padStart(2, '0'),
+      String(d.getHours()).padStart(2, '0'),
+      String(d.getMinutes()).padStart(2, '0'),
+    ].join('');
+    return 'MD3-' + stamp + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+  }
+
+  function buildOrderEmailParams(paymentMethod) {
+    const lines = S.getCartLines();
+    const total = lines.reduce((sum, line) => sum + line.product.price * line.qty, 0);
+    const orderNumber = createOrderNumber();
+    const params = {
+      to_email: getCheckoutValue('email'),
+      email: getCheckoutValue('email'),
+      reply_to: getCheckoutValue('email'),
+      customer_name: getCheckoutValue('customerName'),
+      customer_email: getCheckoutValue('email'),
+      customer_phone: getCheckoutValue('phone'),
+      phone: getCheckoutValue('phone'),
+      payment_method: paymentMethod || '',
+      order_number: orderNumber,
+      order_date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      order_total: MD3Currency.formatPrice(total),
+      order_total_raw: String(total),
+      shipping_address: getCheckoutValue('street') || getCheckoutValue('addressSearch'),
+      shipping_postal: getCheckoutValue('postal'),
+      shipping_city: getCheckoutValue('city'),
+      shipping_country: getCheckoutValue('country'),
+      address_search: getCheckoutValue('addressSearch'),
+    };
+    lines.slice(0, 5).forEach(({ product: p, qty }, idx) => {
+      const n = idx + 1;
+      const image =
+        S.normalizeProductImages && S.normalizeProductImages(p)[0]
+          ? S.normalizeProductImages(p)[0]
+          : p.image || '';
+      params['item' + n + '_name'] = p.name || '';
+      params['item' + n + '_category'] = [p.category, p.sub].filter(Boolean).join(' · ');
+      params['item' + n + '_image'] = image;
+      params['item' + n + '_qty'] = qty || 0;
+      params['item' + n + '_price'] = MD3Currency.formatPrice(p.price);
+      params['item' + n + '_total'] = MD3Currency.formatPrice(p.price * qty);
+    });
+    return params;
+  }
+
+  async function submitCheckout(paymentMethod, button) {
+    const form = document.getElementById('checkoutForm');
+    if (!form.reportValidity()) return;
+    persistCheckoutDetails();
+    if (button) button.disabled = true;
+    try {
+      if (!window.MD3Email || !MD3Email.isOrderConfigured()) {
+        alert(t('checkout-email-not-configured'));
+        return;
+      }
+      await MD3Email.sendOrderEmail(buildOrderEmailParams(paymentMethod));
+      alert(t('checkout-order-sent'));
+    } catch (e) {
+      console.error('checkout email', e);
+      alert(t('checkout-order-send-failed'));
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  window.searchAddress = searchAddress;
+  window.selectAddress = selectAddress;
+  window.submitCheckout = submitCheckout;
+  window.onSaveDetailsChange = onSaveDetailsChange;
+
+  MD3Lang.init({
+    onChange() {
+      MD3Currency.refreshCurrency();
+      MD3Lang.refreshUI();
+      renderCheckout();
+      MD3Header.updateAuth();
+      MD3Header.updateCartBadge();
+    }
+  });
+
+  function boot() {
+    renderCheckout();
+    MD3Header.updateAuth();
+    MD3Header.updateCartBadge();
+  }
+
+  MD3Store.init().then(boot).catch(function (e) {
+    console.error('MD3Store.init', e);
+    boot();
+  });
+  window.addEventListener('md3-carts-updated', boot);
+  window.addEventListener('md3-products-updated', renderCheckout);
+})();
+</script>
+</body>
+</html>

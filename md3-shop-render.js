@@ -9,8 +9,12 @@
   }
 
   function productImageBlock(p) {
-    if (p && p.image) {
-      return `<img src="${esc(p.image)}" alt="" class="product-photo" loading="lazy" />`;
+    const image =
+      global.MD3Store && global.MD3Store.normalizeProductImages
+        ? global.MD3Store.normalizeProductImages(p)[0]
+        : p && p.image;
+    if (image) {
+      return `<img src="${esc(image)}" alt="" class="product-photo" loading="lazy" />`;
     }
     return `<div class="cemoji">${esc((p && p.emoji) || '✦')}</div>`;
   }
