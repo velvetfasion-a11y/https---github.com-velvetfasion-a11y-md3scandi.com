@@ -3,8 +3,9 @@
   const CHROME_HTML =
     '<div class="bar">' +
     '<div class="bar-track">' +
-    '<span class="bar-item" data-i18n="marquee-item">STYLE ◆ NEW COLLECTION ◆ FASHION · HOME · LIFESTYLE ◆ LIMITED EDITION ◆ FREE DELIVERY WORLDWIDE ◆</span>' +
-    '<span class="bar-item" data-i18n="marquee-item" aria-hidden="true">STYLE ◆ NEW COLLECTION ◆ FASHION · HOME · LIFESTYLE ◆ LIMITED EDITION ◆ FREE DELIVERY WORLDWIDE ◆</span>' +
+    '<span class="bar-item" data-i18n="marquee-item">STYLE ◆ NEW COLLECTION ◆ FASHION · HOME · LIFESTYLE ◆ LIMITED EDITION ◆</span>' +
+    '<span class="bar-item" aria-hidden="true" data-i18n="marquee-item">STYLE ◆ NEW COLLECTION ◆ FASHION · HOME · LIFESTYLE ◆ LIMITED EDITION ◆</span>' +
+    '<span class="bar-item" aria-hidden="true" data-i18n="marquee-item">STYLE ◆ NEW COLLECTION ◆ FASHION · HOME · LIFESTYLE ◆ LIMITED EDITION ◆</span>' +
     '</div></div>' +
     '<header class="site-header">' +
     '<div class="header-inner">' +

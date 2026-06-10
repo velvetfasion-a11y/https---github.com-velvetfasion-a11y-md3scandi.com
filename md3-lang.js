@@ -13,7 +13,7 @@
       'banner-style': 'Style',
       'banner-collection': 'Nouvelle Collection',
       'banner-client': 'MD3 Scandi — Espace client',
-      'marquee-item': 'STYLE ◆ NOUVELLE COLLECTION ◆ MODE · MAISON · LIFESTYLE ◆ ÉDITION LIMITÉE ◆ LIVRAISON OFFERTE ◆',
+      'marquee-item': 'STYLE ◆ NOUVELLE COLLECTION ◆ MODE · MAISON · LIFESTYLE ◆ ÉDITION LIMITÉE ◆',
       'nav-fashion': 'Mode',
       'nav-home': 'Maison',
       'nav-lifestyle': 'Lifestyle',
@@ -156,6 +156,10 @@
       'ph-firstname': 'Votre prénom',
       'ph-pass-min': '6 caractères minimum',
       'btn-connect': 'Se connecter',
+      'btn-google': 'Continuer avec Google',
+      'login-or': 'ou',
+      'login-google-loading': 'Connexion…',
+      'err-auth-stale': 'Actualisez la page (Cmd+Shift+R) puis réessayez.',
       'btn-create-account': 'Créer mon compte',
       'link-no-account': 'Pas encore de compte ?',
       'link-no-account-html': 'Pas encore de compte ? <a onclick="showPage(\'signup\')">Créer un compte</a>',
@@ -180,6 +184,9 @@
       'admin-nav-section': 'Navigation',
       'admin-shop-section': 'Boutique',
       'stat-stock-value': 'Valeur stock',
+      'admin-version': 'MD3 Scandi · v2',
+      'stock-decrease': 'Diminuer le stock',
+      'stock-increase': 'Augmenter le stock',
       'stat-products': 'Produits',
       'stat-total-stock': 'Stock total',
       'stat-low-stock': 'Stock faible (&lt;4)',
@@ -273,7 +280,7 @@
       'banner-style': 'Style',
       'banner-collection': 'New Collection',
       'banner-client': 'MD3 Scandi — Client area',
-      'marquee-item': 'STYLE ◆ NEW COLLECTION ◆ FASHION · HOME · LIFESTYLE ◆ LIMITED EDITION ◆ FREE DELIVERY WORLDWIDE ◆',
+      'marquee-item': 'STYLE ◆ NEW COLLECTION ◆ FASHION · HOME · LIFESTYLE ◆ LIMITED EDITION ◆',
       'nav-fashion': 'Fashion',
       'nav-home': 'Home',
       'nav-lifestyle': 'Lifestyle',
@@ -416,6 +423,10 @@
       'ph-firstname': 'Your first name',
       'ph-pass-min': 'At least 6 characters',
       'btn-connect': 'Sign in',
+      'btn-google': 'Continue with Google',
+      'login-or': 'or',
+      'login-google-loading': 'Signing in…',
+      'err-auth-stale': 'Hard-refresh the page (Cmd+Shift+R) and try again.',
       'btn-create-account': 'Create my account',
       'link-no-account': 'No account yet?',
       'link-no-account-html': 'No account yet? <a onclick="showPage(\'signup\')">Create an account</a>',
@@ -440,6 +451,9 @@
       'admin-nav-section': 'Navigation',
       'admin-shop-section': 'Shop',
       'stat-stock-value': 'Stock value',
+      'admin-version': 'MD3 Scandi · v2',
+      'stock-decrease': 'Decrease stock',
+      'stock-increase': 'Increase stock',
       'stat-products': 'Products',
       'stat-total-stock': 'Total stock',
       'stat-low-stock': 'Low stock (&lt;4)',
@@ -533,7 +547,7 @@
       'banner-style': 'أسلوب',
       'banner-collection': 'مجموعة جديدة',
       'banner-client': 'MD3 Scandi — منطقة العملاء',
-      'marquee-item': 'STYLE ◆ مجموعة جديدة ◆ أزياء · منزل · أسلوب حياة ◆ إصدار محدود ◆ توصيل مجاني ◆',
+      'marquee-item': 'STYLE ◆ مجموعة جديدة ◆ أزياء · منزل · أسلوب حياة ◆ إصدار محدود ◆',
       'nav-fashion': 'الأزياء',
       'nav-home': 'المنزل',
       'nav-lifestyle': 'أسلوب الحياة',
@@ -676,6 +690,10 @@
       'ph-firstname': 'اسمك الأول',
       'ph-pass-min': '6 أحرف على الأقل',
       'btn-connect': 'تسجيل الدخول',
+      'btn-google': 'المتابعة مع Google',
+      'login-or': 'أو',
+      'login-google-loading': 'جاري تسجيل الدخول…',
+      'err-auth-stale': 'حدّثي الصفحة (Cmd+Shift+R) ثم أعيدي المحاولة.',
       'btn-create-account': 'إنشاء حسابي',
       'link-no-account': 'ليس لديك حساب؟',
       'link-no-account-html': 'ليس لديك حساب؟ <a onclick="showPage(\'signup\')">إنشاء حساب</a>',
@@ -700,6 +718,9 @@
       'admin-nav-section': 'التنقل',
       'admin-shop-section': 'المتجر',
       'stat-stock-value': 'قيمة المخزون',
+      'admin-version': 'MD3 Scandi · v2',
+      'stock-decrease': 'تقليل المخزون',
+      'stock-increase': 'زيادة المخزون',
       'stat-products': 'المنتجات',
       'stat-total-stock': 'إجمالي المخزون',
       'stat-low-stock': 'مخزون منخفض (&lt;4)',
@@ -959,14 +980,18 @@
       } catch (_) {}
     }
 
-    if (typeof onChangeCb === 'function') {
+    if ((!opts || opts.silent !== true) && typeof onChangeCb === 'function') {
       onChangeCb(lang);
+    }
+
+    if ((!opts || opts.silent !== true) && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('md3-lang-changed', { detail: { lang } }));
     }
   }
 
   /** Re-apply current language to the DOM without touching storage. */
   function refreshUI() {
-    applyLang(currentLang, { persist: false });
+    applyLang(currentLang, { persist: false, silent: true });
   }
 
   function init(opts) {

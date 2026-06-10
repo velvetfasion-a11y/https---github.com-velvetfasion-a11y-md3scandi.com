@@ -24,14 +24,14 @@
     const cartSvg = labels.cartSvg || '';
 
     return `
-      <article class="scard">
-        <div class="cimgw" onclick="location.href='${href}'" role="link" tabindex="0">
+      <article class="scard" onclick="location.href='${href}'" role="link" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();location.href='${href}'}">
+        <div class="cimgw">
           ${productImageBlock(p)}
           ${out ? `<div class="otag">${esc(labels.out)}</div>` : ''}
         </div>
         <div class="cinf">
           ${catLine ? `<div class="ccat">${esc(catLine)}</div>` : ''}
-          <div class="ctitle" onclick="location.href='${href}'">${esc(p.name)}</div>
+          <div class="ctitle">${esc(p.name)}</div>
           <div class="cprice">${labels.price(p.price)}${labels.priceNote ? ` <small>${esc(labels.priceNote)}</small>` : ''}</div>
           <div class="cstock ${out ? 'out' : 'in'}">${esc(out ? labels.stockOut : labels.stockIn)}</div>
           <button type="button" class="ccbtn" ${out ? 'disabled' : ''} onclick="MD3Shop.addToCart(${p.id}, event)">
@@ -87,7 +87,10 @@
       stockOut: L('stock-out-lbl'),
       addToCart: L('cart-add'),
       priceNote: L('price-incl'),
-      price: (n) => global.MD3Currency.formatPrice(n),
+      price: (n) =>
+        global.MD3Currency && global.MD3Currency.formatPriceInSiteLang
+          ? global.MD3Currency.formatPriceInSiteLang(n)
+          : global.MD3Currency.formatPrice(n),
       catLabel: (c) => global.MD3Lang.translateCategory(c),
       subLabel: (s) => global.MD3Lang.translateSub(s),
       cartSvg,

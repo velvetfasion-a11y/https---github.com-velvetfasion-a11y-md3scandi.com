@@ -37,7 +37,7 @@
 
 .scard {
   background: #f5f0e8;
-  cursor: default;
+  cursor: pointer;
 }
 
 .cimgw {
@@ -197,7 +197,7 @@
 }
 
 .product-ibox {
-  aspect-ratio: 1;
+  aspect-ratio: 3 / 4;
   background: #e8e2d9;
   border-radius: 16px;
   overflow: hidden;

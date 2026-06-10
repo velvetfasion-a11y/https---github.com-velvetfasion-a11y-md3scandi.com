@@ -35,7 +35,7 @@
 <script src="firebase-config.js"></script>
 <script src="md3-firebase.js"></script>
 <script src="md3-store.js"></script>
-<script src="md3-auth.js"></script>
+<script src="md3-auth.js?v=2"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js"></script>
 <script src="md3-lang.js"></script>
@@ -94,7 +94,7 @@
         ${catLine ? `<div class="product-pcat">${MD3Shop.esc(catLine)}</div>` : ''}
         <h1 class="product-ptitle">${MD3Shop.esc(p.name)}</h1>
         <div class="product-ppr">
-          <span class="product-pp">${MD3Currency.formatPrice(p.price)}</span>
+          <span class="product-pp">${MD3Currency.formatPriceInSiteLang(p.price)}</span>
           <span class="product-ppn">${L('price-incl')}</span>
         </div>
         <div class="product-pstk ${out ? 'out' : 'in'}">${out ? L('stock-out-lbl') : L('stock-in')}</div>
@@ -119,7 +119,13 @@
     MD3Header.updateAuth();
   }
 
-  MD3Lang.init({ onChange: boot });
+  MD3Lang.init({
+    onChange() {
+      if (typeof MD3Currency !== 'undefined') MD3Currency.refreshCurrency();
+      MD3Lang.refreshUI();
+      boot();
+    },
+  });
   MD3Store.init().then(boot).catch(boot);
   window.addEventListener('md3-products-updated', renderProduct);
   window.addEventListener('md3-carts-updated', () => MD3Header.updateCartBadge());

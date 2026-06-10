@@ -138,6 +138,54 @@
     transition: background 0.25s;
   }
   .btn-login:hover { background: var(--ink-soft); }
+  .login-or {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0 16px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .login-or::before,
+  .login-or::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(184, 147, 90, 0.2);
+  }
+  .btn-google {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: #fff;
+    border: 1px solid rgba(60, 64, 67, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(60, 64, 67, 0.08), 0 2px 6px rgba(60, 64, 67, 0.06);
+    font-family: 'Jost', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: #3c4043;
+    cursor: pointer;
+    transition: box-shadow 0.2s, background 0.2s;
+  }
+  .btn-google:hover {
+    background: #fafafa;
+    box-shadow: 0 2px 4px rgba(60, 64, 67, 0.1), 0 4px 12px rgba(60, 64, 67, 0.08);
+  }
+  .btn-google:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
+  .btn-google svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
   .login-footer {
     margin-top: 28px;
     padding-top: 24px;
@@ -196,6 +244,12 @@
       <button type="submit" class="btn-login" data-i18n="btn-connect">Se connecter</button>
     </form>
 
+    <div class="login-or" data-i18n="login-or">ou</div>
+    <button type="button" class="btn-google" id="btnGoogle" onclick="doGoogleLogin()">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.63 3.5-2.5 6.47-5.33 8.43l8.5 6.59C43.98 37.21 46.98 31.3 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 010-9.18l-7.98-6.19a24.01 24.01 0 000 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-8.5-6.59c-2.37 1.6-5.4 2.53-7.39 2.53-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      <span data-i18n="btn-google">Continuer avec Google</span>
+    </button>
+
     <div class="login-footer" data-i18n="login-footer-html">
       Pas encore de compte ? <a href="compte.html?page=signup">Créer un compte</a>
     </div>
@@ -210,7 +264,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="md3-firebase.js"></script>
 <script src="md3-store.js"></script>
-<script src="md3-auth.js"></script>
+<script src="md3-auth.js?v=2"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js"></script>
 <script src="md3-lang.js"></script>
@@ -252,6 +306,23 @@ if (MD3Store.guardLoginPage('compte.html')) { /* redirecting */ }
     ['login-email', 'login-password'].forEach(id => {
       document.getElementById(id).addEventListener('input', clearFieldErrors);
     });
+
+    handleGoogleRedirectLogin();
+  }
+
+  async function handleGoogleRedirectLogin() {
+    if (!window.MD3Auth || typeof MD3Auth.handleGoogleRedirectResult !== 'function') return;
+    try {
+      await MD3Store.ready;
+      const firebaseUser = await MD3Auth.handleGoogleRedirectResult();
+      if (!firebaseUser) return;
+      const profile = await MD3Auth.ensureUserProfileFromFirebase(firebaseUser);
+      MD3Store.setCurrentUser({ email: profile.email, name: profile.name, isAdmin: false });
+      if (MD3Store.getCurrentUser()) redirectAfterLogin();
+    } catch (err) {
+      console.error('Google redirect login', err);
+      showErr(MD3Auth.firebaseAuthErrorMessage(err));
+    }
   }
 
   MD3Store.init().then(bootLogin).catch(function (e) {
@@ -337,18 +408,66 @@ async function doLogin(e) {
       return false;
     }
 
-    const params = new URLSearchParams(location.search);
-    const redirect = params.get('redirect');
-    if (redirect === 'boutique') {
-      window.location.replace('index.html#boutique');
-    } else {
-      window.location.replace('compte.html');
-    }
+    redirectAfterLogin();
   } catch (err) {
     console.error(err);
     showErr(window.MD3Auth ? MD3Auth.firebaseAuthErrorMessage(err) : err.message);
   }
   return false;
+}
+
+function redirectAfterLogin() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('redirect') === 'boutique') {
+    window.location.replace('index.html#boutique');
+  } else {
+    window.location.replace('compte.html');
+  }
+}
+
+async function doGoogleLogin() {
+  clearFieldErrors();
+  const btn = document.getElementById('btnGoogle');
+  const label = MD3Lang.t('btn-google');
+
+  if (!window.MD3Auth || typeof MD3Auth.signInWithGoogle !== 'function') {
+    if (!sessionStorage.getItem('md3-auth-reload')) {
+      sessionStorage.setItem('md3-auth-reload', '1');
+      location.reload();
+      return;
+    }
+    showErr(MD3Lang.t('err-auth-stale'));
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.querySelector('span').textContent = MD3Lang.t('login-google-loading');
+  }
+
+  const S = MD3Store;
+  try {
+    await S.ready;
+    const firebaseUser = await MD3Auth.signInWithGoogle();
+    if (!firebaseUser) return;
+    const profile = await MD3Auth.ensureUserProfileFromFirebase(firebaseUser);
+    S.setCurrentUser({ email: profile.email, name: profile.name, isAdmin: false });
+    if (!S.getCurrentUser()) {
+      showErr(MD3Lang.t('err-save-session'));
+      return;
+    }
+    redirectAfterLogin();
+  } catch (err) {
+    console.error(err);
+    if (err && err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+      showErr(window.MD3Auth ? MD3Auth.firebaseAuthErrorMessage(err) : err.message);
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.querySelector('span').textContent = label;
+    }
+  }
 }
 </script>
 </body>

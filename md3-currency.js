@@ -114,10 +114,28 @@
     }
   }
 
+  function formatPriceInSiteLang(amountEur) {
+    const n = Number(amountEur);
+    if (!Number.isFinite(n)) return '';
+    const lang = global.MD3Lang && global.MD3Lang.getLang ? global.MD3Lang.getLang() : 'fr';
+    const locale = lang === 'ar' ? 'ar-SA' : lang === 'en' ? 'en-GB' : 'fr-FR';
+    try {
+      return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: BASE,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: n % 1 === 0 ? 0 : 2,
+      }).format(n);
+    } catch (_) {
+      return `${n} €`;
+    }
+  }
+
   global.MD3Currency = {
     BASE,
     RATES,
     formatPrice,
+    formatPriceInSiteLang,
     convertFromEur,
     getCurrency,
     refreshCurrency,

@@ -14,7 +14,7 @@
 }
 .bar-track {
   display: inline-flex;
-  animation: md3-marquee 22s linear infinite;
+  animation: md3-marquee 40s linear infinite;
 }
 .bar-item {
   display: inline-flex;
@@ -28,8 +28,8 @@
   text-transform: uppercase;
 }
 @keyframes md3-marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-33.3333%); }
 }
 
 .site-header {

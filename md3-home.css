@@ -25,7 +25,10 @@
   object-position: center 26%;
   display: block;
   transition: object-position 0.9s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: object-position;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 #md3-hero .hero-bg::after {

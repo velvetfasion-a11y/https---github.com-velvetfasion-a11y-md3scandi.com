@@ -26,10 +26,37 @@
     return password === ADMIN_PASS && ADMIN_IDS.includes(id);
   }
 
+  const CATEGORY_ALIASES = {
+    mode: 'Mode',
+    fashion: 'Mode',
+    maison: 'Maison',
+    home: 'Maison',
+    lifestyle: 'Lifestyle',
+    'edition limitee': 'Édition limitée',
+    'edition limite': 'Édition limitée',
+    'limited edition': 'Édition limitée',
+    limited: 'Édition limitée',
+  };
+
+  function categoryKey(value) {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ');
+  }
+
+  function canonicalCategory(category) {
+    const raw = String(category || '').trim();
+    return CATEGORY_ALIASES[categoryKey(raw)] || raw;
+  }
+
   function normalizeProductFields(p) {
     if (!p || typeof p !== 'object') return p;
     return {
       ...p,
+      category: canonicalCategory(p.category),
       featured: !!p.featured,
       desc: typeof p.desc === 'string' ? p.desc : '',
     };
@@ -588,13 +615,37 @@
     try {
       const remoteProducts = await FB.loadProducts();
       if (remoteProducts && remoteProducts.length) {
-        setProductsCache(remoteProducts);
+        // Merge: keep any local-only products not yet in Firebase
+        const remoteIds = new Set(remoteProducts.map((p) => String(p.id)));
+        const localOnly = productsCache.filter((p) => !remoteIds.has(String(p.id)));
+        if (localOnly.length) {
+          const merged = [...remoteProducts, ...localOnly];
+          merged.sort((a, b) => a.id - b.id);
+          setProductsCache(merged);
+          FB.saveProducts(merged, { onlyIds: localOnly.map((p) => p.id) }).catch((e) =>
+            console.error('syncCloud push local-only products', e)
+          );
+        } else {
+          setProductsCache(remoteProducts);
+        }
       } else if (productsCache.length) {
         await FB.saveProducts(productsCache);
       }
 
       FB.watchProducts((list) => {
-        if (list && list.length) setProductsCache(list);
+        if (!list || !list.length) return;
+        // Same merge: never drop local-only products via a watcher update
+        const remoteIds = new Set(list.map((p) => String(p.id)));
+        const localOnly = productsCache
+          ? productsCache.filter((p) => !remoteIds.has(String(p.id)))
+          : [];
+        if (localOnly.length) {
+          const merged = [...list, ...localOnly];
+          merged.sort((a, b) => a.id - b.id);
+          setProductsCache(merged);
+        } else {
+          setProductsCache(list);
+        }
       });
 
       const remoteUsers = await FB.loadUsersMap();
@@ -699,6 +750,7 @@
     mergeGuestCartIntoUser,
     productVisualInner,
     productThumbInner,
+    canonicalCategory,
     normalizeProductFields,
     getFeaturedProducts,
     getProductById,

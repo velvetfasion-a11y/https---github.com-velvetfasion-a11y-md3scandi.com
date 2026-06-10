@@ -596,7 +596,7 @@
   }
   .product-visual {
     width: 100%;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 3 / 4;
     background: linear-gradient(145deg, var(--cream-deep), var(--sand));
     display: flex;
     align-items: center;
@@ -818,34 +818,14 @@
         <span class="collection-icon">👗</span>
         <h3 data-i18n="mode-title">Mode</h3>
         <p data-i18n="mode-desc">Des silhouettes pensées pour celles qui aiment la simplicité travaillée. Coupes nettes, matières nobles, intemporalité.</p>
-        <a href="#" class="collection-link" onclick="toggleSub(event, this)"><span data-i18n="explore">Explorer</span> <span class="chevron">→</span></a>
-        <div class="subcategories">
-          <div class="sub-divider"></div>
-          <ul class="sub-list">
-            <li><a href="boutique.html?cat=Mode&amp;sub=V%C3%AAtements" data-i18n="sub-vetements">Vêtements</a></li>
-            <li><a href="boutique.html?cat=Mode&amp;sub=Chaussures" data-i18n="sub-chaussures">Chaussures</a></li>
-            <li><a href="boutique.html?cat=Mode&amp;sub=Accessoires" data-i18n="sub-accessoires">Accessoires</a></li>
-            <li><a href="boutique.html?cat=Mode&amp;sub=Sacs" data-i18n="sub-sacs">Sacs</a></li>
-          </ul>
-        </div>
+        <a href="boutique.html?cat=Mode" class="collection-link"><span data-i18n="explore">Explorer</span> →</a>
       </div>
 
       <div class="collection-card reveal">
         <span class="collection-icon">🏠</span>
         <h3 data-i18n="maison-title">Maison</h3>
         <p data-i18n="maison-desc">L'art de l'intérieur scandinave. Lignes épurées, bois clair, textures douces. Une maison qui respire.</p>
-        <a href="#" class="collection-link" onclick="toggleSub(event, this)"><span data-i18n="explore">Explorer</span> <span class="chevron">→</span></a>
-        <div class="subcategories">
-          <div class="sub-divider"></div>
-          <ul class="sub-list">
-            <li><a href="boutique.html?cat=Maison&amp;sub=Canap%C3%A9s" data-i18n="sub-canapes">Canapés</a></li>
-            <li><a href="boutique.html?cat=Maison&amp;sub=Lampes" data-i18n="sub-lampes">Lampes</a></li>
-            <li><a href="boutique.html?cat=Maison&amp;sub=D%C3%A9co" data-i18n="sub-deco">Déco</a></li>
-            <li><a href="boutique.html?cat=Maison&amp;sub=Textile" data-i18n="sub-textile">Textile</a></li>
-            <li><a href="boutique.html?cat=Lifestyle&amp;sub=Vaisselle" data-i18n="sub-vaisselle">Vaisselle</a></li>
-            <li><a href="boutique.html?cat=Maison&amp;sub=Mobilier" data-i18n="sub-mobilier">Mobilier</a></li>
-          </ul>
-        </div>
+        <a href="boutique.html?cat=Maison" class="collection-link"><span data-i18n="explore">Explorer</span> →</a>
       </div>
 
       <div class="collection-card reveal">
@@ -948,7 +928,7 @@
 <script src="firebase-config.js"></script>
 <script src="md3-firebase.js"></script>
 <script src="md3-store.js"></script>
-<script src="md3-auth.js"></script>
+<script src="md3-auth.js?v=2"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js"></script>
 <script src="md3-lang.js"></script>
@@ -988,6 +968,7 @@
   MD3Lang.init({
     onChange() {
       MD3Currency.refreshCurrency();
+      MD3Lang.refreshUI();
       updateNavAuth();
       try { renderFeatured(); } catch (e) { console.error('renderFeatured', e); }
       updateCartBadge();
@@ -1019,7 +1000,8 @@
 
   /* Featured products */
   function renderFeatured() {
-    const products = MD3Store.getFeaturedProducts();
+    const featured = MD3Store.getFeaturedProducts();
+    const products = featured.length ? featured : MD3Store.getProducts();
     const grid = document.getElementById('featuredGrid');
     const empty = document.getElementById('featuredEmpty');
     const countEl = document.getElementById('featuredCount');

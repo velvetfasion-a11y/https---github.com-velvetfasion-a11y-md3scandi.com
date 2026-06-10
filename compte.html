@@ -242,7 +242,7 @@
   }
   .liked-card-img {
     width: 100%;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 3 / 4;
     background: var(--sand);
     display: flex; align-items: center; justify-content: center;
     font-size: 2.5rem;
@@ -697,7 +697,7 @@
       <button class="admin-nav-item" onclick="openAddProduct()" data-i18n="admin-add-product-short">+ Nouveau produit</button>
       <div class="admin-sec-lbl" data-i18n="admin-shop-section">Boutique</div>
       <a class="admin-store-link" href="index.html#boutique" target="_blank" rel="noopener" data-i18n="admin-view-boutique">Voir la boutique ↗</a>
-      <div class="admin-sidebar-foot">MD3 Scandi · v2</div>
+      <div class="admin-sidebar-foot" data-i18n="admin-version">MD3 Scandi · v2</div>
       <button class="admin-nav-item" style="color: rgba(255,255,255,0.35);" onclick="doLogout()" data-i18n="nav-logout">Déconnexion</button>
     </aside>
     <div class="admin-content" id="adminContent"></div>
@@ -810,7 +810,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="md3-firebase.js"></script>
 <script src="md3-store.js"></script>
-<script src="md3-auth.js"></script>
+<script src="md3-auth.js?v=2"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js"></script>
 <script src="md3-lang.js"></script>
@@ -855,11 +855,8 @@ function loadImageIntoCropper(src) {
   img.src = src;
   img.onload = function () {
     destroyProductCropper();
-    const alreadySquare =
-      img.naturalWidth > 0 &&
-      Math.abs(img.naturalWidth / img.naturalHeight - 1) < 0.02;
     productCropper = new Cropper(img, {
-      aspectRatio: 1,
+      aspectRatio: 3 / 4,
       viewMode: 1,
       dragMode: 'move',
       autoCropArea: 1,
@@ -869,17 +866,6 @@ function loadImageIntoCropper(src) {
       movable: true,
       cropBoxMovable: true,
       cropBoxResizable: true,
-      ready: function () {
-        if (!alreadySquare || !productCropper) return;
-        const canvas = productCropper.getCanvasData();
-        const side = Math.min(canvas.width, canvas.height);
-        productCropper.setCropBoxData({
-          left: canvas.left + (canvas.width - side) / 2,
-          top: canvas.top + (canvas.height - side) / 2,
-          width: side,
-          height: side,
-        });
-      },
     });
   };
 }
@@ -907,8 +893,8 @@ function onProductImagePick(e) {
 function getProductImageFromEditor() {
   if (productCropper) {
     const canvas = productCropper.getCroppedCanvas({
-      width: 800,
-      height: 800,
+      width: 900,
+      height: 1200,
       imageSmoothingEnabled: true,
       imageSmoothingQuality: 'high',
     });
@@ -953,14 +939,20 @@ function updateCartBadge() {
 
 function updateNav() {
   MD3Header.updateAuth();
-  MD3Lang.refreshUI();
 }
 
 function refreshCompteView() {
   if (typeof MD3Currency !== 'undefined') MD3Currency.refreshCurrency();
-  if (document.getElementById('productModal')?.classList.contains('open')) {
+  MD3Lang.refreshUI();
+
+  const modal = document.getElementById('productModal');
+  if (modal?.classList.contains('open')) {
+    const editId = document.getElementById('editId').value;
+    document.getElementById('modalTitle').textContent = editId ? L('modal-edit') : L('modal-add');
     initProductTaxonomyUI();
+    MD3Lang.applySelectOptions(MD3Lang.getLang());
   }
+
   updateNav();
   const active = document.querySelector('.page.active');
   if (!active) return;
@@ -1161,7 +1153,7 @@ function renderProfile() {
       <div class="liked-card-body">
         <div class="liked-card-cat">${esc(MD3Lang.translateCategory(p.category))} · ${esc(MD3Lang.translateSub(p.sub))}</div>
         <div class="liked-card-name">${esc(p.name)}</div>
-        <div class="liked-card-price">${MD3Currency.formatPrice(p.price)}</div>
+        <div class="liked-card-price">${MD3Currency.formatPriceInSiteLang(p.price)}</div>
       </div>
       <div class="liked-card-actions">
         <button type="button" class="btn-cart-add ${inCart ? 'in-cart' : ''}" title="${L('cart-add')}"
@@ -1229,13 +1221,17 @@ function adminTab(tab) {
 }
 
 function renderAdminProducts() {
-  const products = S.getProducts();
+  const products = S.getProducts().sort((a, b) => Number(b.id) - Number(a.id));
   const cats = ['Tous', ...new Set(products.map(p => p.category))];
   const filtered = adminFilter === 'Tous' ? products : products.filter(p => p.category === adminFilter);
   const total = products.length;
   const outOfStock = products.filter(p => p.stock === 0).length;
   const featured = products.filter(p => p.featured).length;
   const stockValue = products.reduce((a, p) => a + p.price * p.stock, 0);
+  const fmtPrice = (n) =>
+    typeof MD3Currency !== 'undefined' && MD3Currency.formatPriceInSiteLang
+      ? MD3Currency.formatPriceInSiteLang(n)
+      : `${n} €`;
 
   const catBtnLabel = (c) => c === 'Tous' ? L('shop-all') : MD3Lang.translateCategory(c);
   const stockBadge = (p) => p.stock === 0 ? L('stock-out-lbl') : L('stock-in');
@@ -1246,13 +1242,13 @@ function renderAdminProducts() {
         <h1>${L('admin-manage')}</h1>
         <p>${total} ${L('stat-products-word')}</p>
       </div>
-      <button class="btn-add" type="button" onclick="openAddProduct()">+ ${L('admin-add-product')}</button>
+      <button class="btn-add" type="button" onclick="openAddProduct()">${L('admin-add-product-short')}</button>
     </div>
     <div class="admin-stats">
       <div class="stat-card"><div class="stat-label">${L('stat-products')}</div><div class="stat-value">${total}</div></div>
       <div class="stat-card"><div class="stat-label">${L('stock-in')}</div><div class="stat-value">${total - outOfStock}</div></div>
       <div class="stat-card"><div class="stat-label">${L('stat-featured')}</div><div class="stat-value">${featured}</div></div>
-      <div class="stat-card"><div class="stat-label">${L('stat-stock-value')}</div><div class="stat-value">${Math.round(stockValue)}<span>€</span></div></div>
+      <div class="stat-card"><div class="stat-label">${L('stat-stock-value')}</div><div class="stat-value">${fmtPrice(stockValue)}</div></div>
     </div>
     <div class="category-filter">
       ${cats.map(c => `<button type="button" class="filter-btn ${c === adminFilter ? 'active' : ''}" onclick="setAdminFilter('${esc(c).replace(/'/g, "\\'")}')">${esc(catBtnLabel(c))}</button>`).join('')}
@@ -1273,13 +1269,13 @@ function renderAdminProducts() {
             </div>
             <div class="adm-name">${esc(p.name)}</div>
             <div class="adm-meta">${esc(MD3Lang.translateCategory(p.category))} · ${esc(MD3Lang.translateSub(p.sub))}</div>
-            <div class="adm-price">${p.price} €</div>
+            <div class="adm-price">${fmtPrice(p.price)}</div>
             <div class="adm-sr">
               <span class="adm-slb">${L('label-stock')}</span>
               <div class="adm-qc">
-                <button type="button" class="adm-qbt" onclick="changeStock(${p.id}, -1)" ${p.stock <= 0 ? 'disabled' : ''} aria-label="−">−</button>
+                <button type="button" class="adm-qbt" onclick="changeStock(${p.id}, -1)" ${p.stock <= 0 ? 'disabled' : ''} aria-label="${esc(L('stock-decrease'))}">−</button>
                 <span class="adm-qnm" id="adm-q-${p.id}">${p.stock}</span>
-                <button type="button" class="adm-qbt" onclick="changeStock(${p.id}, 1)" aria-label="+">+</button>
+                <button type="button" class="adm-qbt" onclick="changeStock(${p.id}, 1)" aria-label="${esc(L('stock-increase'))}">+</button>
               </div>
             </div>
             <div class="adm-cf">
@@ -1459,6 +1455,7 @@ function deleteProductFromModal() {
 }
 
 async function saveProduct() {
+  const editId = document.getElementById('editId').value;
   const name = document.getElementById('prodName').value.trim();
   const category = document.getElementById('prodCat').value;
   const sub = document.getElementById('prodSub').value.trim();
@@ -1469,7 +1466,6 @@ async function saveProduct() {
     : Math.max(1, stockRaw || 1);
   const desc = (document.getElementById('prodDesc') && document.getElementById('prodDesc').value.trim()) || '';
   const featured = !!(document.getElementById('prodFeatured') && document.getElementById('prodFeatured').checked);
-  const editId = document.getElementById('editId').value;
   const image = getProductImageFromEditor();
   if (!name) { alert(L('err-prod-name')); return; }
   if (!sub) { alert(L('err-prod-sub')); return; }
@@ -1569,13 +1565,12 @@ function routeCompte() {
 }
 
 (function init() {
+  MD3Lang.init({ onChange: refreshCompteView });
   MD3Store.init().then(function () {
     routeCompte();
-    MD3Lang.init({ onChange: refreshCompteView });
   }).catch(function (e) {
     console.error('MD3Store.init', e);
     routeCompte();
-    MD3Lang.init({ onChange: refreshCompteView });
   });
 })();
 

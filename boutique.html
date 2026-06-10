@@ -36,7 +36,7 @@
 <script src="firebase-config.js"></script>
 <script src="md3-firebase.js"></script>
 <script src="md3-store.js"></script>
-<script src="md3-auth.js"></script>
+<script src="md3-auth.js?v=2"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js"></script>
 <script src="md3-lang.js"></script>
@@ -64,8 +64,11 @@
 
   function renderBoutique() {
     readParams();
+    const canonicalCat = (cat) =>
+      MD3Store.canonicalCategory ? MD3Store.canonicalCategory(cat) : cat;
+    const activeCat = catFilter ? canonicalCat(catFilter) : null;
     let products = MD3Store.getProducts();
-    if (catFilter) products = products.filter((p) => p.category === catFilter);
+    if (activeCat) products = products.filter((p) => canonicalCat(p.category) === activeCat);
     if (subFilter) products = products.filter((p) => p.sub === subFilter);
 
     const titleEl = document.getElementById('boutiqueTitle');
@@ -74,8 +77,8 @@
     const empty = document.getElementById('boutiqueEmpty');
     const filtersEl = document.getElementById('boutiqueFilters');
 
-    if (catFilter) {
-      titleEl.textContent = MD3Lang.translateCategory(catFilter);
+    if (activeCat) {
+      titleEl.textContent = MD3Lang.translateCategory(activeCat);
       document.title = 'MD3 Scandi — ' + titleEl.textContent;
     } else {
       titleEl.textContent = L('shop-eyebrow');
@@ -87,8 +90,8 @@
       ? L('boutique-count-one')
       : L('boutique-count').replace('%n', String(n));
 
-    if (catFilter && !subFilter) {
-      const subs = [...new Set(MD3Store.getProducts().filter((p) => p.category === catFilter).map((p) => p.sub))].filter(Boolean);
+    if (activeCat && !subFilter) {
+      const subs = [...new Set(MD3Store.getProducts().filter((p) => canonicalCat(p.category) === activeCat).map((p) => p.sub))].filter(Boolean);
       if (subs.length > 1) {
         filtersEl.hidden = false;
         filtersEl.innerHTML = [
@@ -99,9 +102,9 @@
         filtersEl.hidden = true;
         filtersEl.innerHTML = '';
       }
-    } else if (catFilter && subFilter) {
+    } else if (activeCat && subFilter) {
       filtersEl.hidden = false;
-      const subs = [...new Set(MD3Store.getProducts().filter((p) => p.category === catFilter).map((p) => p.sub))].filter(Boolean);
+      const subs = [...new Set(MD3Store.getProducts().filter((p) => canonicalCat(p.category) === activeCat).map((p) => p.sub))].filter(Boolean);
       filtersEl.innerHTML = [
         `<button type="button" class="boutique-filter" onclick="setSub(null)">${L('shop-all')}</button>`,
         ...subs.map((s) => {
@@ -131,7 +134,13 @@
   }
 
   window.setSub = setSub;
-  MD3Lang.init({ onChange: boot });
+  MD3Lang.init({
+    onChange() {
+      if (typeof MD3Currency !== 'undefined') MD3Currency.refreshCurrency();
+      MD3Lang.refreshUI();
+      boot();
+    },
+  });
   MD3Store.init().then(boot).catch(boot);
   window.addEventListener('md3-products-updated', renderBoutique);
   window.addEventListener('md3-carts-updated', () => MD3Header.updateCartBadge());
