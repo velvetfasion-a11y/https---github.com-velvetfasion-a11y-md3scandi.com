@@ -22,7 +22,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 62% 28%;
+  object-position: 50% 32%;
   display: block;
   transition: object-position 0.9s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -151,7 +151,7 @@ html[dir="rtl"] #md3-hero .hero-headline {
 
 @media (max-width: 767px) {
   #md3-hero .hero-bg-img {
-    object-position: 58% 24%;
+    object-position: 50% 28%;
   }
 
   #md3-hero .luxury-button {
@@ -180,7 +180,7 @@ html[dir="rtl"] #md3-hero .hero-headline {
 
 /* Featured collection section */
 .featured-collection {
-  padding: 7rem 2rem 4rem;
+  padding: 7rem 2rem 2.5rem;
   max-width: 1400px;
   margin: 0 auto;
   font-family: 'Inter', 'Jost', Helvetica, sans-serif;
