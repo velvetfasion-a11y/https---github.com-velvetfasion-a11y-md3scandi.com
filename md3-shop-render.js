@@ -19,6 +19,25 @@
     return `<div class="cemoji">${esc((p && p.emoji) || '✦')}</div>`;
   }
 
+  function storeCardMinimalHtml(p, labels) {
+    const href = global.MD3Store.productHref(p.id);
+    const image =
+      global.MD3Store && global.MD3Store.normalizeProductImages
+        ? global.MD3Store.normalizeProductImages(p)[0]
+        : p && p.image;
+    const imgHtml = image
+      ? `<img src="${esc(image)}" alt="${esc(p.name)}" loading="lazy" />`
+      : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
+    return `
+      <a href="${href}" class="product-card">
+        <div class="image-wrapper">${imgHtml}</div>
+        <div class="product-info">
+          <span class="product-name">${esc(p.name)}</span>
+          <span class="product-price">${labels.price(p.price)}</span>
+        </div>
+      </a>`;
+  }
+
   function storeCardHtml(p, labels) {
     const out = !p.stock;
     const href = global.MD3Store.productHref(p.id);
@@ -92,13 +111,18 @@
       addToCart: L('cart-add'),
       priceNote: L('price-incl'),
       price: (n) =>
-        global.MD3Currency && global.MD3Currency.formatPriceInSiteLang
-          ? global.MD3Currency.formatPriceInSiteLang(n)
-          : global.MD3Currency.formatPrice(n),
+        global.MD3Currency && global.MD3Currency.formatPrice
+          ? global.MD3Currency.formatPrice(n)
+          : `${n} €`,
       catLabel: (c) => global.MD3Lang.translateCategory(c),
       subLabel: (s) => global.MD3Lang.translateSub(s),
       cartSvg,
+      minimal: false,
     };
+  }
+
+  function minimalLabels() {
+    return { ...defaultLabels(), minimal: true };
   }
 
   function renderGrid(container, products, labels) {
@@ -108,7 +132,8 @@
       container.innerHTML = '';
       return;
     }
-    container.innerHTML = products.map((p) => storeCardHtml(p, lbl)).join('');
+    const render = lbl.minimal ? storeCardMinimalHtml : storeCardHtml;
+    container.innerHTML = products.map((p) => render(p, lbl)).join('');
   }
 
   global.MD3Shop = {
@@ -118,6 +143,7 @@
     addToCart,
     showToast,
     defaultLabels,
+    minimalLabels,
     renderGrid,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

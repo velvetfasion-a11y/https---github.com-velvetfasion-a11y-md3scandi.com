@@ -9,8 +9,8 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="md3-header.css?v=3" />
-<link rel="stylesheet" href="md3-admin.css" />
+<link rel="stylesheet" href="md3-header.css?v=5" />
+<link rel="stylesheet" href="md3-admin.css?v=4" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" crossorigin="anonymous" />
 <style>
   :root {
@@ -565,61 +565,6 @@
     transition: color 0.2s;
   }
   .btn-delete-subtle:hover { color: var(--danger); }
-  .admin-layout { display: flex; min-height: calc(100vh - var(--md3-chrome-h, 108px)); }
-  .admin-sidebar {
-    width: 220px; flex-shrink: 0;
-    background: var(--charcoal); color: white;
-    padding: 2rem 0;
-    position: sticky; top: var(--md3-chrome-h, 108px); height: calc(100vh - var(--md3-chrome-h, 108px)); overflow-y: auto;
-  }
-  .admin-sidebar-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
-    color: rgba(255,255,255,0.4); padding: 0 1.5rem; margin-bottom: 1.5rem;
-  }
-  .admin-nav-item {
-    display: block; padding: 0.75rem 1.5rem;
-    font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase;
-    color: rgba(255,255,255,0.6); cursor: pointer;
-    transition: all 0.15s; border: none; background: none; width: 100%; text-align: left;
-  }
-  .admin-nav-item:hover, .admin-nav-item.active {
-    color: white; background: rgba(255,255,255,0.08);
-  }
-  .admin-nav-item.active { border-left: 2px solid white; }
-  .admin-content { flex: 1; padding: 2.5rem; overflow-y: auto; }
-  .admin-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;
-  }
-  .admin-header h1 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.8rem; font-weight: 300;
-  }
-  .btn-add {
-    background: var(--charcoal); color: white; border: none;
-    padding: 0.7rem 1.5rem;
-    font-family: 'Jost', sans-serif;
-    font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase;
-    cursor: pointer; transition: background 0.2s;
-  }
-  .btn-add:hover { background: var(--accent); }
-  .admin-stats {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem;
-    margin-bottom: 2.5rem;
-  }
-  .stat-card {
-    background: white; border: 1px solid var(--mist);
-    padding: 1.25rem 1.5rem;
-  }
-  .stat-card .stat-label {
-    font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase;
-    color: var(--stone); margin-bottom: 0.5rem;
-  }
-  .stat-card .stat-value {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 2rem; font-weight: 300; line-height: 1;
-  }
   .products-table {
     background: white; border: 1px solid var(--mist); width: 100%;
     border-collapse: collapse;
@@ -677,7 +622,199 @@
     max-height: 90vh; overflow-y: auto;
     position: relative;
   }
-  .modal.modal-product { max-width: 560px; }
+  .modal.modal-product { max-width: 520px; border-radius: 20px; padding: 1.75rem 1.5rem 1.35rem; }
+  .modal-product h2 {
+    font-size: 1.35rem;
+    font-weight: 500;
+    margin-bottom: 1.25rem;
+  }
+  .modal-product .field { margin-bottom: 1rem; }
+  .modal-product .field label {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: rgba(44, 44, 42, 0.55);
+    margin-bottom: 0.4rem;
+  }
+  .modal-product .field input,
+  .modal-product .field textarea,
+  .modal-product select.field-select {
+    border-radius: 12px;
+    border: 1px solid rgba(44, 44, 42, 0.1);
+    background: #f5f2ed;
+    padding: 0.72rem 0.95rem;
+    font-size: 0.92rem;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .modal-product .field input:focus,
+  .modal-product .field textarea:focus,
+  .modal-product select.field-select:focus {
+    border-color: rgba(184, 148, 106, 0.55);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(184, 148, 106, 0.12);
+  }
+  .modal-product .field-textarea {
+    width: 100%;
+    resize: vertical;
+    min-height: 88px;
+    font-family: 'Jost', sans-serif;
+  }
+  .modal-product .field-row-taxonomy {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .modal-product .field-row-taxonomy .field { margin-bottom: 0; min-width: 0; }
+  .modal-product .field-row-taxonomy .admin-sub-field {
+    display: flex;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+  .modal-product .field-row-taxonomy .admin-sub-field select { flex: 1; min-width: 0; }
+  .modal-product .field-row-taxonomy .admin-sub-add {
+    flex-shrink: 0;
+    width: 2.25rem;
+    border-radius: 12px;
+    border: 1px solid rgba(44, 44, 42, 0.1);
+    background: #f5f2ed;
+    opacity: 1;
+    color: rgba(44, 44, 42, 0.55);
+  }
+  .modal-product .field-row-taxonomy .admin-sub-add:hover {
+    background: #fff;
+    color: var(--charcoal);
+  }
+  .modal-product .field-featured {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    background: #f5f2ed;
+    border-radius: 12px;
+    border: 1px solid rgba(44, 44, 42, 0.08);
+  }
+  .modal-product .field-featured input { width: auto; margin: 0; accent-color: #b8946b; }
+  .modal-product .field-featured label { margin: 0; text-transform: none; letter-spacing: 0.02em; font-size: 0.82rem; color: var(--charcoal); }
+  .modal-product .image-upload-zone { margin-bottom: 1.1rem; }
+  .modal-product .image-upload-hint {
+    font-size: 0.72rem;
+    color: rgba(44, 44, 42, 0.5);
+    margin-top: 0.5rem;
+    line-height: 1.45;
+  }
+  .modal-product .product-photo-slots {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 0.5rem;
+  }
+  .modal-product .product-photo-slot {
+    aspect-ratio: 3 / 4;
+    border-radius: 14px;
+    border: 2px dashed rgba(184, 148, 106, 0.35);
+    background: #f5f2ed;
+    color: rgba(44, 44, 42, 0.45);
+    font-family: 'Jost', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 300;
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  }
+  .modal-product .product-photo-slot:hover {
+    border-color: rgba(184, 148, 106, 0.55);
+    background: #faf7f2;
+  }
+  .modal-product .product-photo-slot.active {
+    border-color: #1a1a1a;
+    border-style: solid;
+    box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.08);
+  }
+  .modal-product .product-photo-slot.drag-over {
+    border-color: #b8946b;
+    border-style: solid;
+    background: rgba(184, 148, 106, 0.1);
+    transform: scale(1.02);
+  }
+  .modal-product .product-photo-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .modal-product .product-photo-slot span {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    text-align: center;
+    pointer-events: none;
+  }
+  .modal-product .product-photo-slot.has-image span {
+    align-items: flex-end;
+    justify-content: flex-start;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: white;
+    background: linear-gradient(to top, rgba(0,0,0,0.45), transparent 55%);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  .modal-product .crop-section { display: none; margin-top: 0.85rem; }
+  .modal-product .crop-wrap {
+    width: 100%;
+    height: 260px;
+    background: #f0ebe3;
+    overflow: hidden;
+    border-radius: 14px;
+  }
+  .modal-product .crop-toolbar {
+    display: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0.75rem 0 0;
+  }
+  .modal-product .crop-toolbar button {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid rgba(44, 44, 42, 0.12);
+    background: #fff;
+    color: var(--charcoal);
+    cursor: pointer;
+    border-radius: 999px;
+  }
+  .modal-product .crop-toolbar button:hover { background: #f5f2ed; }
+  .modal-product .crop-toolbar .btn-remove-img { color: var(--danger); border-color: #e8c5c2; }
+  .modal-product .modal-actions {
+    margin-top: 1.25rem;
+    padding-top: 0;
+    border-top: none;
+  }
+  .modal-product .btn-cancel,
+  .modal-product .btn-primary {
+    border-radius: 12px;
+  }
+  .modal-product .modal-close {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    background: #f5f2ed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    top: 0.85rem;
+    right: 0.85rem;
+  }
+  @media (max-width: 520px) {
+    .modal-product .field-row-taxonomy { grid-template-columns: 1fr; gap: 0.65rem; }
+  }
   .modal h2 {
     font-family: 'Cormorant Garamond', serif;
     font-size: 1.5rem; font-weight: 300; margin-bottom: 1.75rem;
@@ -835,14 +972,6 @@
     color: var(--charcoal);
   }
   .table-wrap { overflow-x: auto; }
-  @media (max-width: 768px) {
-    .admin-layout { flex-direction: column; }
-    .admin-sidebar {
-      width: 100%; position: static; height: auto;
-      display: flex; flex-wrap: wrap; padding: 1rem 0;
-    }
-    .admin-sidebar-title { width: 100%; }
-  }
 </style>
 </head>
 <body data-meta-title="meta-title-compte" data-meta-desc="meta-desc-compte">
@@ -993,23 +1122,21 @@
 </div>
 
 <div class="page" id="page-admin">
-  <div class="admin-layout">
-    <aside class="admin-sidebar">
-      <div class="admin-sidebar-brand">
-        <h1>M<em>D</em>3 Scandi</h1>
-        <p data-i18n="admin-sidebar">MD3 Admin</p>
-      </div>
-      <div class="admin-sec-lbl" data-i18n="admin-nav-section">Navigation</div>
-      <button class="admin-nav-item active" data-tab="products" onclick="adminTab('products')" data-i18n="admin-products">Produits</button>
-      <button class="admin-nav-item" data-tab="stats" onclick="adminTab('stats')" data-i18n="admin-stats">Statistiques</button>
-      <button class="admin-nav-item" onclick="openAddProduct()" data-i18n="admin-add-product-short">+ Nouveau produit</button>
-      <div class="admin-sec-lbl" data-i18n="admin-shop-section">Boutique</div>
-      <a class="admin-store-link" href="index.html#boutique" target="_blank" rel="noopener" data-i18n="admin-view-boutique">Voir la boutique ↗</a>
-      <div class="admin-sidebar-foot" data-i18n="admin-version">MD3 Scandi · v2</div>
-      <button class="admin-nav-item" style="color: rgba(255,255,255,0.35);" onclick="doLogout()" data-i18n="nav-logout">Déconnexion</button>
-    </aside>
-    <div class="admin-content" id="adminContent"></div>
-  </div>
+  <header class="admin-nav">
+    <a href="index.html" class="admin-logo">M<em>D</em>3 <em>Scandi</em></a>
+    <div class="admin-nav-right">
+      <span class="admin-email" id="adminUserEmail"></span>
+      <a class="admin-store-link-inline" href="index.html#boutique" target="_blank" rel="noopener" data-i18n="admin-view-boutique">Voir la boutique ↗</a>
+      <button type="button" class="admin-logout" onclick="doLogout()" data-i18n="nav-logout">Déconnexion</button>
+    </div>
+  </header>
+  <main class="admin-main admin-main-wide">
+    <nav class="admin-tabs" aria-label="Admin">
+      <button type="button" class="admin-tab active" data-tab="products" onclick="adminTab('products')" data-i18n="admin-products">Produits</button>
+      <button type="button" class="admin-tab" data-tab="stats" onclick="adminTab('stats')" data-i18n="admin-stats">Statistiques</button>
+    </nav>
+    <div id="adminContent"></div>
+  </main>
 </div>
 
 <div class="modal-overlay" id="productModal">
@@ -1017,43 +1144,12 @@
     <button class="modal-close" onclick="closeModal('productModal')">✕</button>
     <h2 id="modalTitle" data-i18n="modal-add">Ajouter un produit</h2>
     <input type="hidden" id="editId">
-    <div class="field">
-      <label data-i18n="label-prod-name">Nom du produit</label>
-      <input type="text" id="prodName" placeholder="ex. Robe Lin Ivoire">
-    </div>
-    <div class="field field-taxonomy">
-      <label data-i18n="label-category">Catégorie</label>
-      <select id="prodCat" class="field-select" data-i18n-options onchange="onProdCatChange()">
-        <option value="Mode">Mode</option>
-        <option value="Maison">Maison</option>
-        <option value="Lifestyle">Lifestyle</option>
-        <option value="Édition limitée">Édition limitée</option>
-      </select>
-    </div>
-    <div class="field field-taxonomy">
-      <label data-i18n="label-subcat">Sous-catégorie</label>
-      <div class="admin-sub-field">
-        <select id="prodSub" class="field-select" data-i18n-sub-options></select>
-        <button type="button" class="admin-sub-add" id="prodSubAddBtn" onclick="promptAddSubcategory()" aria-label="+">+</button>
-      </div>
-    </div>
-    <div class="field">
-      <label data-i18n="label-desc">Description</label>
-      <textarea id="prodDesc" rows="3" placeholder="" style="width:100%;border:1px solid var(--mist);padding:0.75rem 1rem;font-family:'Jost',sans-serif;font-size:0.9rem;background:var(--ivory);resize:vertical;"></textarea>
-    </div>
-    <div class="field">
-      <label data-i18n="label-price">Prix (€)</label>
-      <input type="number" id="prodPrice" placeholder="89" min="0" step="0.01">
-    </div>
-    <div class="field" style="display:flex;align-items:center;gap:10px;">
-      <input type="checkbox" id="prodFeatured" style="width:auto;">
-      <label for="prodFeatured" data-i18n="label-featured" style="margin:0;">En vedette sur l'accueil</label>
-    </div>
+    <input type="file" id="prodImageInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
+
     <div class="field image-upload-zone">
-      <label data-i18n="label-photo">Photo du produit</label>
-      <input type="file" id="prodImageInput" accept="image/jpeg,image/png,image/webp,image/gif" onchange="onProductImagePick(event)" />
-      <p class="image-upload-hint" data-i18n="photo-hint">Glissez pour repositionner, redimensionnez la zone de recadrage. JPG/PNG, max. 8 Mo.</p>
+      <label data-i18n="label-photo">Photos du produit (max. 3)</label>
       <div class="product-photo-slots" id="productPhotoSlots"></div>
+      <p class="image-upload-hint" data-i18n="photo-hint">Tap a box or drag a photo in. Up to 3 images — select a thumbnail to crop.</p>
       <div class="crop-section" id="cropSection">
         <div class="crop-wrap">
           <img id="cropImage" alt="Aperçu recadrage" />
@@ -1066,6 +1162,43 @@
           <button type="button" class="btn-remove-img" onclick="removeProductImage()" data-i18n="remove-image">Supprimer l'image</button>
         </div>
       </div>
+    </div>
+
+    <div class="field">
+      <label data-i18n="label-prod-name">Nom du produit</label>
+      <input type="text" id="prodName" placeholder="ex. Robe Lin Ivoire">
+    </div>
+
+    <div class="field-row-taxonomy">
+      <div class="field field-taxonomy">
+        <label data-i18n="label-category">Catégorie</label>
+        <select id="prodCat" class="field-select" data-i18n-options onchange="onProdCatChange()">
+          <option value="Mode">Mode</option>
+          <option value="Maison">Maison</option>
+          <option value="Lifestyle">Lifestyle</option>
+          <option value="Édition limitée">Édition limitée</option>
+        </select>
+      </div>
+      <div class="field field-taxonomy">
+        <label data-i18n="label-subcat">Sous-catégorie</label>
+        <div class="admin-sub-field">
+          <select id="prodSub" class="field-select" data-i18n-sub-options></select>
+          <button type="button" class="admin-sub-add" id="prodSubAddBtn" onclick="promptAddSubcategory()" aria-label="+">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label data-i18n="label-desc">Description</label>
+      <textarea id="prodDesc" class="field-textarea" rows="3" placeholder=""></textarea>
+    </div>
+    <div class="field">
+      <label data-i18n="label-price">Prix (€)</label>
+      <input type="number" id="prodPrice" placeholder="89" min="0" step="0.01">
+    </div>
+    <div class="field field-featured">
+      <input type="checkbox" id="prodFeatured">
+      <label for="prodFeatured" data-i18n="label-featured">En vedette sur l'accueil</label>
     </div>
     <div class="field">
       <label data-i18n="label-stock">Stock (inventaire)</label>
@@ -1121,16 +1254,17 @@
 <script src="md3-store.js?v=5"></script>
 <script src="md3-auth.js?v=3"></script>
 <script src="md3-nav-icons.js"></script>
-<script src="md3-header.js?v=2"></script>
-<script src="md3-lang.js?v=5"></script>
+<script src="md3-header.js?v=3"></script>
+<script src="md3-lang.js?v=8"></script>
 <script src="md3-taxonomy.js?v=2"></script>
-<script src="md3-currency.js?v=3"></script>
+<script src="md3-currency.js?v=4"></script>
 <script src="email-config.js?v=3"></script>
 <script src="md3-email.js?v=5"></script>
 <script>
 const S = MD3Store;
 const L = (k) => MD3Lang.t(k);
 let adminFilter = 'Tous';
+let adminSearch = '';
 let adminTabActive = 'products';
 const MAX_PRODUCT_IMAGES = 3;
 const PRODUCT_IMAGE_MAX_BYTES = 20 * 1024 * 1024;
@@ -1190,11 +1324,85 @@ function renderProductPhotoSlots() {
     const img = productImages[i];
     const active = i === activeProductImageIndex ? ' active' : '';
     const has = img ? ' has-image' : '';
-    return `<button type="button" class="product-photo-slot${active}${has}" onclick="selectProductImageSlot(${i})">
+    const label = img ? productImageLabel(i) : '+';
+    return `<button type="button" class="product-photo-slot${active}${has}" data-index="${i}" aria-label="${esc(label)}">
       ${img ? `<img src="${esc(img)}" alt="" />` : ''}
-      <span>${img ? productImageLabel(i) : '+'}</span>
+      <span>${esc(label)}</span>
     </button>`;
   }).join('');
+  initProductPhotoSlotEvents();
+}
+
+function initProductPhotoSlotEvents() {
+  const slots = document.getElementById('productPhotoSlots');
+  const input = document.getElementById('prodImageInput');
+  if (!slots || slots.dataset.bound === '1') return;
+  slots.dataset.bound = '1';
+
+  slots.addEventListener('click', (e) => {
+    const btn = e.target.closest('.product-photo-slot');
+    if (!btn) return;
+    const index = parseInt(btn.dataset.index, 10);
+    if (Number.isNaN(index)) return;
+    if (!productImages[index]) {
+      activeProductImageIndex = index;
+      openProductImagePicker();
+      return;
+    }
+    selectProductImageSlot(index);
+  });
+
+  slots.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const btn = e.target.closest('.product-photo-slot');
+    slots.querySelectorAll('.product-photo-slot.drag-over').forEach((el) => el.classList.remove('drag-over'));
+    if (btn) btn.classList.add('drag-over');
+  });
+
+  slots.addEventListener('dragleave', (e) => {
+    const btn = e.target.closest('.product-photo-slot');
+    if (btn && !btn.contains(e.relatedTarget)) btn.classList.remove('drag-over');
+  });
+
+  slots.addEventListener('drop', (e) => {
+    e.preventDefault();
+    slots.querySelectorAll('.product-photo-slot').forEach((el) => el.classList.remove('drag-over'));
+    const btn = e.target.closest('.product-photo-slot');
+    if (btn) activeProductImageIndex = parseInt(btn.dataset.index, 10) || 0;
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) processProductImageFile(file);
+  });
+
+  if (input && !input.dataset.bound) {
+    input.dataset.bound = '1';
+    input.addEventListener('change', onProductImagePick);
+  }
+}
+
+function openProductImagePicker() {
+  const input = document.getElementById('prodImageInput');
+  if (input) input.click();
+}
+
+function processProductImageFile(file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    alert(L('err-image-type'));
+    return;
+  }
+  if (file.size > PRODUCT_IMAGE_MAX_BYTES) {
+    alert(L('err-image-size'));
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function () {
+    saveActiveProductImageCrop();
+    activeProductImageIndex = Math.max(0, Math.min(MAX_PRODUCT_IMAGES - 1, activeProductImageIndex));
+    loadImageIntoCropper(reader.result);
+    productImages[activeProductImageIndex] = reader.result;
+    renderProductPhotoSlots();
+  };
+  reader.readAsDataURL(file);
 }
 
 function selectProductImageSlot(index) {
@@ -1241,28 +1449,8 @@ function loadImageIntoCropper(src) {
 
 function onProductImagePick(e) {
   const file = e.target.files && e.target.files[0];
-  if (!file) return;
-  if (!file.type.startsWith('image/')) {
-    alert(L('err-image-type'));
-    return;
-  }
-  if (file.size > PRODUCT_IMAGE_MAX_BYTES) {
-    alert(L('err-image-size'));
-    e.target.value = '';
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = function () {
-    saveActiveProductImageCrop();
-    if (productImages[activeProductImageIndex] && productImages.filter(Boolean).length < MAX_PRODUCT_IMAGES) {
-      const emptyIndex = productImages.findIndex((img) => !img);
-      activeProductImageIndex = emptyIndex === -1 ? productImages.length : emptyIndex;
-    }
-    loadImageIntoCropper(reader.result);
-    productImages[activeProductImageIndex] = reader.result;
-    renderProductPhotoSlots();
-  };
-  reader.readAsDataURL(file);
+  if (file) processProductImageFile(file);
+  e.target.value = '';
 }
 
 function getProductImagesFromEditor() {
@@ -1308,13 +1496,23 @@ function cropReset() {
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
+  document.body.classList.toggle('admin-active', name === 'admin');
   if (name !== 'signup') {
     const formStep = document.getElementById('signup-form-step');
     if (formStep) formStep.style.display = '';
   }
   if (name === 'profile') renderProfile();
-  if (name === 'admin') renderAdminProducts();
+  if (name === 'admin') {
+    updateAdminNav();
+    renderAdminProducts();
+  }
   updateNav();
+}
+
+function updateAdminNav() {
+  const emailEl = document.getElementById('adminUserEmail');
+  const user = S.getCurrentUser();
+  if (emailEl) emailEl.textContent = user && user.email ? user.email : '';
 }
 
 function updateCartBadge() {
@@ -1341,7 +1539,10 @@ function refreshCompteView() {
   const active = document.querySelector('.page.active');
   if (!active) return;
   if (active.id === 'page-profile') renderProfile();
-  else if (active.id === 'page-admin') adminTab(adminTabActive);
+  else if (active.id === 'page-admin') {
+    updateAdminNav();
+    adminTab(adminTabActive);
+  }
 }
 
 function clearInputErrors(prefix) {
@@ -1671,7 +1872,7 @@ function renderProfileGrid(gridId, products, context) {
       <div class="liked-card-body">
         <div class="liked-card-cat">${esc(MD3Lang.translateCategory(p.category))} · ${esc(MD3Lang.translateSub(p.sub))}</div>
         <div class="liked-card-name">${esc(p.name)}</div>
-        <div class="liked-card-price">${MD3Currency.formatPriceInSiteLang(p.price)}</div>
+        <div class="liked-card-price">${MD3Currency.formatPrice(p.price)}</div>
       </div>
       <div class="liked-card-actions">
         <button type="button" class="profile-card-btn" onclick="toggleWishlistFromProfile(${p.id})">${wishlistLabel}</button>
@@ -1760,7 +1961,7 @@ function copyWishlist() {
   const profile = S.getUsers()[user.email] || {};
   const products = S.getProducts().filter(p => (profile.wishlist || []).includes(p.id));
   if (!products.length) return;
-  const text = products.map(p => `${p.name} — ${MD3Currency.formatPriceInSiteLang(p.price)}`).join('\n');
+  const text = products.map(p => `${p.name} — ${MD3Currency.formatPrice(p.price)}`).join('\n');
   navigator.clipboard?.writeText('My MD3 Scandi Wishlist:\n\n' + text + '\n\n' + location.origin).catch(() => {});
 }
 
@@ -1821,17 +2022,32 @@ function confirmDeleteAccount() {
 
 function adminTab(tab) {
   adminTabActive = tab;
-  document.querySelectorAll('.admin-nav-item[data-tab]').forEach(el => {
+  document.querySelectorAll('.admin-tabs [data-tab]').forEach(el => {
     el.classList.toggle('active', el.dataset.tab === tab);
   });
   if (tab === 'products') renderAdminProducts();
   else renderAdminStats();
 }
 
+function setAdminSearch(val) {
+  adminSearch = (val || '').trim().toLowerCase();
+  renderAdminProducts();
+}
+
+function adminProductMatchesSearch(p, q) {
+  if (!q) return true;
+  const hay = [p.name, p.category, p.sub, p.desc, String(p.id), String(p.price)]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return hay.includes(q);
+}
+
 function renderAdminProducts() {
   const products = S.getProducts().sort((a, b) => Number(b.id) - Number(a.id));
   const cats = ['Tous', ...new Set(products.map(p => p.category))];
-  const filtered = adminFilter === 'Tous' ? products : products.filter(p => p.category === adminFilter);
+  const filteredByCat = adminFilter === 'Tous' ? products : products.filter(p => p.category === adminFilter);
+  const filtered = filteredByCat.filter(p => adminProductMatchesSearch(p, adminSearch));
   const total = products.length;
   const outOfStock = products.filter(p => p.stock === 0).length;
   const featured = products.filter(p => p.featured).length;
@@ -1843,26 +2059,36 @@ function renderAdminProducts() {
 
   const catBtnLabel = (c) => c === 'Tous' ? L('shop-all') : MD3Lang.translateCategory(c);
   const stockBadge = (p) => p.stock === 0 ? L('stock-out-lbl') : L('stock-in');
+  const searchVal = esc(adminSearch);
 
   document.getElementById('adminContent').innerHTML = `
-    <div class="admin-header">
+    <div class="admin-page-head">
       <div>
         <h1>${L('admin-manage')}</h1>
-        <p>${total} ${L('stat-products-word')}</p>
+        <p class="admin-sub">${total} ${L('stat-products-word')}</p>
       </div>
-      <button class="btn-add" type="button" onclick="openAddProduct()">${L('admin-add-product-short')}</button>
+      <button class="admin-btn-outline" type="button" onclick="renderAdminProducts()">${L('admin-refresh')}</button>
     </div>
-    <div class="admin-stats">
-      <div class="stat-card"><div class="stat-label">${L('stat-products')}</div><div class="stat-value">${total}</div></div>
-      <div class="stat-card"><div class="stat-label">${L('stock-in')}</div><div class="stat-value">${total - outOfStock}</div></div>
-      <div class="stat-card"><div class="stat-label">${L('stat-featured')}</div><div class="stat-value">${featured}</div></div>
-      <div class="stat-card"><div class="stat-label">${L('stat-stock-value')}</div><div class="stat-value">${fmtPrice(stockValue)}</div></div>
+    <div class="admin-toolbar">
+      <div class="admin-search-wrap">
+        <input type="search" class="admin-search" placeholder="${esc(L('admin-search-placeholder'))}" value="${searchVal}" oninput="setAdminSearch(this.value)" />
+      </div>
+      <div class="admin-toolbar-meta">
+        <span class="admin-count"><strong>${filtered.length}</strong> ${L('stat-products-word')}</span>
+        <button class="admin-btn" type="button" onclick="openAddProduct()">${L('admin-add-product-short')}</button>
+      </div>
+    </div>
+    <div class="admin-grid">
+      <div class="admin-stat"><div class="admin-stat-label">${L('stat-products')}</div><div class="admin-stat-value">${total}</div></div>
+      <div class="admin-stat"><div class="admin-stat-label">${L('stock-in')}</div><div class="admin-stat-value">${total - outOfStock}</div></div>
+      <div class="admin-stat"><div class="admin-stat-label">${L('stat-featured')}</div><div class="admin-stat-value">${featured}</div></div>
+      <div class="admin-stat"><div class="admin-stat-label">${L('stat-stock-value')}</div><div class="admin-stat-value">${fmtPrice(stockValue)}</div></div>
     </div>
     <div class="category-filter">
       ${cats.map(c => `<button type="button" class="filter-btn ${c === adminFilter ? 'active' : ''}" onclick="setAdminFilter('${esc(c).replace(/'/g, "\\'")}')">${esc(catBtnLabel(c))}</button>`).join('')}
     </div>
     <div class="adm-pgrid">
-      ${filtered.map(p => `
+      ${filtered.length ? filtered.map(p => `
         <article class="adm-pc${p.featured ? ' feat' : ''}">
           <div class="adm-cim" onclick="openEditProduct(${p.id})">
             ${productImagesFor(p)[0] ? `<img src="${esc(productImagesFor(p)[0])}" alt="" class="product-thumb" />` : `<span>${esc(p.emoji || '✦')}</span>`}
@@ -1891,7 +2117,7 @@ function renderAdminProducts() {
               <button type="button" class="adm-btn-edit" onclick="openEditProduct(${p.id})">${L('btn-modify')}</button>
             </div>
           </div>
-        </article>`).join('')}
+        </article>`).join('') : `<div class="admin-panel"><p class="admin-sub">${L('admin-no-results')}</p></div>`}
     </div>`;
 }
 
@@ -1899,24 +2125,35 @@ function renderAdminStats() {
   const products = S.getProducts();
   const cats = {};
   products.forEach(p => { cats[p.category] = (cats[p.category] || 0) + 1; });
+  const outOfStock = products.filter(p => p.stock === 0);
   document.getElementById('adminContent').innerHTML = `
-    <div class="admin-header"><h1>${L('stats-title')}</h1></div>
-    <div class="admin-stats" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
-      ${Object.entries(cats).map(([cat, count]) => `
-        <div class="stat-card"><div class="stat-label">${esc(MD3Lang.translateCategory(cat))}</div>
-        <div class="stat-value">${count} <span style="font-size:1rem;color:var(--stone)">${L('stat-products-word')}</span></div></div>`).join('')}
+    <div class="admin-page-head">
+      <div>
+        <h1>${L('stats-title')}</h1>
+        <p class="admin-sub">${products.length} ${L('stat-products-word')}</p>
+      </div>
+      <button class="admin-btn-outline" type="button" onclick="renderAdminStats()">${L('admin-refresh')}</button>
     </div>
-    <div style="margin-top:2rem;background:white;border:1px solid var(--mist);padding:1.5rem;">
-      <h2 class="section-title">${L('stats-out-title')}</h2>
-      ${products.filter(p=>p.stock===0).length === 0
-        ? `<p style="font-size:0.85rem;color:var(--stone)">${L('stats-none')}</p>`
-        : products.filter(p=>p.stock===0).map(p=>`
-            <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem 0;border-bottom:1px solid var(--mist)">
+    <div class="admin-grid">
+      ${Object.entries(cats).map(([cat, count]) => `
+        <div class="admin-stat">
+          <div class="admin-stat-label">${esc(MD3Lang.translateCategory(cat))}</div>
+          <div class="admin-stat-value">${count}</div>
+        </div>`).join('')}
+    </div>
+    <div class="admin-panel" style="margin-top:1.5rem">
+      <h2>${L('stats-out-title')}</h2>
+      ${outOfStock.length === 0
+        ? `<p class="admin-sub">${L('stats-none')}</p>`
+        : `<ul class="admin-list">${outOfStock.map(p => `
+            <li class="admin-list-item">
               ${S.productThumbInner(p)}
-              <div><div style="font-size:0.9rem;font-weight:500">${esc(p.name)}</div>
-              <div style="font-size:0.75rem;color:var(--stone)">${esc(MD3Lang.translateCategory(p.category))}</div></div>
-              <button class="btn-sm btn-edit" style="margin-left:auto" onclick="adminTab('products');setAdminFilter('${esc(p.category).replace(/'/g, "\\'")}')">${L('btn-view')}</button>
-            </div>`).join('')}
+              <div class="admin-list-item-info">
+                <div class="admin-list-item-name">${esc(p.name)}</div>
+                <div class="admin-list-item-meta">${esc(MD3Lang.translateCategory(p.category))}</div>
+              </div>
+              <button class="btn-sm btn-edit" type="button" onclick="adminTab('products');setAdminFilter('${esc(p.category).replace(/'/g, "\\'")}')">${L('btn-view')}</button>
+            </li>`).join('')}</ul>`}
     </div>`;
 }
 
@@ -2190,6 +2427,7 @@ async function routeCompte() {
 }
 
 (function init() {
+  initProductPhotoSlotEvents();
   MD3Lang.init({ onChange: refreshCompteView });
   MD3Store.init().then(function () {
     routeCompte().catch((e) => console.error('routeCompte', e));

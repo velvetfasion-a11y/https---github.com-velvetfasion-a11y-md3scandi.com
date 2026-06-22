@@ -9,7 +9,9 @@
     '</div></div>' +
     '<header class="site-header">' +
     '<div class="header-inner">' +
-    '<a href="index.html" class="logo"><strong>MD3</strong><em>Scandi</em></a>' +
+    '<a href="index.html" class="logo" aria-label="MD3 Scandi">' +
+    '<span class="logo-md3"><span class="logo-letters">MD</span><span class="logo-digit">3</span></span>' +
+    '<em class="logo-scandi">Scandi</em></a>' +
     '<nav class="header-nav" aria-label="Categories">' +
     '<a href="boutique.html?cat=Mode" class="nav-cat-link" data-i18n="nav-fashion">Mode</a>' +
     '<span class="nav-dot" aria-hidden="true"></span>' +

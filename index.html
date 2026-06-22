@@ -23,24 +23,24 @@
 <!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="md3-header.css?v=3" />
-<link rel="stylesheet" href="md3-home.css" />
-<link rel="stylesheet" href="md3-shop.css?v=9" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Playfair+Display:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="md3-header.css?v=5" />
+<link rel="stylesheet" href="md3-home.css?v=8" />
+<link rel="stylesheet" href="md3-shop.css?v=11" />
 
 <style>
   :root {
-    --cream: #f0ebe3;
-    --cream-deep: #e8e2d8;
-    --sand: #d9cdb6;
+    --cream: #f8f5f0;
+    --cream-deep: #f0f0f0;
+    --sand: #eaeaea;
     --bone: #ffffff;
-    --ink: #2b2620;
-    --ink-soft: #5a5247;
+    --ink: #1a1a1a;
+    --ink-soft: #666666;
     --wood: #b8946b;
-    --gold: #b8935a;
-    --gold-bright: #d4a85f;
-    --gold-soft: #e8d4a8;
-    --shadow: 0 1px 2px rgba(43, 38, 32, 0.04), 0 8px 24px rgba(43, 38, 32, 0.06);
+    --gold: #1a1a1a;
+    --gold-bright: #333333;
+    --gold-soft: #eaeaea;
+    --shadow: 0 2px 8px rgba(26, 26, 26, 0.06);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,8 +48,8 @@
   html { scroll-behavior: smooth; }
 
   body {
-    font-family: 'Jost', sans-serif;
-    font-weight: 300;
+    font-family: 'Inter', 'Jost', sans-serif;
+    font-weight: 400;
     color: var(--ink);
     background: var(--cream);
     line-height: 1.6;
@@ -61,15 +61,7 @@
   }
   /* Subtle paper texture */
   body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    background-image:
-      radial-gradient(circle at 20% 30%, rgba(184, 147, 90, 0.06) 0%, transparent 40%),
-      radial-gradient(circle at 80% 70%, rgba(184, 148, 107, 0.05) 0%, transparent 40%);
-    opacity: 0.9;
+    display: none;
   }
 
   .display { font-family: 'Cormorant Garamond', serif; }
@@ -187,8 +179,8 @@
     position: relative;
     z-index: 1;
   }
-  section.featured-shop {
-    padding: 0 0 0;
+  section.featured-collection {
+    padding: 0;
   }
   .container { max-width: 1100px; margin: 0 auto; }
 
@@ -260,6 +252,64 @@
     box-shadow: var(--shadow);
   }
 
+  .collection-card--fashion {
+    background: url('images/fashion-bg.png') center 32% / cover no-repeat;
+    min-height: 480px;
+    padding: 0;
+    border: none;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .collection-card--fashion::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(28, 24, 20, 0.88) 0%,
+      rgba(28, 24, 20, 0.45) 38%,
+      rgba(28, 24, 20, 0.08) 62%,
+      transparent 100%
+    );
+    pointer-events: none;
+  }
+
+  .collection-card--fashion:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 48px rgba(43, 38, 32, 0.22);
+  }
+
+  .collection-card--fashion .collection-card-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    padding: 36px 28px 40px;
+    text-align: center;
+  }
+
+  .collection-card--fashion h3 {
+    color: var(--cream);
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  .collection-card p {
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  .collection-card--fashion p {
+    color: #d4af37;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.28);
+  }
+
+  .collection-card--fashion .collection-link {
+    color: var(--cream);
+    border-bottom-color: var(--gold);
+  }
+
   .collection-icon {
     font-size: 36px;
     margin-bottom: 20px;
@@ -272,12 +322,6 @@
     font-weight: 500;
     margin-bottom: 12px;
     letter-spacing: 0.02em;
-  }
-
-  .collection-card p {
-    color: var(--ink-soft);
-    font-size: 14px;
-    margin-bottom: 24px;
   }
 
   .collection-link {
@@ -389,7 +433,7 @@
     margin: 0 auto;
   }
   .manifesto-text strong {
-    color: var(--gold-bright);
+    color: #c9a96e;
     font-weight: 500;
   }
 
@@ -754,55 +798,23 @@
 <div id="md3-site-header"></div>
 
 <!-- Hero -->
-<section id="md3-hero" aria-label="MD3 Scandi">
+<section id="md3-hero" class="hero-elegant" aria-label="MD3 Scandi">
   <div class="hero-bg" aria-hidden="true">
-    <img class="hero-bg-img" src="images/hero-bg.jpeg" alt="" width="1920" height="1080" decoding="async" fetchpriority="high" />
+    <img class="hero-bg-img" src="images/hero-bg.jpeg" alt="MD3 Scandi collection hero" width="1920" height="1080" decoding="async" fetchpriority="high" />
   </div>
-  <div class="hero-inner">
-    <div class="hero-top">
-      <span class="hero-title" id="heroTitle" data-i18n="hero-brand-full">MD3 Scandi</span>
-      <span class="hero-subtitle" id="heroSubtitle" data-i18n="hero-subtitle">Ton univers, sublimé</span>
-    </div>
-    <div class="hero-btns">
-      <a href="boutique.html?cat=Mode" class="hero-btn">
-        <div class="hero-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 6.5a2.5 2.5 0 10-2.2-3.7"/><path d="M12 6.5v2.2"/><path d="M4 18l8-9 8 9"/><path d="M5.5 18h13"/></svg></div>
-        <div class="hero-btn-text">
-          <span class="hero-btn-cat" data-i18n="hero-btn-mode-1">MODE</span>
-          <span class="hero-btn-name" data-i18n="hero-btn-mode-2">COLLECTION</span>
-        </div>
-      </a>
-      <a href="boutique.html?cat=Maison" class="hero-btn">
-        <div class="hero-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-        <div class="hero-btn-text">
-          <span class="hero-btn-cat" data-i18n="hero-btn-maison-1">MAISON</span>
-          <span class="hero-btn-name" data-i18n="hero-btn-maison-2">COLLECTION</span>
-        </div>
-      </a>
-      <a href="boutique.html?cat=Lifestyle" class="hero-btn">
-        <div class="hero-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
-        <div class="hero-btn-text">
-          <span class="hero-btn-cat" data-i18n="hero-btn-lifestyle-1">LIFESTYLE</span>
-          <span class="hero-btn-name" data-i18n="hero-btn-lifestyle-2">COLLECTION</span>
-        </div>
-      </a>
-      <a href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" class="hero-btn">
-        <div class="hero-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-        <div class="hero-btn-text">
-          <span class="hero-btn-cat" data-i18n="hero-btn-limited-1">ÉDITION</span>
-          <span class="hero-btn-name" data-i18n="hero-btn-limited-2">LIMITÉE</span>
-        </div>
-      </a>
+  <div class="hero-gradient" aria-hidden="true"></div>
+  <div class="hero-content hero-content--left">
+    <div class="hero-copy">
+      <h1 class="hero-headline" data-i18n="hero-subtitle">Your world,<br>elevated</h1>
+      <a href="#boutique" class="btn-elegant luxury-button" data-i18n="hero-cta-shop">Discover the collection</a>
     </div>
   </div>
 </section>
 
 <!-- Featured -->
-<section class="featured-shop" id="boutique">
-  <div class="featured-hero reveal">
-    <h1 data-i18n="featured-title">Sélection</h1>
-    <p id="featuredCount"></p>
-  </div>
-  <div class="sgrid reveal" id="featuredGrid"></div>
+<section class="featured-collection" id="boutique">
+  <h2 class="featured-title reveal" data-i18n="featured-title">New Collection</h2>
+  <div class="product-grid reveal" id="featuredGrid"></div>
   <p class="shop-empty-state reveal" id="featuredEmpty" hidden data-i18n="featured-empty">Aucun produit en vedette pour le moment.</p>
 </section>
 
@@ -817,11 +829,12 @@
     <h2 class="section-title reveal"><span data-i18n="sec-univers-a">L'art de </span><em data-i18n="sec-univers-b">vivre beau</em></h2>
 
     <div class="collection-grid">
-      <div class="collection-card reveal">
-        <span class="collection-icon">👗</span>
-        <h3 data-i18n="mode-title">Mode</h3>
-        <p data-i18n="mode-desc">Des silhouettes pensées pour celles qui aiment la simplicité travaillée. Coupes nettes, matières nobles, intemporalité.</p>
-        <a href="boutique.html?cat=Mode" class="collection-link"><span data-i18n="explore">Explorer</span> →</a>
+      <div class="collection-card collection-card--fashion reveal">
+        <div class="collection-card-inner">
+          <h3 data-i18n="mode-title">Mode</h3>
+          <p data-i18n="mode-desc">Des silhouettes pensées pour celles qui aiment la simplicité travaillée. Coupes nettes, matières nobles, intemporalité.</p>
+          <a href="boutique.html?cat=Mode" class="collection-link"><span data-i18n="explore">Explorer</span> →</a>
+        </div>
       </div>
 
       <div class="collection-card reveal">
@@ -937,11 +950,11 @@
 <script src="md3-store.js?v=5"></script>
 <script src="md3-auth.js?v=3"></script>
 <script src="md3-nav-icons.js"></script>
-<script src="md3-header.js?v=2"></script>
-<script src="md3-lang.js?v=5"></script>
-<script src="md3-currency.js?v=3"></script>
+<script src="md3-header.js?v=3"></script>
+<script src="md3-lang.js?v=6"></script>
+<script src="md3-currency.js?v=4"></script>
 <script src="md3-hero-fit.js"></script>
-<script src="md3-shop-render.js?v=3"></script>
+<script src="md3-shop-render.js?v=6"></script>
 <script>
   function updateCartBadge() {
     MD3Header.updateCartBadge();
@@ -1011,15 +1024,9 @@
     const products = featured.length ? featured : MD3Store.getProducts();
     const grid = document.getElementById('featuredGrid');
     const empty = document.getElementById('featuredEmpty');
-    const countEl = document.getElementById('featuredCount');
     if (!grid) return;
 
     const n = products.length;
-    if (countEl) {
-      countEl.textContent = n === 1
-        ? shopLabel('boutique-count-one')
-        : shopLabel('boutique-count').replace('%n', String(n));
-    }
 
     if (!n) {
       grid.innerHTML = '';
@@ -1027,7 +1034,7 @@
       return;
     }
     if (empty) empty.hidden = true;
-    MD3Shop.renderGrid(grid, products);
+    MD3Shop.renderGrid(grid, products.slice(0, 4), MD3Shop.minimalLabels());
     updateCartBadge();
   }
 

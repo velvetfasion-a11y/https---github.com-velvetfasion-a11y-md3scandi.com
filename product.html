@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500;600&family=Noto+Sans+Arabic:wght@300;400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="md3-header.css?v=3" />
+<link rel="stylesheet" href="md3-header.css?v=5" />
 <link rel="stylesheet" href="md3-shop.css?v=12" />
 <style>
   body { font-family: 'Jost', sans-serif; background: #f5f0e8; color: #1a1816; min-height: 100vh; }
@@ -37,10 +37,10 @@
 <script src="md3-store.js?v=5"></script>
 <script src="md3-auth.js?v=3"></script>
 <script src="md3-nav-icons.js"></script>
-<script src="md3-header.js?v=2"></script>
+<script src="md3-header.js?v=3"></script>
 <script src="md3-lang.js?v=5"></script>
-<script src="md3-currency.js?v=3"></script>
-<script src="md3-shop-render.js?v=3"></script>
+<script src="md3-currency.js?v=4"></script>
+<script src="md3-shop-render.js?v=4"></script>
 <script>
   let qty = 1;
   let currentProductImages = [];
@@ -125,7 +125,7 @@
         ${catLine ? `<div class="product-pcat">${MD3Shop.esc(catLine)}</div>` : ''}
         <h1 class="product-ptitle">${MD3Shop.esc(p.name)}</h1>
         <div class="product-ppr">
-          <span class="product-pp">${MD3Currency.formatPriceInSiteLang(p.price)}</span>
+          <span class="product-pp">${MD3Currency.formatPrice(p.price)}</span>
           <span class="product-ppn">${L('price-incl')}</span>
         </div>
         <div class="product-pstk ${out ? 'out' : 'in'}">${out ? L('stock-out-lbl') : L('stock-in')}</div>

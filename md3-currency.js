@@ -51,25 +51,97 @@
     SK: 'EUR', SI: 'EUR', LT: 'EUR', LV: 'EUR', EE: 'EUR', CY: 'EUR', MT: 'EUR',
   };
 
+  const TZ_REGION = {
+    'Europe/Paris': 'FR',
+    'Europe/Berlin': 'DE',
+    'Europe/Madrid': 'ES',
+    'Europe/Rome': 'IT',
+    'Europe/Amsterdam': 'NL',
+    'Europe/Brussels': 'BE',
+    'Europe/Vienna': 'AT',
+    'Europe/Lisbon': 'PT',
+    'Europe/Dublin': 'IE',
+    'Europe/Helsinki': 'FI',
+    'Europe/London': 'GB',
+    'Europe/Stockholm': 'SE',
+    'Europe/Oslo': 'NO',
+    'Europe/Copenhagen': 'DK',
+    'Europe/Warsaw': 'PL',
+    'Europe/Prague': 'CZ',
+    'Europe/Budapest': 'HU',
+    'Europe/Bucharest': 'RO',
+    'Europe/Sofia': 'BG',
+    'Europe/Zagreb': 'HR',
+    'Europe/Zurich': 'CH',
+    'America/New_York': 'US',
+    'America/Chicago': 'US',
+    'America/Denver': 'US',
+    'America/Los_Angeles': 'US',
+    'America/Toronto': 'CA',
+    'America/Vancouver': 'CA',
+    'America/Mexico_City': 'MX',
+    'America/Sao_Paulo': 'BR',
+    'Australia/Sydney': 'AU',
+    'Australia/Melbourne': 'AU',
+    'Pacific/Auckland': 'NZ',
+    'Asia/Tokyo': 'JP',
+    'Asia/Seoul': 'KR',
+    'Asia/Kolkata': 'IN',
+    'Asia/Dubai': 'AE',
+    'Asia/Riyadh': 'SA',
+    'Asia/Qatar': 'QA',
+    'Asia/Kuwait': 'KW',
+    'Asia/Bahrain': 'BH',
+    'Asia/Muscat': 'OM',
+    'Africa/Cairo': 'EG',
+    'Africa/Casablanca': 'MA',
+    'Africa/Tunis': 'TN',
+  };
+
   const LANG_FALLBACK = { fr: 'EUR', en: 'USD', ar: 'SAR' };
+
+  function languageTags() {
+    if (typeof navigator === 'undefined') return ['fr-FR'];
+    if (navigator.languages && navigator.languages.length) return [...navigator.languages];
+    return [navigator.language || 'fr-FR'];
+  }
 
   function regionFromTag(tag) {
     try {
       const loc = new Intl.Locale(tag);
       if (loc.region) return loc.region.toUpperCase();
+      if (typeof loc.maximize === 'function') {
+        const max = loc.maximize();
+        if (max.region) return max.region.toUpperCase();
+      }
     } catch (_) {}
     const part = (tag || '').split('-')[1];
     return part ? part.toUpperCase() : '';
   }
 
-  function detectCurrency() {
-    const tags = navigator.languages?.length
-      ? [...navigator.languages]
-      : [navigator.language || 'fr-FR'];
-    for (const tag of tags) {
+  function regionFromTimezone() {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+      if (TZ_REGION[tz]) return TZ_REGION[tz];
+      if (tz.startsWith('Europe/')) return 'FR';
+      if (tz.startsWith('America/')) return 'US';
+      if (tz.startsWith('Australia/')) return 'AU';
+      if (tz.startsWith('Pacific/Auckland')) return 'NZ';
+    } catch (_) {}
+    return '';
+  }
+
+  function detectRegion() {
+    for (const tag of languageTags()) {
       const region = regionFromTag(tag);
-      if (region && REGION_CURRENCY[region]) return REGION_CURRENCY[region];
+      if (region) return region;
     }
+    return regionFromTimezone();
+  }
+
+  function detectCurrency() {
+    const region = detectRegion();
+    if (region && REGION_CURRENCY[region]) return REGION_CURRENCY[region];
     if (global.MD3Lang && typeof global.MD3Lang.getLang === 'function') {
       const fb = LANG_FALLBACK[global.MD3Lang.getLang()];
       if (fb) return fb;
@@ -77,14 +149,24 @@
     return BASE;
   }
 
+  function displayLocale() {
+    return languageTags()[0] || 'fr-FR';
+  }
+
   let activeCurrency = detectCurrency();
+  let activeRegion = detectRegion();
 
   function refreshCurrency() {
+    activeRegion = detectRegion();
     activeCurrency = detectCurrency();
   }
 
   function getCurrency() {
     return activeCurrency;
+  }
+
+  function getRegion() {
+    return activeRegion;
   }
 
   function convertFromEur(amountEur) {
@@ -97,10 +179,7 @@
 
   function formatPrice(amountEur) {
     const value = convertFromEur(amountEur);
-    const locale =
-      (navigator.languages && navigator.languages[0]) ||
-      navigator.language ||
-      'fr-FR';
+    const locale = displayLocale();
     const noCents = activeCurrency === 'JPY' || activeCurrency === 'KRW';
     try {
       return new Intl.NumberFormat(locale, {
@@ -114,6 +193,7 @@
     }
   }
 
+  /** Admin / back-office — always EUR. */
   function formatPriceInSiteLang(amountEur) {
     const n = Number(amountEur);
     if (!Number.isFinite(n)) return '';
@@ -138,7 +218,9 @@
     formatPriceInSiteLang,
     convertFromEur,
     getCurrency,
+    getRegion,
     refreshCurrency,
     detectCurrency,
+    detectRegion,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

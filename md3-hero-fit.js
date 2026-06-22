@@ -50,7 +50,7 @@
 
     let y = 22 + (0.75 - ar) * 8;
     y = Math.max(18, Math.min(30, y));
-    img.style.objectPosition = "center " + y.toFixed(1) + "%";
+    img.style.objectPosition = "58% " + y.toFixed(1) + "%";
   }
 
   function scheduleUpdates() {
