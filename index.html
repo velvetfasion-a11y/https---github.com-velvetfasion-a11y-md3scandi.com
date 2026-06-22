@@ -811,7 +811,10 @@
 <!-- Hero -->
 <section id="md3-hero" class="hero-elegant" aria-label="MD3 Scandi">
   <div class="hero-bg" aria-hidden="true">
-    <img class="hero-bg-img" src="images/hero-bg.png?v=1" alt="MD3 Scandi collection hero" width="682" height="1024" decoding="async" fetchpriority="high" />
+    <picture>
+      <source srcset="images/hero-bg.webp?v=2" type="image/webp" />
+      <img class="hero-bg-img" src="images/hero-bg.jpeg?v=2" alt="MD3 Scandi collection hero" width="3840" height="5766" decoding="async" fetchpriority="high" />
+    </picture>
   </div>
   <div class="hero-gradient" aria-hidden="true"></div>
   <div class="hero-content hero-content--left">
@@ -958,7 +961,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script src="md3-firebase.js?v=3"></script>
-<script src="md3-store.js?v=5"></script>
+<script src="md3-store.js?v=6"></script>
 <script src="md3-auth.js?v=3"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js?v=3"></script>
@@ -1031,21 +1034,18 @@
 
   /* Featured products */
   function renderFeatured() {
-    const featured = MD3Store.getFeaturedProducts();
-    const products = featured.length ? featured : MD3Store.getProducts();
+    const products = MD3Store.getHomeFeaturedProducts();
     const grid = document.getElementById('featuredGrid');
     const empty = document.getElementById('featuredEmpty');
     if (!grid) return;
 
-    const n = products.length;
-
-    if (!n) {
+    if (!products.length) {
       grid.innerHTML = '';
       if (empty) empty.hidden = false;
       return;
     }
     if (empty) empty.hidden = true;
-    MD3Shop.renderGrid(grid, products.slice(0, 4), MD3Shop.minimalLabels());
+    MD3Shop.renderGrid(grid, products, MD3Shop.minimalLabels());
     updateCartBadge();
   }
 

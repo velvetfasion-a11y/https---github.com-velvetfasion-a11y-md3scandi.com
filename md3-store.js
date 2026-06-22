@@ -302,7 +302,38 @@
     return `<span class="product-emoji-fallback">${(p && p.emoji) || '✦'}</span>`;
   }
 
+  /** Homepage “New Collection” row — fixed order */
+  const HOME_FEATURED_IDS = [1, 4, 7, 9];
+
+  function getHomeFeaturedProducts() {
+    const byId = new Map(getProducts().map((p) => [p.id, p]));
+    return HOME_FEATURED_IDS.map((id) => byId.get(id)).filter(Boolean);
+  }
+
+  function syncHomeFeaturedFlags() {
+    const featuredSet = new Set(HOME_FEATURED_IDS);
+    const products = getProducts();
+    let changed = false;
+    const next = products.map((p) => {
+      const want = featuredSet.has(p.id);
+      if (!!p.featured !== want) {
+        changed = true;
+        return { ...p, featured: want };
+      }
+      return p;
+    });
+    if (!changed) return false;
+    productsCache = next;
+    try {
+      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(next));
+    } catch (_) {}
+    notifyProductsUpdated();
+    return true;
+  }
+
   function getFeaturedProducts() {
+    const home = getHomeFeaturedProducts();
+    if (home.length) return home;
     return getProducts().filter((p) => p.featured);
   }
 
@@ -795,10 +826,12 @@
 
   async function init() {
     ensureCaches();
+    syncHomeFeaturedFlags();
     pruneAllCartsLocal();
     readyResolve();
     syncCloud()
       .then(() => {
+        syncHomeFeaturedFlags();
         if (global.MD3Auth && global.MD3Auth.initSessionSync) {
           return global.MD3Auth.initSessionSync();
         }
@@ -846,6 +879,9 @@
     normalizeProductImages,
     normalizeProductFields,
     getFeaturedProducts,
+    getHomeFeaturedProducts,
+    HOME_FEATURED_IDS,
+    syncHomeFeaturedFlags,
     getProductById,
     productHref,
     boutiqueHref,

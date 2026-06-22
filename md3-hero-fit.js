@@ -42,15 +42,15 @@
     const ar = w / h;
 
     if (DESKTOP_MQ.matches) {
-      const x = Math.min(54, Math.max(46, 48 + (ar - 1) * 3));
-      const y = Math.min(38, Math.max(24, 26 + (ar - 0.9) * 10));
+      const x = Math.min(58, Math.max(48, 48 + (ar - 1) * 5));
+      const y = Math.min(42, Math.max(28, 28 + (ar - 0.9) * 10));
       img.style.objectPosition = x.toFixed(1) + "% " + y.toFixed(1) + "%";
       return;
     }
 
-    let y = 26 + (0.75 - ar) * 10;
-    y = Math.max(22, Math.min(36, y));
-    img.style.objectPosition = "50% " + y.toFixed(1) + "%";
+    let y = 30 + (0.75 - ar) * 10;
+    y = Math.max(24, Math.min(42, y));
+    img.style.objectPosition = "52% " + y.toFixed(1) + "%";
   }
 
   function scheduleUpdates() {
