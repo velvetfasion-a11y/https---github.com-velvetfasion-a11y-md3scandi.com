@@ -58,7 +58,7 @@
     const images = [...list, p.image]
       .filter((img) => typeof img === 'string' && img.trim())
       .filter((img, idx, arr) => arr.indexOf(img) === idx)
-      .slice(0, 3);
+      .slice(0, 8);
     return images;
   }
 

@@ -321,6 +321,62 @@
     border-bottom-color: var(--gold);
   }
 
+  .collection-card--has-bg {
+    min-height: 420px;
+    padding: 0;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-end;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .collection-card--has-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(28, 24, 20, 0.88) 0%,
+      rgba(28, 24, 20, 0.45) 38%,
+      rgba(28, 24, 20, 0.08) 62%,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .collection-card--has-bg > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .collection-card--has-bg:not(.collection-card--fashion) {
+    padding: 36px 28px 40px;
+    text-align: center;
+  }
+
+  .collection-card--has-bg h3 {
+    color: var(--cream);
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  .collection-card--has-bg p {
+    color: #d4af37;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.28);
+  }
+
+  .collection-card--has-bg .collection-link {
+    color: var(--cream);
+    border-bottom-color: var(--gold);
+  }
+
+  .collection-card--has-bg .collection-icon {
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
+  }
+
   .collection-icon {
     font-size: 36px;
     margin-bottom: 20px;
@@ -851,21 +907,21 @@
         </div>
       </div>
 
-      <div class="collection-card reveal">
+      <div class="collection-card collection-card--maison reveal">
         <span class="collection-icon">🏠</span>
         <h3 data-i18n="maison-title">Maison</h3>
         <p data-i18n="maison-desc">L'art de l'intérieur scandinave. Lignes épurées, bois clair, textures douces. Une maison qui respire.</p>
         <a href="boutique.html?cat=Maison" class="collection-link"><span data-i18n="explore">Explorer</span> →</a>
       </div>
 
-      <div class="collection-card reveal">
+      <div class="collection-card collection-card--lifestyle reveal">
         <span class="collection-icon">✦</span>
         <h3 data-i18n="lifestyle-title">Lifestyle</h3>
         <p data-i18n="lifestyle-desc">Au-delà des objets — un état d'esprit. Le hygge, le luxe discret, le quotidien magnifié.</p>
         <a href="boutique.html?cat=Lifestyle" class="collection-link"><span data-i18n="explore">Explorer</span> →</a>
       </div>
 
-      <div class="collection-card reveal">
+      <div class="collection-card collection-card--limited reveal">
         <span class="collection-icon">✿</span>
         <h3 data-i18n="limited-title">Édition limitée</h3>
         <p data-i18n="limited-desc">Des pièces rares, en quantité limitée, pour ceux qui cherchent l'exception au quotidien.</p>

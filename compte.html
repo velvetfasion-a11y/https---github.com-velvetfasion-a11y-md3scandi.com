@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="md3-header.css?v=5" />
-<link rel="stylesheet" href="md3-admin.css?v=5" />
+<link rel="stylesheet" href="md3-admin.css?v=6" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" crossorigin="anonymous" />
 <style>
   :root {
@@ -1271,10 +1271,10 @@
 <script src="md3-auth.js?v=3"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js?v=3"></script>
-<script src="ai-config.js"></script>
-<script src="md3-site-assets.js?v=1"></script>
-<script src="md3-admin-ai.js?v=2"></script>
-<script src="md3-lang.js?v=10"></script>
+<script src="ai-config.js" onerror="window.MD3_AI_CONFIG=window.MD3_AI_CONFIG||{}"></script>
+<script src="md3-site-assets.js?v=2"></script>
+<script src="md3-admin-ai.js?v=10"></script>
+<script src="md3-lang.js?v=15"></script>
 <script src="md3-taxonomy.js?v=2"></script>
 <script src="md3-currency.js?v=4"></script>
 <script src="email-config.js?v=3"></script>
@@ -2130,7 +2130,7 @@ function renderAdminProducts() {
     </div>
     <div class="adm-pgrid">
       ${filtered.length ? filtered.map(p => `
-        <article class="adm-pc${p.featured ? ' feat' : ''}">
+        <article class="adm-pc${p.featured ? ' feat' : ''}" onmousedown="adminFocusProduct(${p.id})">
           <div class="adm-cim" onclick="openEditProduct(${p.id})">
             ${productImagesFor(p)[0] ? `<img src="${esc(productImagesFor(p)[0])}" alt="" class="product-thumb" />` : `<span>${esc(p.emoji || '✦')}</span>`}
             <div class="adm-cov"><button type="button" class="adm-eib" onclick="event.stopPropagation();openEditProduct(${p.id})">${L('admin-edit-image')}</button></div>
@@ -2308,9 +2308,19 @@ function openAddProduct() {
   MD3Lang.applySelectOptions(MD3Lang.getLang());
 }
 
+function adminFocusProduct(id) {
+  const p = S.getProducts().find((x) => x.id === id);
+  if (p && window.MD3AdminAI && window.MD3AdminAI.setFocusedProduct) {
+    window.MD3AdminAI.setFocusedProduct(id, p.name);
+  }
+}
+
 function openEditProduct(id) {
   const p = S.getProducts().find(x => x.id === id);
   if (!p) return;
+  if (window.MD3AdminAI && window.MD3AdminAI.setFocusedProduct) {
+    window.MD3AdminAI.setFocusedProduct(id, p.name);
+  }
   document.getElementById('modalTitle').textContent = L('modal-edit');
   document.getElementById('editId').value = id;
   document.getElementById('prodName').value = p.name;

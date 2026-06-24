@@ -212,20 +212,34 @@
       'admin-no-results': 'Aucun produit ne correspond à votre recherche.',
       'admin-ai-title': 'Assistant IA',
       'admin-ai-placeholder': 'Joignez une image avec + et décrivez la modification…',
-      'admin-ai-welcome': 'Bonjour ! Joignez des images avec + puis écrivez par ex. « image header », « là où il y a Mode — cette image », « ajouter tous les produits », ou « produit Robe Lin Ivoire image ».',
+      'admin-ai-welcome': 'Bonjour ! Je peux modifier tout le site — hero, images, textes, produits. Chaque réponse a un bouton Annuler. L’historique est conservé 30 minutes.',
       'admin-ai-thinking': 'Traitement…',
+      'admin-ai-generating': 'Génération des images produit…',
+      'admin-ai-done-gallery': 'Galerie mise à jour pour ',
+      'admin-ai-images': 'images',
       'admin-ai-need-image': 'Joignez d’abord une image avec +.',
       'admin-ai-done-seed': 'Tous les produits par défaut ont été restaurés.',
       'admin-ai-done-hero': 'Image header / hero mise à jour.',
+      'admin-ai-done-site-image': 'Image du site mise à jour : ',
+      'admin-ai-done-site-text': 'Texte du site mis à jour : ',
+      'admin-ai-done-delete': 'Produit supprimé : ',
+      'admin-ai-err-slot': 'Quelle section ? Essayez : hero, fashion, maison, lifestyle, limited, manifesto.',
+      'admin-ai-err-text': 'Clé de texte et valeur requis.',
+      'admin-ai-undo': 'Annuler',
+      'admin-ai-redo': 'Rétablir',
+      'admin-ai-undone': 'Annulé',
       'admin-ai-done-fashion': 'Image de la carte Mode / Fashion mise à jour.',
       'admin-ai-done-add': 'Produit ajouté : ',
       'admin-ai-done-update': 'Produit mis à jour : ',
+      'admin-ai-done-image': 'Image mise à jour pour ',
+      'admin-ai-err-which-product': 'Impossible d’identifier le produit. Cliquez sur la fiche ou Modifier, ou indiquez son nom.',
       'admin-ai-done-featured': 'Produits en vedette mis à jour.',
       'admin-ai-err-name': 'Nom du produit manquant.',
       'admin-ai-err-missing': 'Produit introuvable : ',
       'admin-ai-err-size': 'Image trop grande (max 12 Mo).',
       'admin-ai-err': 'Erreur : ',
-      'admin-ai-no-action': 'Aucune action reconnue. Essayez : « image header », « carte fashion », « ajouter produit … ».',
+      'admin-ai-no-action': 'Aucune action reconnue. Décrivez ce que vous voulez : image hero, modifier un produit, nouveau produit, prix…',
+      'admin-ai-clarify': 'Que dois-je faire ? Ex. : « ajouter ces photos comme produits séparés », « ajouter toutes les images à ce produit », changer le prix, image hero…',
       'admin-ai-hint-local': 'Astuce : ajoutez une clé Gemini dans ai-config.js pour des commandes plus intelligentes.',
       'admin-nav-section': 'Navigation',
       'admin-shop-section': 'Boutique',
@@ -530,20 +544,34 @@
       'admin-no-results': 'No products match your search.',
       'admin-ai-title': 'AI assistant',
       'admin-ai-placeholder': 'Attach an image with + and describe what to change…',
-      'admin-ai-welcome': 'Hi! Attach images with + then try: “set header image”, “where it says Fashion — this image”, “add all products”, or “product Robe Lin Ivoire image”.',
+      'admin-ai-welcome': 'Hi! I can change anything on the site — hero, section images, headlines, products, and more. Each reply has an Undo button. Chat history is kept for 30 minutes.',
       'admin-ai-thinking': 'Working…',
+      'admin-ai-generating': 'Generating product images…',
+      'admin-ai-done-gallery': 'Gallery updated for ',
+      'admin-ai-images': 'images',
       'admin-ai-need-image': 'Attach an image with + first.',
       'admin-ai-done-seed': 'All default products restored.',
       'admin-ai-done-hero': 'Header / hero image updated.',
+      'admin-ai-done-site-image': 'Site image updated: ',
+      'admin-ai-done-site-text': 'Site text updated: ',
+      'admin-ai-done-delete': 'Product removed: ',
+      'admin-ai-err-slot': 'Which section? Try: hero, fashion, maison, lifestyle, limited, manifesto.',
+      'admin-ai-err-text': 'Text key and value required.',
+      'admin-ai-undo': 'Undo',
+      'admin-ai-redo': 'Redo',
+      'admin-ai-undone': 'Undone',
       'admin-ai-done-fashion': 'Fashion / Mode card image updated.',
       'admin-ai-done-add': 'Product added: ',
       'admin-ai-done-update': 'Product updated: ',
+      'admin-ai-done-image': 'Image updated for ',
+      'admin-ai-err-which-product': 'Could not find which product to update. Click the product card or Edit first, or name it in your message.',
       'admin-ai-done-featured': 'Featured products updated.',
       'admin-ai-err-name': 'Product name missing.',
       'admin-ai-err-missing': 'Product not found: ',
       'admin-ai-err-size': 'Image too large (max 12 MB).',
       'admin-ai-err': 'Error: ',
-      'admin-ai-no-action': 'No matching action. Try: “header image”, “fashion card”, “add product …”.',
+      'admin-ai-no-action': 'No matching action. Say what you want: hero image, update product, new product, price…',
+      'admin-ai-clarify': 'What should I do? Examples: "add these as separate products", "add all images to this product", update price, change hero image…',
       'admin-ai-hint-local': 'Tip: add a Gemini key in ai-config.js for smarter commands.',
       'admin-nav-section': 'Navigation',
       'admin-shop-section': 'Shop',
@@ -847,14 +875,27 @@
       'admin-no-results': 'لا توجد منتجات مطابقة.',
       'admin-ai-title': 'مساعد الذكاء الاصطناعي',
       'admin-ai-placeholder': 'أرفقي صورة بـ + واصفي التعديل…',
-      'admin-ai-welcome': 'مرحباً! أرفقي صوراً بـ + ثم اكتبي مثلاً: «صورة الهيدر»، «حيث يظهر Mode — هذه الصورة»، «أضيفي كل المنتجات».',
+      'admin-ai-welcome': 'مرحباً! أستطيع تعديل كل شيء في الموقع. كل رد فيه زر تراجع. يُحفظ السجل 30 دقيقة.',
       'admin-ai-thinking': 'جاري المعالجة…',
+      'admin-ai-generating': 'جاري إنشاء صور المنتج…',
+      'admin-ai-done-gallery': 'تم تحديث معرض ',
+      'admin-ai-images': 'صور',
       'admin-ai-need-image': 'أرفقي صورة أولاً بـ +.',
       'admin-ai-done-seed': 'تمت استعادة المنتجات الافتراضية.',
       'admin-ai-done-hero': 'تم تحديث صورة الهيدر.',
+      'admin-ai-done-site-image': 'تم تحديث صورة الموقع: ',
+      'admin-ai-done-site-text': 'تم تحديث نص الموقع: ',
+      'admin-ai-done-delete': 'تم حذف المنتج: ',
+      'admin-ai-err-slot': 'أي قسم؟ جرّبي: hero, fashion, maison, lifestyle, limited, manifesto.',
+      'admin-ai-err-text': 'مفتاح النص والقيمة مطلوبان.',
+      'admin-ai-undo': 'تراجع',
+      'admin-ai-redo': 'إعادة',
+      'admin-ai-undone': 'تم التراجع',
       'admin-ai-done-fashion': 'تم تحديث صورة بطاقة Mode.',
       'admin-ai-done-add': 'تمت إضافة المنتج: ',
       'admin-ai-done-update': 'تم تحديث المنتج: ',
+      'admin-ai-done-image': 'تم تحديث الصورة لـ ',
+      'admin-ai-err-which-product': 'تعذّر تحديد المنتج. انقري على البطاقة أو تعديل، أو اذكري اسمه.',
       'admin-ai-hint-local': 'نصيحة: أضيفي مفتاح OpenAI في ai-config.js لأوامر أذكى.',
       'admin-nav-section': 'التنقل',
       'admin-shop-section': 'المتجر',
@@ -980,7 +1021,95 @@
   };
 
   const LANG_STORAGE_KEY = 'md3-lang';
+  const OVERRIDE_KEY = 'md3_i18n_overrides';
   const LANG_CODES = ['fr', 'en', 'ar'];
+
+  /** Homepage & shop copy keys the AI may edit */
+  const EDITABLE_TEXT_KEYS = [
+    'meta-title',
+    'meta-desc',
+    'hero-subtitle',
+    'hero-cta-shop',
+    'hero-tag',
+    'featured-title',
+    'sec-univers-eyebrow',
+    'sec-univers-a',
+    'sec-univers-b',
+    'mode-title',
+    'mode-desc',
+    'maison-title',
+    'maison-desc',
+    'lifestyle-title',
+    'lifestyle-desc',
+    'limited-title',
+    'limited-desc',
+    'manifesto',
+    'signature',
+    'values-eyebrow',
+    'values-a',
+    'values-b',
+    'val1-title',
+    'val1-desc',
+    'val2-title',
+    'val2-desc',
+    'val3-title',
+    'val3-desc',
+    'footer-tag',
+    'shop-a',
+    'shop-b',
+    'shop-desc',
+    'tagline',
+  ];
+
+  function getOverrides() {
+    try {
+      return JSON.parse(localStorage.getItem(OVERRIDE_KEY) || '{}');
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function getMergedDict(lang) {
+    const base = T[lang] || T.fr;
+    const over = getOverrides()[lang] || {};
+    return Object.assign({}, base, over);
+  }
+
+  function setOverride(lang, key, value) {
+    const all = getOverrides();
+    if (!all[lang]) all[lang] = {};
+    all[lang][key] = value;
+    try {
+      localStorage.setItem(OVERRIDE_KEY, JSON.stringify(all));
+    } catch (_) {}
+    applyLang(currentLang, { persist: false, silent: true });
+    return value;
+  }
+
+  function setOverridesForLang(lang, map) {
+    if (!map || typeof map !== 'object') return;
+    const all = getOverrides();
+    if (!all[lang]) all[lang] = {};
+    Object.assign(all[lang], map);
+    try {
+      localStorage.setItem(OVERRIDE_KEY, JSON.stringify(all));
+    } catch (_) {}
+    applyLang(currentLang, { persist: false, silent: true });
+  }
+
+  function restoreOverrides(data) {
+    try {
+      localStorage.setItem(OVERRIDE_KEY, JSON.stringify(data || {}));
+    } catch (_) {}
+    applyLang(currentLang, { persist: false, silent: true });
+  }
+
+  function getEditableTextCatalog() {
+    return EDITABLE_TEXT_KEYS.map((key) => ({
+      key,
+      sample: (T.fr[key] || '').replace(/<[^>]+>/g, '').slice(0, 80),
+    }));
+  }
 
   function readSavedLang() {
     try {
@@ -998,7 +1127,7 @@
   }
 
   function t(key) {
-    const dict = T[currentLang] || T.fr;
+    const dict = getMergedDict(currentLang);
     if (dict[key] !== undefined) return dict[key];
     if (T.fr[key] !== undefined) return T.fr[key];
     return key;
@@ -1067,8 +1196,8 @@
   }
 
   function applyLang(lang, opts) {
-    const dict = T[lang];
-    if (!dict) return;
+    const dict = getMergedDict(lang);
+    if (!dict || !T[lang]) return;
 
     const persist = !opts || opts.persist !== false;
     currentLang = lang;
@@ -1157,6 +1286,9 @@
       if (e.key === LANG_STORAGE_KEY && e.newValue && T[e.newValue]) {
         applyLang(e.newValue);
       }
+      if (e.key === OVERRIDE_KEY) {
+        applyLang(currentLang, { persist: false, silent: true });
+      }
     });
   }
 
@@ -1171,9 +1303,17 @@
   global.MD3Lang = {
     T,
     LANG_STORAGE_KEY,
+    OVERRIDE_KEY,
     LANG_CODES,
+    EDITABLE_TEXT_KEYS,
     getLang,
     readSavedLang,
+    getOverrides,
+    getMergedDict,
+    setOverride,
+    setOverridesForLang,
+    restoreOverrides,
+    getEditableTextCatalog,
     t,
     translateCategory,
     translateSub,
