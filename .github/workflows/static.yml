@@ -31,6 +31,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Generate ai-config.js from secrets
+        env:
+          AI_PROVIDER: gemini
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-2.5-pro
+          GEMINI_IMAGE_MODEL: gemini-3-pro-image-preview
+          GEMINI_IMAGE_SIZE: 2K
+          GEMINI_IMAGE_ASPECT: 3:4
+        run: node scripts/sync-ai-config.mjs
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

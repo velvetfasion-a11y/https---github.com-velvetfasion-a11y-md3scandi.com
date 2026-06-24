@@ -2185,7 +2185,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
           esc(
             msg(
               'admin-ai-hint-local',
-              'Tip: add a Gemini key in ai-config.js for smarter names, prices, and descriptions from photos.'
+              'Tip: set GEMINI_API_KEY in .env, then run node scripts/sync-ai-config.mjs'
             )
           ) +
           '</small>';

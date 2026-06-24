@@ -35,6 +35,22 @@ Puis : [http://localhost:8080](http://localhost:8080)
 | `firebase-config.js` | Clés Firebase (à remplir) |
 | `md3-email.js` | Envoi du code de confirmation (EmailJS) |
 | `email-config.js` | Clés EmailJS (à remplir) |
+| `.env` | Secrets locaux (reCAPTCHA, Gemini, OAuth) — voir `.env.example` |
+| `ai-config.js` | Config admin AI (généré depuis `.env`) |
+
+## Admin AI (Gemini)
+
+1. Copiez `.env.example` vers `.env` si besoin
+2. Renseignez `GEMINI_API_KEY` et les variables `AI_*` / `GEMINI_*` dans `.env`
+3. Générez le fichier navigateur :
+
+```bash
+node scripts/sync-ai-config.mjs
+```
+
+4. Rechargez `compte.html` (admin). Ne commitez pas `.env` ni `ai-config.js`.
+
+**GitHub Pages :** ajoutez le secret `GEMINI_API_KEY` dans *Settings → Secrets → Actions* ; le déploiement génère `ai-config.js` automatiquement.
 
 ## Confirmation email à l’inscription
 

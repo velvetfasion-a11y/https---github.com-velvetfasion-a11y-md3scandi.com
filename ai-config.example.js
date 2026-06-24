@@ -1,13 +1,16 @@
 /**
- * Copy to ai-config.js for OpenAI-powered admin assistant (optional).
- * Without a key, the assistant uses built-in command parsing.
+ * Browser AI config — generated from .env (do not copy/edit this file by hand).
+ *
+ * 1. cp .env.example .env
+ * 2. Set GEMINI_API_KEY and optional AI_* / GEMINI_* / OPENAI_* vars in .env
+ * 3. node scripts/sync-ai-config.mjs
+ *
+ * Output: ai-config.js (gitignored, loaded by compte.html)
  */
 window.MD3_AI_CONFIG = {
   provider: 'gemini',
   geminiApiKey: 'YOUR_GEMINI_API_KEY',
-  /** Reasoning / chat — gemini-2.5-pro or gemini-3.1-pro-preview */
   geminiModel: 'gemini-2.5-pro',
-  /** Product image generation — gemini-3-pro-image-preview */
   geminiImageModel: 'gemini-3-pro-image-preview',
   geminiImageSize: '2K',
   geminiImageAspect: '3:4',
