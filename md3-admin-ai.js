@@ -285,7 +285,9 @@ User may write Swedish, French, English, or Arabic.
 Always return actions when the user wants products created/updated — never reply with only text if work can be done.
 NEVER default to add_product just because the user attached an image.
 An image alone is NOT a request to add a product — infer intent from words + chat context + whether a product is focused.
-If intent is unclear, return {"reply":"short clarifying question","actions":[]} — do NOT guess add_product.
+If intent is unclear AND you cannot infer any action from chat + images, return {"reply":"short clarifying question","actions":[]} — do NOT guess add_product.
+NEVER return empty actions when the user asks to create/generate/make a new image (with or without the word "product") and an image is attached or was attached in the previous message — use replace_product_image or generate_product_images with match:"focused" after identifying the product from the photo.
+When user says "create a new image" / "generate image" / "make a new photo" → replace_product_image or generate_product_images on the product shown in the attached image.
 Product screenshots / admin UI shots → update existing product, never add_product.`;
   }
 
@@ -717,25 +719,72 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     return null;
   }
 
-  function refersAttachedImageEdit(text, files) {
-    if (!files || !files.length) return false;
-    if (wantsMultipleDifferentProducts(text, files)) return false;
-    if (explicitWantsNewProduct(text) && !refersExistingProduct(text, files)) return false;
-    if (inferSiteImageSlot(text)) return false;
-    const t = String(text || '').toLowerCase();
+  function normalizeUserIntentText(text) {
+    return String(text || '')
+      .replace(/^(?:no[,!\s—-]+|not\s+that[,!\s—-]+|don'?t\s+(?:do\s+that[,!\s—-]+)?)/i, '')
+      .trim();
+  }
+
+  function getRecentChatFiles() {
+    for (let i = chatHistory.length - 1; i >= 0; i--) {
+      const turn = chatHistory[i];
+      if (turn.role === 'user' && turn.files && turn.files.length) {
+        return turn.files;
+      }
+    }
+    return sessionCtx.lastFiles && sessionCtx.lastFiles.length ? sessionCtx.lastFiles : [];
+  }
+
+  function getEffectiveFiles(files, text) {
+    const current = files && files.length ? files : [];
+    if (current.length) return current;
+    const t = normalizeUserIntentText(text).toLowerCase();
+    if (
+      wantsCreateOrGenerateImage(text) ||
+      refersAttachedImageEdit(text, sessionCtx.lastFiles || []) ||
+      /(?:this|that|the)\s+(?:image|photo|model|picture|one)\b/.test(t) ||
+      /(?:same|attached|uploaded)\s+(?:image|photo)/.test(t) ||
+      /^(?:yes|ok|okay|do it|go ahead|please)\b/.test(t)
+    ) {
+      return getRecentChatFiles();
+    }
+    return current;
+  }
+
+  function wantsCreateOrGenerateImage(text) {
+    const t = normalizeUserIntentText(text).toLowerCase();
+    if (!t) return false;
+    if (/(?:new\s+)?products?\b/.test(t) && !/(?:image|photo|picture|bild|model)/.test(t)) return false;
     return (
-      /(?:change|replace|swap|update|edit|modify|make|retouch|recolor|fix)\b/.test(t) ||
+      /(?:create|generate|make|produce|build|créer|générer|skapa)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:images?|photos?|pictures?|bilder?|shot|variant|version)/.test(t) ||
+      /(?:new|another|different)\s+(?:images?|photos?|pictures?|catalog\s+image)/.test(t) ||
+      /(?:ai|nano|banana)\s+(?:images?|photos?)/.test(t) ||
+      /(?:images?|photos?)\s+(?:with\s+ai|using\s+ai)/.test(t)
+    );
+  }
+
+  function refersAttachedImageEdit(text, files) {
+    const imgs = files && files.length ? files : getRecentChatFiles();
+    if (!imgs.length) return false;
+    if (wantsMultipleDifferentProducts(text, imgs)) return false;
+    if (wantsCreateOrGenerateImage(text)) return true;
+    if (explicitWantsNewProduct(text) && !refersExistingProduct(text, imgs)) return false;
+    if (inferSiteImageSlot(text)) return false;
+    const t = normalizeUserIntentText(text).toLowerCase();
+    return (
+      /(?:change|replace|swap|update|edit|modify|make|create|generate|retouch|recolor|fix)\b/.test(t) ||
       /\bthis\s+(?:model|image|photo|picture|shot|one)\b/.test(t) ||
-      /(?:model|background|studio|mannequin|portrait)/.test(t)
+      /(?:model|background|studio|mannequin|portrait)/.test(t) ||
+      !t
     );
   }
 
   function buildImageEditPrompt(text) {
-    const raw = String(text || '').trim();
+    const raw = normalizeUserIntentText(text).trim();
     if (!raw) return '';
     const stripped = raw
       .replace(
-        /^(?:please\s+)?(?:change|replace|update|edit|make|retouch)\s+(?:this\s+)?(?:model|image|photo|picture|shot)?\s*(?:to|with|so|:)?\s*/i,
+        /^(?:please\s+)?(?:(?:no[,!\s—-]+\s*)?(?:create|generate|make|change|replace|update|edit|retouch)\s+(?:a\s+|an\s+)?(?:new\s+)?(?:this\s+)?(?:model|image|photo|picture|shot)?\s*(?:to|with|instead|so|:)?\s*)/i,
         ''
       )
       .trim();
@@ -744,6 +793,28 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       body +
       '. Keep the same garment/product as the reference photo. Professional e-commerce catalog quality, photorealistic, no text or watermarks.'
     );
+  }
+
+  function buildImageGenerateAction(text, imgs) {
+    const productRef =
+      sessionCtx.resolvedProductId != null
+        ? 'focused'
+        : sessionCtx.focusedProductId != null
+          ? 'focused'
+          : 'last';
+    const modelShot = /model|mannequin|portrait|wearing|background|studio/.test(normalizeUserIntentText(text).toLowerCase());
+    return {
+      type: 'replace_product_image',
+      match: productRef,
+      prompt:
+        buildImageEditPrompt(text) ||
+        (modelShot
+          ? 'Professional fashion model wearing the same garment from the reference photo, full-body e-commerce catalog shot, Scandinavian minimal styling, soft natural light'
+          : 'Fresh professional e-commerce catalog photo of the same product, new angle, lighting, and Scandinavian minimal styling'),
+      referenceImageIndex: 0,
+      catalogImageIndex: sessionCtx.resolvedImageIndex != null ? sessionCtx.resolvedImageIndex : 0,
+      useUploadedReference: !!(imgs && imgs.length),
+    };
   }
 
   async function compressImage(dataUrl, maxW) {
@@ -1001,7 +1072,9 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   }
 
   function refersExistingProduct(text, files) {
-    if (files && files.length && refersAttachedImageEdit(text, files)) return true;
+    if (wantsCreateOrGenerateImage(text)) return true;
+    const imgs = getEffectiveFiles(files, text);
+    if (imgs.length && refersAttachedImageEdit(text, imgs)) return true;
     if (wantsMultipleDifferentProducts(text, files)) return false;
     if (wantsImagesOnOneProduct(text, files)) return true;
 
@@ -1127,7 +1200,8 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   }
 
   function explicitWantsNewProduct(text) {
-    const t = String(text || '').toLowerCase().trim();
+    if (wantsCreateOrGenerateImage(text)) return false;
+    const t = normalizeUserIntentText(text).toLowerCase().trim();
     if (!t) return false;
     if (
       /(?:update|change|replace|swap|modify|edit|fix|delete|remove|hero|header|site|section|manifesto|headline|title|text|price|featured|fashion card|mode card|maison|lifestyle|gallery|display image|andra bild|fler bild)/.test(
@@ -1263,32 +1337,37 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   }
 
   function classifyIntent(text, files) {
-    const t = String(text || '').toLowerCase();
-    const hasImages = !!(files && files.length);
-    const imageCount = hasImages ? files.length : 0;
+    const norm = normalizeUserIntentText(text);
+    const t = norm.toLowerCase();
+    const imgs = getEffectiveFiles(files, text);
+    const hasImages = !!(imgs && imgs.length);
+    const imageCount = hasImages ? imgs.length : 0;
+    const wantsNewImage = wantsCreateOrGenerateImage(text);
 
     const wantsAdd =
       explicitWantsNewProduct(text) ||
-      wantsMultipleDifferentProducts(text, files) ||
-      wantsCreateMultipleProducts(text, files);
+      wantsMultipleDifferentProducts(text, imgs) ||
+      wantsCreateMultipleProducts(text, imgs);
 
-    const wantsImageWork = /(?:image|photo|picture|bild|foto|gallery|bilder)/.test(t);
+    const wantsImageWork = /(?:image|photo|picture|bild|foto|gallery|bilder|model)/.test(t) || wantsNewImage;
 
-    const clearlyMultipleProducts = wantsMultipleDifferentProducts(text, files);
+    const clearlyMultipleProducts = wantsMultipleDifferentProducts(text, imgs);
 
     const wantsAppendToOne =
-      wantsImagesOnOneProduct(text, files) &&
+      wantsImagesOnOneProduct(text, imgs) &&
       hasImages &&
       imageCount > 1 &&
+      !wantsNewImage &&
       !/(?:generate|make|create|nano|banana|ai)\s+.*(?:other|more|extra|display|additional)\s*(?:images?|photos?)/.test(t) &&
       !/(?:other|more|extra|display|additional)\s+(?:images?|photos?)/.test(t);
 
-    const wantsAddMultiple = wantsMultipleDifferentProducts(text, files);
+    const wantsAddMultiple = wantsMultipleDifferentProducts(text, imgs);
 
     const wantsUpdateExisting =
       !wantsAddMultiple &&
       !wantsAdd &&
-      (/(?:change|replace|swap|update|edit|modify|fix|ändra|byt|remplacer|changer|modifier|mettre à jour)/.test(t) ||
+      (wantsNewImage ||
+        /(?:change|replace|swap|update|edit|modify|fix|ändra|byt|remplacer|changer|modifier|mettre à jour)/.test(t) ||
         /(?:different|another|new)\s+(?:image|photo|picture|bild|model|mannequin)/.test(t) ||
         /create\s+(?:a\s+)?different\s+(?:image|photo|picture|bild)/.test(t) ||
         (hasImages && /\bthis\s+(?:model|image|photo|picture|shot)\b/.test(t)) ||
@@ -1297,14 +1376,16 @@ Product screenshots / admin UI shots → update existing product, never add_prod
         /\bthis\s+product\b/.test(t) ||
         /(?:den\s+här|denna|det\s+här|ce\s+produit|cette\s+produit|le\s+produit)/.test(t) ||
         wantsAppendToOne ||
+        (hasImages && !t.trim()) ||
         (/(?:generate|create|make).*(?:image|photo|bild)/.test(t) &&
           /(?:for|this|product|produit|produkt)/.test(t)));
 
     const wantsAiGenerate =
-      /(?:generate|create|make|ai|nano|banana|gemini|model|mannequin|portrait|background|studio)/.test(t) &&
-      (wantsImageWork ||
-        /different|another|variation|variant|other images|display images|more images|wearing|black|white/.test(t) ||
-        (hasImages && /\bthis\s+(?:model|image|photo)\b/.test(t)));
+      wantsNewImage ||
+      (/((?:generate|create|make|ai|nano|banana|gemini|model|mannequin|portrait|background|studio))/.test(t) &&
+        (wantsImageWork ||
+          /different|another|variation|variant|other images|display images|more images|wearing|black|white/.test(t) ||
+          (hasImages && /\bthis\s+(?:model|image|photo)\b/.test(t))));
 
     const wantsGallery =
       /(?:gallery|more\s+images|fler\s+bilder|extra\s+images|display\s+images|andra\s+bilder|make other images|other images|product images)/.test(
@@ -2096,9 +2177,9 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   }
 
   function parseLocalCommands(text, files) {
-    const t = text.toLowerCase();
+    const t = normalizeUserIntentText(text).toLowerCase();
     const actions = [];
-    const imgs = files || [];
+    const imgs = getEffectiveFiles(files, text);
     const intent = classifyIntent(text, imgs);
     const productRef = extractProductRef(text) || 'focused';
     const siteSlot = inferSiteImageSlot(text);
@@ -2209,19 +2290,8 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       return actions;
     }
 
-    if ((intent.wantsUpdateExisting || refersAttachedImageEdit(text, imgs)) && intent.wantsAiGenerate && imgs.length) {
-      const modelShot = /model|mannequin|portrait|wearing|background|studio/.test(t);
-      actions.push({
-        type: 'replace_product_image',
-        match: sessionCtx.resolvedProductId != null ? 'focused' : productRef,
-        prompt: buildImageEditPrompt(text) || (modelShot
-          ? 'Professional fashion model wearing the same garment from the reference photo, full-body e-commerce catalog shot, Scandinavian minimal styling, soft natural light'
-          : text.trim() ||
-            'Same product as reference, new professional catalog photo with different composition and soft Nordic styling'),
-        referenceImageIndex: 0,
-        catalogImageIndex: sessionCtx.resolvedImageIndex != null ? sessionCtx.resolvedImageIndex : 0,
-        useUploadedReference: true,
-      });
+    if ((intent.wantsUpdateExisting || refersAttachedImageEdit(text, imgs) || wantsCreateOrGenerateImage(text)) && (intent.wantsAiGenerate || wantsCreateOrGenerateImage(text)) && imgs.length) {
+      actions.push(buildImageGenerateAction(text, imgs));
       return actions;
     }
 
@@ -2326,13 +2396,36 @@ Product screenshots / admin UI shots → update existing product, never add_prod
           match: 'focused',
           imageIndices: imgs.map((_, i) => i),
         });
+      } else if (wantsCreateOrGenerateImage(text) || intent.wantsAiGenerate || !t.trim()) {
+        actions.push(buildImageGenerateAction(text, imgs));
       } else {
         actions.push({ type: 'update_product_image', match: 'focused', imageIndex: 0 });
       }
       return actions;
     }
 
+    if (!actions.length && imgs.length && (wantsCreateOrGenerateImage(text) || intent.wantsAiGenerate || (!t.trim() && imgs.length === 1))) {
+      return [buildImageGenerateAction(text, imgs)];
+    }
+
+    if (!actions.length && wantsCreateOrGenerateImage(text) && sessionCtx.resolvedProductId != null) {
+      return [buildImageGenerateAction(text, imgs)];
+    }
+
     return rewriteMisclassifiedActions(actions, text, imgs);
+  }
+
+  function inferActionsWhenEmpty(text, files, parsed) {
+    let actions = rewriteMisclassifiedActions(parseLocalCommands(text, files), text, files);
+    if (actions.length) return actions;
+    const imgs = getEffectiveFiles(files, text);
+    if (imgs.length && (wantsCreateOrGenerateImage(text) || refersAttachedImageEdit(text, imgs))) {
+      return [buildImageGenerateAction(text, imgs)];
+    }
+    if (parsed && parsed.reply && !parsed.actions) {
+      return [];
+    }
+    return actions;
   }
 
   async function callGemini(text, files) {
@@ -2497,14 +2590,21 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     });
     markOlderImageTurns();
 
+    const workFiles = getEffectiveFiles(files, text);
+
     addBubble('assistant', '<span class="admin-ai-typing">' + msg('admin-ai-thinking', 'Working…') + '</span>');
 
-    if (files.length && refersAttachedImageEdit(text, files)) {
+    if (
+      workFiles.length &&
+      (refersAttachedImageEdit(text, workFiles) ||
+        wantsCreateOrGenerateImage(text) ||
+        !normalizeUserIntentText(text))
+    ) {
       setLastBubble(
         '<span class="admin-ai-typing">' + esc(msg('admin-ai-identifying', 'Identifying product from photo…')) + '</span>'
       );
       try {
-        const resolved = await resolveProductFromAttachments(files, text);
+        const resolved = await resolveProductFromAttachments(workFiles, text);
         if (resolved && resolved.product) {
           sessionCtx.resolvedProductId = resolved.product.id;
           sessionCtx.resolvedImageIndex = resolved.imageIndex;
@@ -2526,16 +2626,19 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
       if (hasCloudAI()) {
         try {
-          parsed = await callCloudAI(text, files);
-          actions = normalizeActions((parsed && parsed.actions) || [], text, files);
+          parsed = await callCloudAI(text, workFiles);
+          actions = normalizeActions((parsed && parsed.actions) || [], text, workFiles);
           usedCloud = true;
+          if (!actions.length) {
+            actions = inferActionsWhenEmpty(text, workFiles, parsed);
+          }
         } catch (e) {
           cloudErr = e;
           console.warn('admin ai cloud fallback', e);
-          actions = rewriteMisclassifiedActions(parseLocalCommands(text, files), text, files);
+          actions = inferActionsWhenEmpty(text, workFiles, null);
         }
       } else {
-        actions = rewriteMisclassifiedActions(parseLocalCommands(text, files), text, files);
+        actions = inferActionsWhenEmpty(text, workFiles, null);
       }
 
       if (!actions.length) {
@@ -2561,7 +2664,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
         return;
       }
 
-      const exec = await executeAll(actions, files, true);
+      const exec = await executeAll(actions, workFiles, true);
       const intro = parsed && parsed.reply ? esc(parsed.reply) + '<br>' : '';
       replyHtml = finalizeAssistantReply({ ...exec, html: intro + exec.html });
 
@@ -2596,10 +2699,10 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       markOlderImageTurns();
     } catch (e) {
       console.error('admin ai', e);
-      const fallback = rewriteMisclassifiedActions(parseLocalCommands(text, files), text, files);
+      const fallback = inferActionsWhenEmpty(text, getEffectiveFiles(text, sessionCtx.lastFiles || []), null);
       if (fallback.length) {
         try {
-          const exec = await executeAll(fallback, files, true);
+          const exec = await executeAll(fallback, getEffectiveFiles([], text), true);
           setLastBubble(finalizeAssistantReply(exec));
           persistChatSession();
           pushHistoryTurn({
