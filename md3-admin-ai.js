@@ -20,13 +20,72 @@
     return d.innerHTML;
   }
 
-  function aiConfig() {
-    return (global.MD3_AI_CONFIG && global.MD3_AI_CONFIG.openaiApiKey) || '';
+  function getCfg() {
+    return global.MD3_AI_CONFIG || {};
+  }
+
+  function geminiKey() {
+    const k = getCfg().geminiApiKey;
+    return k && !String(k).includes('YOUR_') ? k : '';
+  }
+
+  function openaiKey() {
+    const k = getCfg().openaiApiKey;
+    return k && !String(k).includes('YOUR_') ? k : '';
+  }
+
+  function hasGemini() {
+    return !!geminiKey();
   }
 
   function hasOpenAI() {
-    const k = aiConfig();
-    return !!(k && !String(k).includes('YOUR_') && k.length > 20);
+    return !!openaiKey();
+  }
+
+  function hasCloudAI() {
+    const p = (getCfg().provider || 'gemini').toLowerCase();
+    if (p === 'openai') return hasOpenAI();
+    if (p === 'gemini') return hasGemini();
+    return hasGemini() || hasOpenAI();
+  }
+
+  function dataUrlToGeminiPart(dataUrl) {
+    const m = String(dataUrl).match(/^data:([^;]+);base64,(.+)$/);
+    if (!m) return null;
+    return { inline_data: { mime_type: m[1], data: m[2] } };
+  }
+
+  function buildSystemPrompt() {
+    const products = S()
+      .getProducts()
+      .slice(0, 20)
+      .map((p) => ({ id: p.id, name: p.name, category: p.category, price: p.price, featured: p.featured }));
+    return `You are MD3 Scandi admin assistant. Reply ONLY with valid JSON:
+{"reply":"short friendly message","actions":[...]}
+
+Action types:
+- seed_defaults — restore all default catalogue products
+- set_hero_image {imageIndex:0} — homepage header (needs attached image)
+- set_fashion_image {imageIndex:0} — Mode/Fashion collection card background
+- add_product {name,category,sub,price,stock,desc,featured,emoji,imageIndex} — create product; infer name/category/price from image+text when user says "add this product"
+- update_product {match or name, price, desc, stock, featured, imageIndex}
+- update_product_image {name, imageIndex}
+
+Categories: Mode, Maison, Lifestyle, Édition limitée.
+Subs examples: Vêtements, Canapés, Vaisselle, Déco, Textile.
+Current products: ${JSON.stringify(products)}.
+User may write Swedish, French, or English. Always return at least one action when user attaches a product image and asks to add it.`;
+  }
+
+  function parseAiJson(raw) {
+    if (!raw) return { reply: '', actions: [] };
+    const trimmed = String(raw).trim();
+    const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
+    try {
+      return JSON.parse(jsonMatch ? jsonMatch[0] : trimmed);
+    } catch (_) {
+      return { reply: trimmed, actions: [] };
+    }
   }
 
   function msg(key, fallback) {
@@ -263,12 +322,13 @@
       : msg('admin-ai-no-action', 'I could not find a matching action. Try: “set hero image”, “fashion card”, “add product …”, or attach + image.');
   }
 
-  function parseLocalCommands(text) {
+  function parseLocalCommands(text, files) {
     const t = text.toLowerCase();
     const actions = [];
+    const imgs = files || [];
 
     if (
-      /lägg till alla|alla produkter|standardprodukter|seed|default products|restore products|återställ produkter/.test(
+      /lägg till alla|alla produkter|standardprodukter|seed|default products|restore products|återställ produkter|add all products/.test(
         t
       )
     ) {
@@ -276,18 +336,41 @@
     }
 
     if (
-      attachments.length &&
+      imgs.length &&
       /(header|hero|startbild|huvudbild|bild (högst upp|överst)|bilden högst)/.test(t)
     ) {
       actions.push({ type: 'set_hero_image', imageIndex: 0 });
     }
 
     if (
-      attachments.length &&
-      /(fashion|mode\b|stil|kollektion mode|där det står mode|där det står fashion)/.test(t) &&
+      imgs.length &&
+      /(fashion|mode\b|stil|kollektion mode|där det står mode|där det står fashion|where it says fashion)/.test(t) &&
       !/produkt|product/.test(t)
     ) {
       actions.push({ type: 'set_fashion_image', imageIndex: 0 });
+    }
+
+    // "add this product" + attached image
+    if (
+      imgs.length &&
+      /(?:add|lägg till|ajouter|create|new|ny)\s+(?:this\s+)?(?:product|produkt|produit)|(?:add|lägg till)\s+den\s+här|this\s+product/i.test(
+        text
+      )
+    ) {
+      const nameMatch =
+        text.match(/(?:named?|called|namn|nom|name)\s*[:\-]\s*["']?([^"'\n]+?)["']?$/i) ||
+        text.match(/(?:product|produkt|produit)\s*[:\-]\s*["']?([^"'\n]+?)["']?$/i);
+      const priceMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:kr|€|eur|sek)?/i);
+      const catMatch = text.match(/\b(mode|maison|lifestyle|fashion|home|édition limitée|edition limitee)\b/i);
+      actions.push({
+        type: 'add_product',
+        name: nameMatch ? nameMatch[1].trim() : 'New product',
+        category: catMatch ? catMatch[1] : 'Mode',
+        price: priceMatch ? parseFloat(String(priceMatch[1]).replace(',', '.')) : 89,
+        stock: 5,
+        desc: '',
+        imageIndex: 0,
+      });
     }
 
     const jsonBlock = text.match(/\[[\s\S]*?\]|\{[\s\S]*"products"[\s\S]*\}/);
@@ -307,7 +390,7 @@
               desc: p.desc || p.description,
               featured: p.featured,
               emoji: p.emoji,
-              imageIndex: attachments.length ? Math.min(i, attachments.length - 1) : undefined,
+              imageIndex: imgs.length ? Math.min(i, imgs.length - 1) : undefined,
             })
           );
         }
@@ -326,14 +409,14 @@
         category: addMatch[2] || 'Mode',
         price: Number(addMatch[3] || addMatch[2]),
         stock: 5,
-        imageIndex: attachments.length ? 0 : undefined,
+        imageIndex: imgs.length ? 0 : undefined,
       });
     }
 
     const prodImg =
       text.match(/(?:produkt|product)\s+["']?([^"'\n]+?)["']?\s*(?:bild|image|photo)/i) ||
       text.match(/(?:bild|image)\s+(?:för|for|på|on)\s+["']?([^"'\n]+?)["']?$/i);
-    if (prodImg && attachments.length) {
+    if (prodImg && imgs.length) {
       actions.push({ type: 'update_product_image', name: prodImg[1].trim(), imageIndex: 0 });
     }
 
@@ -359,33 +442,71 @@
       });
     }
 
-    if (!actions.length && attachments.length === 1) {
+    if (!actions.length && imgs.length === 1) {
       if (/(header|hero|start)/.test(t)) actions.push({ type: 'set_hero_image', imageIndex: 0 });
       else if (/(fashion|mode)/.test(t)) actions.push({ type: 'set_fashion_image', imageIndex: 0 });
+      else if (text.trim()) {
+        actions.push({
+          type: 'add_product',
+          name: text.trim().slice(0, 80) || 'New product',
+          category: 'Mode',
+          price: 89,
+          stock: 5,
+          imageIndex: 0,
+        });
+      }
     }
 
     return actions;
   }
 
-  async function callOpenAI(text, files) {
-    const key = aiConfig();
-    const model = (global.MD3_AI_CONFIG && global.MD3_AI_CONFIG.model) || 'gpt-4o-mini';
-    const products = S()
-      .getProducts()
-      .slice(0, 20)
-      .map((p) => ({ id: p.id, name: p.name, category: p.category, price: p.price, featured: p.featured }));
+  async function callGemini(text, files) {
+    const key = geminiKey();
+    const model = getCfg().geminiModel || 'gemini-2.0-flash';
+    const system = buildSystemPrompt();
+    const parts = [{ text: system + '\n\nUser message: ' + (text || 'Use the attached image(s).') }];
+    (files || []).forEach((f, i) => {
+      const imgPart = dataUrlToGeminiPart(f.dataUrl);
+      if (imgPart) parts.push(imgPart);
+      parts.push({ text: '[attachment ' + i + ': ' + f.name + ']' });
+    });
 
-    const system = `You are MD3 Scandi admin assistant. Reply ONLY with JSON: {"reply":"short human message","actions":[...]}
-Action types:
-- seed_defaults
-- set_hero_image (needs attached image, imageIndex 0)
-- set_fashion_image (Mode/Fashion collection card on homepage)
-- add_product {name,category,sub,price,stock,desc,featured,emoji,imageIndex}
-- update_product {match or name, price, desc, stock, featured, imageIndex}
-- update_product_image {name, imageIndex}
-Categories: Mode, Maison, Lifestyle, Édition limitée.
-Current products: ${JSON.stringify(products)}.
-User may write Swedish, French, or English.`;
+    const url =
+      'https://generativelanguage.googleapis.com/v1beta/models/' +
+      encodeURIComponent(model) +
+      ':generateContent?key=' +
+      encodeURIComponent(key);
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts }],
+        generationConfig: {
+          temperature: 0.2,
+          responseMimeType: 'application/json',
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('Gemini: ' + err.slice(0, 280));
+    }
+    const data = await res.json();
+    const raw =
+      data.candidates &&
+      data.candidates[0] &&
+      data.candidates[0].content &&
+      data.candidates[0].content.parts &&
+      data.candidates[0].content.parts.map((p) => p.text).join('');
+    return parseAiJson(raw);
+  }
+
+  async function callOpenAI(text, files) {
+    const key = openaiKey();
+    const model = getCfg().model || 'gpt-4o-mini';
+    const system = buildSystemPrompt();
 
     const content = [{ type: 'text', text: text || 'Execute based on attachments.' }];
     files.forEach((f, i) => {
@@ -416,8 +537,15 @@ User may write Swedish, French, or English.`;
     }
     const data = await res.json();
     const raw = data.choices && data.choices[0] && data.choices[0].message.content;
-    const parsed = JSON.parse(raw);
-    return parsed;
+    return parseAiJson(raw);
+  }
+
+  async function callCloudAI(text, files) {
+    const provider = (getCfg().provider || 'gemini').toLowerCase();
+    if (provider === 'openai' && hasOpenAI()) return callOpenAI(text, files);
+    if (hasGemini()) return callGemini(text, files);
+    if (hasOpenAI()) return callOpenAI(text, files);
+    return null;
   }
 
   async function handleSend() {
@@ -441,19 +569,20 @@ User may write Swedish, French, or English.`;
 
     try {
       let replyHtml;
-      if (hasOpenAI()) {
-        const parsed = await callOpenAI(text, files);
-        const actions = (parsed && parsed.actions) || [];
+      if (hasCloudAI()) {
+        const parsed = await callCloudAI(text, files);
+        let actions = (parsed && parsed.actions) || [];
+        if (!actions.length) actions = parseLocalCommands(text, files);
         const exec = await executeAll(actions, files);
-        const intro = parsed.reply ? esc(parsed.reply) + '<br>' : '';
+        const intro = parsed && parsed.reply ? esc(parsed.reply) + '<br>' : '';
         replyHtml = intro + exec;
       } else {
-        const actions = parseLocalCommands(text);
+        const actions = parseLocalCommands(text, files);
         replyHtml = await executeAll(actions, files);
-        if (!hasOpenAI() && !$('adminAiMessages').dataset.hinted) {
+        if (!hasCloudAI() && !$('adminAiMessages').dataset.hinted) {
           replyHtml +=
             '<br><small class="admin-ai-hint">' +
-            esc(msg('admin-ai-hint-local', 'Tip: add OpenAI key in ai-config.js for smarter commands.')) +
+            esc(msg('admin-ai-hint-local', 'Tip: add Gemini key in ai-config.js for smarter commands.')) +
             '</small>';
           $('adminAiMessages').dataset.hinted = '1';
         }
