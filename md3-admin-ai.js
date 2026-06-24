@@ -21,6 +21,9 @@
     focusedProductId: null,
     focusedProductName: '',
     adminVisibleIds: [],
+    resolvedProductId: null,
+    resolvedImageIndex: null,
+    resolvedMatchMethod: '',
   };
   let turnSnapshots = [];
   let redoStack = [];
@@ -277,6 +280,7 @@ Subs: Vêtements, Canapés, Vaisselle, Déco, Textile, Sacs, Chaussures, Lampes.
 Current products: ${JSON.stringify(products)}.
 Recently touched in this chat: ${JSON.stringify(recent)}.
 ${focused ? 'Product currently open in editor (use match:"focused" for "this product"): ' + JSON.stringify(focused) + '.' : 'No product open in editor — use product name or "last" from chat.'}
+When the user attaches a product/catalog photo, identify which catalog product and which gallery image index (0=main) it matches — even if they say "this model" or "this image" without naming the product. Use replace_product_image with catalogImageIndex for that slot.
 User may write Swedish, French, English, or Arabic.
 Always return actions when the user wants products created/updated — never reply with only text if work can be done.
 NEVER default to add_product just because the user attached an image.
@@ -517,6 +521,231 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     });
   }
 
+  const catalogImageDataUrlCache = new Map();
+
+  function normalizeImageUrl(url) {
+    if (!url || typeof url !== 'string') return '';
+    return url.trim().split('?')[0].split('#')[0];
+  }
+
+  async function urlToComparableDataUrl(url) {
+    if (!url) return null;
+    if (String(url).startsWith('data:')) return url;
+    const key = normalizeImageUrl(url);
+    if (catalogImageDataUrlCache.has(key)) return catalogImageDataUrlCache.get(key);
+    try {
+      const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      const dataUrl = await readFileAsDataUrl(blob);
+      catalogImageDataUrlCache.set(key, dataUrl);
+      return dataUrl;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function imageFingerprint(dataUrl) {
+    if (!dataUrl) return null;
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const size = 32;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, size, size);
+        resolve(ctx.getImageData(0, 0, size, size).data);
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    });
+  }
+
+  async function compareImageSimilarity(a, b) {
+    const dataA = String(a).startsWith('data:') ? a : await urlToComparableDataUrl(a);
+    const dataB = String(b).startsWith('data:') ? b : await urlToComparableDataUrl(b);
+    if (!dataA || !dataB) return 0;
+    if (dataA === dataB || normalizeImageUrl(dataA) === normalizeImageUrl(dataB)) return 1;
+
+    const fa = await imageFingerprint(dataA);
+    const fb = await imageFingerprint(dataB);
+    if (!fa || !fb || fa.length !== fb.length) return 0;
+
+    let diff = 0;
+    for (let i = 0; i < fa.length; i++) diff += Math.abs(fa[i] - fb[i]);
+    return Math.max(0, 1 - diff / (fa.length * 255));
+  }
+
+  async function findCatalogImageIndex(product, attachmentDataUrl) {
+    const images = S().normalizeProductImages(product);
+    let bestIdx = 0;
+    let bestScore = 0;
+    for (let i = 0; i < images.length; i++) {
+      const score = await compareImageSimilarity(attachmentDataUrl, images[i]);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIdx = i;
+      }
+    }
+    return { imageIndex: bestIdx, score: bestScore };
+  }
+
+  async function findProductByImageMatch(attachmentDataUrl) {
+    if (!attachmentDataUrl) return null;
+    const products = S().getProducts();
+    let best = { product: null, imageIndex: 0, score: 0, method: '' };
+
+    for (const product of products) {
+      const images = S().normalizeProductImages(product);
+      for (let i = 0; i < images.length; i++) {
+        const catalogUrl = images[i];
+        if (catalogUrl === attachmentDataUrl) {
+          return { product, imageIndex: i, score: 1, method: 'exact' };
+        }
+        if (normalizeImageUrl(catalogUrl) && normalizeImageUrl(catalogUrl) === normalizeImageUrl(attachmentDataUrl)) {
+          return { product, imageIndex: i, score: 1, method: 'url' };
+        }
+        const score = await compareImageSimilarity(attachmentDataUrl, catalogUrl);
+        if (score > best.score) {
+          best = { product, imageIndex: i, score, method: 'visual' };
+        }
+      }
+    }
+
+    return best.score >= 0.8 ? best : null;
+  }
+
+  async function identifyProductWithGemini(files, text) {
+    const key = geminiKey();
+    if (!key || !files.length) return null;
+
+    const products = S()
+      .getProducts()
+      .slice(0, 40)
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        sub: p.sub,
+        desc: (p.desc || '').slice(0, 120),
+        imageCount: S().normalizeProductImages(p).length,
+      }));
+
+    const parts = [
+      {
+        text:
+          'The user attached a product/catalog photo from their shop admin. Identify which catalog product it belongs to and which gallery image index (0 = main) it matches.\n\n' +
+          'User message: ' +
+          (text || '(no text)') +
+          '\n\nCatalog:\n' +
+          JSON.stringify(products) +
+          '\n\nReply ONLY JSON: {"productId":number|null,"imageIndex":number,"confidence":0.0-1.0,"reason":"brief"}',
+      },
+    ];
+    const ref = dataUrlToGeminiPart(files[0].dataUrl);
+    if (ref) parts.push(ref);
+
+    const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro'];
+    for (const model of models) {
+      const url =
+        'https://generativelanguage.googleapis.com/v1beta/models/' +
+        encodeURIComponent(model) +
+        ':generateContent?key=' +
+        encodeURIComponent(key);
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts }] }),
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const raw =
+          data.candidates &&
+          data.candidates[0] &&
+          data.candidates[0].content &&
+          data.candidates[0].content.parts &&
+          data.candidates[0].content.parts.map((p) => p.text).join('');
+        const parsed = parseAiJson(raw);
+        const id = parsed.productId != null ? parseInt(parsed.productId, 10) : null;
+        if (!id) return null;
+        return {
+          productId: id,
+          imageIndex: parsed.imageIndex != null ? parseInt(parsed.imageIndex, 10) : 0,
+          confidence: Number(parsed.confidence) || 0.75,
+          reason: parsed.reason || '',
+        };
+      } catch (_) {
+        continue;
+      }
+    }
+    return null;
+  }
+
+  async function resolveProductFromAttachments(files, text) {
+    if (!files || !files.length) return null;
+
+    const attachment = files[0].dataUrl;
+    const visual = await findProductByImageMatch(attachment);
+    if (visual && visual.product) {
+      const refined = await findCatalogImageIndex(visual.product, attachment);
+      if (refined.score >= 0.75) visual.imageIndex = refined.imageIndex;
+      return visual;
+    }
+
+    if (hasCloudAI()) {
+      const vision = await identifyProductWithGemini(files, text);
+      if (vision && vision.productId) {
+        const product = S().getProducts().find((p) => p.id === vision.productId);
+        if (product) {
+          const refined = await findCatalogImageIndex(product, attachment);
+          const imageIndex =
+            refined.score >= 0.75 ? refined.imageIndex : Math.max(0, vision.imageIndex || 0);
+          return {
+            product,
+            imageIndex,
+            score: vision.confidence,
+            method: 'gemini',
+          };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  function refersAttachedImageEdit(text, files) {
+    if (!files || !files.length) return false;
+    if (wantsMultipleDifferentProducts(text, files)) return false;
+    if (explicitWantsNewProduct(text) && !refersExistingProduct(text, files)) return false;
+    if (inferSiteImageSlot(text)) return false;
+    const t = String(text || '').toLowerCase();
+    return (
+      /(?:change|replace|swap|update|edit|modify|make|retouch|recolor|fix)\b/.test(t) ||
+      /\bthis\s+(?:model|image|photo|picture|shot|one)\b/.test(t) ||
+      /(?:model|background|studio|mannequin|portrait)/.test(t)
+    );
+  }
+
+  function buildImageEditPrompt(text) {
+    const raw = String(text || '').trim();
+    if (!raw) return '';
+    const stripped = raw
+      .replace(
+        /^(?:please\s+)?(?:change|replace|update|edit|make|retouch)\s+(?:this\s+)?(?:model|image|photo|picture|shot)?\s*(?:to|with|so|:)?\s*/i,
+        ''
+      )
+      .trim();
+    const body = stripped.length >= 8 ? stripped : raw;
+    return (
+      body +
+      '. Keep the same garment/product as the reference photo. Professional e-commerce catalog quality, photorealistic, no text or watermarks.'
+    );
+  }
+
   async function compressImage(dataUrl, maxW) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -581,6 +810,12 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
   function findProductFromContext(match, text) {
     const products = S().getProducts();
+
+    if (sessionCtx.resolvedProductId != null) {
+      const resolved = products.find((p) => p.id === sessionCtx.resolvedProductId);
+      if (resolved) return resolved;
+    }
+
     const q = String(match || '')
       .trim()
       .toLowerCase();
@@ -605,6 +840,13 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       if (last) {
         const byLast = findProductByName(last);
         if (byLast) return byLast;
+      }
+    }
+
+    if (/\bthis\s+(?:model|image|photo|picture|shot)\b/i.test(text || '')) {
+      if (sessionCtx.focusedProductId != null) {
+        const hit = products.find((p) => p.id === sessionCtx.focusedProductId);
+        if (hit) return hit;
       }
     }
 
@@ -759,6 +1001,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   }
 
   function refersExistingProduct(text, files) {
+    if (files && files.length && refersAttachedImageEdit(text, files)) return true;
     if (wantsMultipleDifferentProducts(text, files)) return false;
     if (wantsImagesOnOneProduct(text, files)) return true;
 
@@ -1046,8 +1289,10 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       !wantsAddMultiple &&
       !wantsAdd &&
       (/(?:change|replace|swap|update|edit|modify|fix|ändra|byt|remplacer|changer|modifier|mettre à jour)/.test(t) ||
-        /(?:different|another|new)\s+(?:image|photo|picture|bild)/.test(t) ||
+        /(?:different|another|new)\s+(?:image|photo|picture|bild|model|mannequin)/.test(t) ||
         /create\s+(?:a\s+)?different\s+(?:image|photo|picture|bild)/.test(t) ||
+        (hasImages && /\bthis\s+(?:model|image|photo|picture|shot)\b/.test(t)) ||
+        (hasImages && /(?:change|replace|make)\s+this\b/.test(t)) ||
         /(?:for|of|on|to)\s+(?:this|the|that)\s+product/.test(t) ||
         /\bthis\s+product\b/.test(t) ||
         /(?:den\s+här|denna|det\s+här|ce\s+produit|cette\s+produit|le\s+produit)/.test(t) ||
@@ -1056,8 +1301,10 @@ Product screenshots / admin UI shots → update existing product, never add_prod
           /(?:for|this|product|produit|produkt)/.test(t)));
 
     const wantsAiGenerate =
-      /(?:generate|create|make|ai|nano|banana|gemini|model|mannequin|portrait)/.test(t) &&
-      (wantsImageWork || /different|another|variation|variant|other images|display images|more images|wearing/.test(t));
+      /(?:generate|create|make|ai|nano|banana|gemini|model|mannequin|portrait|background|studio)/.test(t) &&
+      (wantsImageWork ||
+        /different|another|variation|variant|other images|display images|more images|wearing|black|white/.test(t) ||
+        (hasImages && /\bthis\s+(?:model|image|photo)\b/.test(t)));
 
     const wantsGallery =
       /(?:gallery|more\s+images|fler\s+bilder|extra\s+images|display\s+images|andra\s+bilder|make other images|other images|product images)/.test(
@@ -1589,14 +1836,23 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
       const refIdx = action.referenceImageIndex != null ? action.referenceImageIndex : 0;
       const uploadedRef = files[refIdx] && files[refIdx].dataUrl;
-      const catalogRef =
-        (S().normalizeProductImages && S().normalizeProductImages(target)[0]) || target.image;
-      const reference = action.useUploadedReference ? uploadedRef || catalogRef : catalogRef || uploadedRef;
+      const products = S().getProducts();
+      const idx = products.findIndex((p) => p.id === target.id);
+      const existing = S().normalizeProductImages(products[idx]);
+      const catalogSlot =
+        action.catalogImageIndex != null
+          ? action.catalogImageIndex
+          : sessionCtx.resolvedImageIndex != null
+            ? sessionCtx.resolvedImageIndex
+            : 0;
+      const catalogRef = existing[catalogSlot] || existing[0] || target.image;
+      const reference = action.useUploadedReference !== false ? uploadedRef || catalogRef : catalogRef || uploadedRef;
       if (!reference) return msg('admin-ai-need-image', 'Attach an image with + first.');
 
       const prompt =
         action.prompt ||
         action.description ||
+        buildImageEditPrompt(sessionCtx.lastUserText || '') ||
         'Same product as the reference, fresh professional e-commerce catalog photo with different angle, lighting, and Scandinavian minimal styling';
 
       if (onProgress) {
@@ -1616,19 +1872,22 @@ Product screenshots / admin UI shots → update existing product, never add_prod
         }
       });
 
-      const products = S().getProducts();
-      const idx = products.findIndex((p) => p.id === target.id);
-      const existing = S().normalizeProductImages(products[idx]);
-      const nextImages = action.keepGallery ? [newImg].concat(existing.slice(1)) : [newImg];
+      const nextImages = existing.length ? existing.slice() : [];
+      while (nextImages.length <= catalogSlot) nextImages.push(newImg);
+      nextImages[catalogSlot] = newImg;
 
       products[idx] = S().normalizeProductFields({
         ...products[idx],
         images: nextImages,
-        image: newImg,
+        image: catalogSlot === 0 ? newImg : nextImages[0] || newImg,
       });
       await S().saveProducts(products, { onlyIds: [target.id] });
       trackProduct(target.name);
-      return msg('admin-ai-done-image', 'Image updated for ') + esc(target.name);
+      const slotNote =
+        existing.length > 1
+          ? ' (' + msg('admin-ai-image-slot', 'image') + ' ' + (catalogSlot + 1) + '/' + nextImages.length + ')'
+          : '';
+      return msg('admin-ai-done-image', 'Image updated for ') + esc(target.name) + slotNote;
     }
 
     if (type === 'add_product' || type === 'update_product') {
@@ -1950,17 +2209,18 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       return actions;
     }
 
-    if (intent.wantsUpdateExisting && intent.wantsAiGenerate && imgs.length) {
-      const modelShot = /model|mannequin|portrait|wearing/.test(t);
+    if ((intent.wantsUpdateExisting || refersAttachedImageEdit(text, imgs)) && intent.wantsAiGenerate && imgs.length) {
+      const modelShot = /model|mannequin|portrait|wearing|background|studio/.test(t);
       actions.push({
         type: 'replace_product_image',
-        match: productRef,
-        prompt: modelShot
+        match: sessionCtx.resolvedProductId != null ? 'focused' : productRef,
+        prompt: buildImageEditPrompt(text) || (modelShot
           ? 'Professional fashion model wearing the same garment from the reference photo, full-body e-commerce catalog shot, Scandinavian minimal styling, soft natural light'
           : text.trim() ||
-            'Same product as reference, new professional catalog photo with different composition and soft Nordic styling',
+            'Same product as reference, new professional catalog photo with different composition and soft Nordic styling'),
         referenceImageIndex: 0,
-        useUploadedReference: !!imgs.length,
+        catalogImageIndex: sessionCtx.resolvedImageIndex != null ? sessionCtx.resolvedImageIndex : 0,
+        useUploadedReference: true,
       });
       return actions;
     }
@@ -2225,6 +2485,9 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
     sessionCtx.lastFiles = files;
     sessionCtx.lastUserText = text;
+    sessionCtx.resolvedProductId = null;
+    sessionCtx.resolvedImageIndex = null;
+    sessionCtx.resolvedMatchMethod = '';
 
     pushHistoryTurn({
       role: 'user',
@@ -2235,6 +2498,24 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     markOlderImageTurns();
 
     addBubble('assistant', '<span class="admin-ai-typing">' + msg('admin-ai-thinking', 'Working…') + '</span>');
+
+    if (files.length && refersAttachedImageEdit(text, files)) {
+      setLastBubble(
+        '<span class="admin-ai-typing">' + esc(msg('admin-ai-identifying', 'Identifying product from photo…')) + '</span>'
+      );
+      try {
+        const resolved = await resolveProductFromAttachments(files, text);
+        if (resolved && resolved.product) {
+          sessionCtx.resolvedProductId = resolved.product.id;
+          sessionCtx.resolvedImageIndex = resolved.imageIndex;
+          sessionCtx.resolvedMatchMethod = resolved.method || '';
+          setFocusedProduct(resolved.product.id, resolved.product.name);
+        }
+      } catch (e) {
+        console.warn('admin ai image resolve', e);
+      }
+      setLastBubble('<span class="admin-ai-typing">' + msg('admin-ai-thinking', 'Working…') + '</span>');
+    }
 
     try {
       let replyHtml;
