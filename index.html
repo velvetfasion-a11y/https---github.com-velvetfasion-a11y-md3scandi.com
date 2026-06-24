@@ -960,8 +960,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="md3-firebase.js?v=3"></script>
+<script src="md3-firebase.js?v=4"></script>
 <script src="md3-store.js?v=6"></script>
+<script src="md3-site-assets.js?v=1"></script>
 <script src="md3-auth.js?v=3"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js?v=3"></script>
@@ -1058,7 +1059,10 @@
     try { renderFeatured(); } catch (e) { console.error('renderFeatured', e); }
   }
 
-  MD3Store.init().then(bootShop).catch(function (e) {
+  MD3Store.init().then(function () {
+    if (window.MD3SiteAssets) MD3SiteAssets.init();
+    bootShop();
+  }).catch(function (e) {
     console.error('MD3Store.init', e);
     bootShop();
   });

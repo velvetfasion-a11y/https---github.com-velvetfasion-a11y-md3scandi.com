@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="md3-header.css?v=5" />
-<link rel="stylesheet" href="md3-admin.css?v=4" />
+<link rel="stylesheet" href="md3-admin.css?v=5" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" crossorigin="anonymous" />
 <style>
   :root {
@@ -1131,6 +1131,20 @@
     </div>
   </header>
   <main class="admin-main admin-main-wide">
+    <div class="admin-ai" id="adminAi">
+      <div class="admin-ai-head">
+        <span data-i18n="admin-ai-title">AI-assistent</span>
+        <button type="button" class="admin-ai-toggle" id="adminAiToggle" aria-label="Collapse">−</button>
+      </div>
+      <div class="admin-ai-messages" id="adminAiMessages"></div>
+      <div class="admin-ai-attachments" id="adminAiAttachments" hidden></div>
+      <div class="admin-ai-compose">
+        <button type="button" class="admin-ai-plus" id="adminAiAttachBtn" title="Bifoga bilder" aria-label="+">+</button>
+        <input type="file" id="adminAiFileInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden />
+        <input type="text" class="admin-ai-input" id="adminAiInput" data-i18n-placeholder="admin-ai-placeholder" placeholder="Bifoga bild med + och beskriv vad som ska ändras…" autocomplete="off" />
+        <button type="button" class="admin-ai-send" id="adminAiSendBtn" aria-label="Send">↑</button>
+      </div>
+    </div>
     <nav class="admin-tabs" aria-label="Admin">
       <button type="button" class="admin-tab active" data-tab="products" onclick="adminTab('products')" data-i18n="admin-products">Produits</button>
       <button type="button" class="admin-tab" data-tab="stats" onclick="adminTab('stats')" data-i18n="admin-stats">Statistiques</button>
@@ -1245,17 +1259,22 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" crossorigin="anonymous"></script>
+<script src="recaptcha-config.js"></script>
+<script src="md3-recaptcha.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-<script src="md3-firebase.js?v=3"></script>
+<script src="md3-firebase.js?v=4"></script>
 <script src="md3-store.js?v=6"></script>
 <script src="md3-auth.js?v=3"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js?v=3"></script>
-<script src="md3-lang.js?v=8"></script>
+<script src="ai-config.js"></script>
+<script src="md3-site-assets.js?v=1"></script>
+<script src="md3-admin-ai.js?v=1"></script>
+<script src="md3-lang.js?v=10"></script>
 <script src="md3-taxonomy.js?v=2"></script>
 <script src="md3-currency.js?v=4"></script>
 <script src="email-config.js?v=3"></script>
@@ -1505,6 +1524,7 @@ function showPage(name) {
   if (name === 'admin') {
     updateAdminNav();
     renderAdminProducts();
+    if (window.MD3AdminAI) window.MD3AdminAI.init();
   }
   updateNav();
 }
@@ -1559,6 +1579,20 @@ function markInputError(inputId, labelId) {
   }
 }
 
+async function verifyRecaptcha(action, errEl) {
+  if (!window.MD3Recaptcha || !MD3Recaptcha.isConfigured()) return true;
+  try {
+    const cap = await MD3Recaptcha.guard(action);
+    if (cap.ok || cap.skipped) return true;
+    showErr(errEl, L('err-recaptcha'));
+    return false;
+  } catch (e) {
+    console.error('recaptcha', e);
+    showErr(errEl, L('err-recaptcha'));
+    return false;
+  }
+}
+
 async function doLogin() {
   clearInputErrors('login');
   const email = document.getElementById('login-email').value.trim().toLowerCase();
@@ -1574,6 +1608,8 @@ async function doLogin() {
     showErr(err, L('err-pass-req'), [['login-password', 'login-label-password']]);
     return;
   }
+
+  if (!(await verifyRecaptcha('LOGIN', err))) return;
 
   if (S.isAdminLogin(email, pass)) {
     S.setCurrentUser({ email: S.ADMIN_EMAIL, isAdmin: true });
@@ -1653,6 +1689,7 @@ async function doGoogleLogin() {
   }
 
   try {
+    if (!(await verifyRecaptcha('GOOGLE_LOGIN', err))) return;
     await S.ready;
     const firebaseUser = await MD3Auth.signInWithGoogle();
     await finishGoogleLogin(firebaseUser);
@@ -1712,6 +1749,10 @@ async function doSignup() {
   }
 
   try {
+    if (!(await verifyRecaptcha('SIGNUP', err))) {
+      resetSignupBtn();
+      return;
+    }
     const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
     S.setPendingSignup(email, { name, email, pass, token });
     const verifyUrl = location.origin + location.pathname + '?verifySignup=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(email);

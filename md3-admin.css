@@ -740,6 +740,206 @@ body.admin-active .modal {
   box-shadow: 0 20px 48px rgba(43, 38, 32, 0.14);
 }
 
+/* ── Admin AI chat ── */
+#page-admin .admin-ai {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--admin-shadow);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+#page-admin .admin-ai--drag {
+  border-color: var(--admin-gold);
+}
+
+#page-admin .admin-ai--collapsed .admin-ai-messages,
+#page-admin .admin-ai--collapsed .admin-ai-attachments,
+#page-admin .admin-ai--collapsed .admin-ai-compose {
+  display: none;
+}
+
+#page-admin .admin-ai-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--admin-border);
+  background: var(--admin-surface-soft);
+}
+
+#page-admin .admin-ai-head span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+}
+
+#page-admin .admin-ai-toggle {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--admin-muted);
+}
+
+#page-admin .admin-ai-messages {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+#page-admin .admin-ai-msg {
+  max-width: 92%;
+  padding: 0.55rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+#page-admin .admin-ai-msg--assistant {
+  align-self: flex-start;
+  background: var(--admin-surface-soft);
+  color: var(--admin-ink);
+  border: 1px solid var(--admin-border);
+}
+
+#page-admin .admin-ai-msg--user {
+  align-self: flex-end;
+  background: var(--admin-ink);
+  color: #fff;
+}
+
+#page-admin .admin-ai-user-imgs {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+#page-admin .admin-ai-user-imgs img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+#page-admin .admin-ai-hint {
+  color: var(--admin-muted-soft);
+  font-size: 0.72rem;
+}
+
+#page-admin .admin-ai-typing {
+  opacity: 0.65;
+}
+
+#page-admin .admin-ai-attachments {
+  display: flex;
+  gap: 8px;
+  padding: 0 1rem 0.65rem;
+  flex-wrap: wrap;
+}
+
+#page-admin .admin-ai-thumb {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
+
+#page-admin .admin-ai-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border);
+}
+
+#page-admin .admin-ai-thumb button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: none;
+  background: var(--admin-ink);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+#page-admin .admin-ai-compose {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem 0.85rem;
+  border-top: 1px solid var(--admin-border);
+}
+
+#page-admin .admin-ai-plus {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 1px dashed var(--admin-border-strong);
+  background: var(--admin-surface-soft);
+  color: var(--admin-gold);
+  font-size: 1.25rem;
+  font-weight: 300;
+  cursor: pointer;
+  line-height: 1;
+}
+
+#page-admin .admin-ai-plus:hover {
+  background: #fff;
+  border-style: solid;
+}
+
+#page-admin .admin-ai-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.85rem;
+  background: #fff;
+  outline: none;
+}
+
+#page-admin .admin-ai-input:focus {
+  border-color: var(--admin-border-strong);
+  box-shadow: 0 0 0 3px rgba(184, 148, 106, 0.12);
+}
+
+#page-admin .admin-ai-send {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--admin-gold);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+#page-admin .admin-ai-send:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
 @media (max-width: 520px) {
   #page-admin .adm-pgrid {
     grid-template-columns: 1fr;

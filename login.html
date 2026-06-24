@@ -257,6 +257,8 @@
   </div>
 </main>
 
+<script src="recaptcha-config.js"></script>
+<script src="md3-recaptcha.js"></script>
 <script src="firebase-config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -363,6 +365,20 @@ function showErr(msg, fields) {
   (fields || []).forEach(([inputId, labelId]) => setFieldError(inputId, labelId));
 }
 
+async function verifyRecaptcha(action) {
+  if (!window.MD3Recaptcha || !MD3Recaptcha.isConfigured()) return true;
+  try {
+    const cap = await MD3Recaptcha.guard(action);
+    if (cap.ok || cap.skipped) return true;
+    showErr(MD3Lang.t('err-recaptcha'));
+    return false;
+  } catch (e) {
+    console.error('recaptcha', e);
+    showErr(MD3Lang.t('err-recaptcha'));
+    return false;
+  }
+}
+
 async function doLogin(e) {
   e.preventDefault();
   clearFieldErrors();
@@ -377,6 +393,8 @@ async function doLogin(e) {
     showErr(MD3Lang.t('err-pass-req'), [['login-password', 'label-password']]);
     return false;
   }
+
+  if (!(await verifyRecaptcha('LOGIN'))) return false;
 
   const S = MD3Store;
 
@@ -427,6 +445,7 @@ function redirectAfterLogin() {
 
 async function doGoogleLogin() {
   clearFieldErrors();
+  if (!(await verifyRecaptcha('GOOGLE_LOGIN'))) return;
   const btn = document.getElementById('btnGoogle');
   const label = MD3Lang.t('btn-google');
 

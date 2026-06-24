@@ -380,6 +380,31 @@
     return auth;
   }
 
+  function siteDoc() {
+    return db.collection('settings').doc('site');
+  }
+
+  async function loadSiteAssets() {
+    if (!db) return null;
+    const doc = await siteDoc().get();
+    return doc.exists ? doc.data() : null;
+  }
+
+  async function saveSiteAssets(data) {
+    if (!db) return;
+    await siteDoc().set({ ...data, updatedAt: Date.now() }, { merge: true });
+  }
+
+  function watchSiteAssets(onChange) {
+    if (!db) return () => {};
+    return siteDoc().onSnapshot(
+      (doc) => {
+        if (doc.exists) onChange(doc.data());
+      },
+      (err) => console.error('site assets snapshot', err)
+    );
+  }
+
   global.MD3Firebase = {
     isConfigured,
     isEnabled,
@@ -399,5 +424,8 @@
     loadTaxonomy,
     saveTaxonomy,
     watchTaxonomy,
+    loadSiteAssets,
+    saveSiteAssets,
+    watchSiteAssets,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
