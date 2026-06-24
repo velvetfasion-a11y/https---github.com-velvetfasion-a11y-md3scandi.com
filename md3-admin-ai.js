@@ -15,7 +15,13 @@
   let attachments = [];
   let busy = false;
   let chatHistory = [];
-  let sessionCtx = { lastProductNames: [], lastFiles: [], focusedProductId: null, focusedProductName: '' };
+  let sessionCtx = {
+    lastProductNames: [],
+    lastFiles: [],
+    focusedProductId: null,
+    focusedProductName: '',
+    adminVisibleIds: [],
+  };
   let turnSnapshots = [];
   let redoStack = [];
   let historySaveTimer = null;
@@ -61,6 +67,56 @@
     if (p === 'openai') return hasOpenAI();
     if (p === 'gemini') return hasGemini();
     return hasGemini() || hasOpenAI();
+  }
+
+  function cloudAISetupMessage() {
+    return msg(
+      'admin-ai-err-no-key',
+      'Gemini API key missing. Locally: set GEMINI_API_KEY in .env, then run node scripts/sync-ai-config.mjs. Live site: add GEMINI_API_KEY in GitHub → Settings → Secrets → Actions.'
+    );
+  }
+
+  function productNotFoundMessage() {
+    return msg(
+      'admin-ai-err-which-product',
+      'Could not find which product to update. Click a product card or Edit first, or name the product in your message.'
+    );
+  }
+
+  function getVisibleProducts() {
+    const ids = sessionCtx.adminVisibleIds || [];
+    if (!ids.length) return [];
+    const products = S().getProducts();
+    return ids.map((id) => products.find((p) => p.id === id)).filter(Boolean);
+  }
+
+  function findProductFromKeywords(text) {
+    const t = String(text || '').toLowerCase();
+    const products = S().getProducts().filter((p) => !/^New product(\s+\d+)?$/i.test(String(p.name || '').trim()));
+    if (!products.length) return null;
+
+    const tokens = t.split(/\W+/).filter((w) => w.length > 3);
+    let best = null;
+    let bestScore = 0;
+
+    for (const p of products) {
+      const hay = (p.name + ' ' + (p.desc || '') + ' ' + p.category + ' ' + (p.sub || '')).toLowerCase();
+      let score = 0;
+      for (const tok of tokens) {
+        if (hay.includes(tok)) score++;
+      }
+      if (
+        /cloth|garment|robe|dress|outfit|wear|linen|textile|mode|fashion|vetement|vêtement|model/.test(t) &&
+        /mode|fashion|vêtement|vetement|textile|cloth/i.test(hay)
+      ) {
+        score += 2;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = p;
+      }
+    }
+    return bestScore >= 2 ? best : null;
   }
 
   function chatModels() {
@@ -292,6 +348,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
         lastProductNames: sessionCtx.lastProductNames || [],
         focusedProductId: sessionCtx.focusedProductId,
         focusedProductName: sessionCtx.focusedProductName || '',
+        adminVisibleIds: sessionCtx.adminVisibleIds || [],
       },
       turnSnapshots: noSnapshots ? [] : turnSnapshots.slice(-MAX_PERSISTED_SNAPSHOTS),
       messages: collectUiMessages(),
@@ -358,6 +415,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
         sessionCtx.lastProductNames = data.sessionCtx.lastProductNames || [];
         sessionCtx.focusedProductId = data.sessionCtx.focusedProductId ?? null;
         sessionCtx.focusedProductName = data.sessionCtx.focusedProductName || '';
+        sessionCtx.adminVisibleIds = data.sessionCtx.adminVisibleIds || [];
       }
 
       turnSnapshots = data.turnSnapshots || [];
@@ -561,18 +619,60 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     const byName = findProductByName(match);
     if (byName) return byName;
 
-    if (/this product|different image|ce produit|den här/i.test(text || '')) {
+    if (/this product|different image|ce produit|den här|image of this product|the image of this/i.test(text || '')) {
+      const visible = getVisibleProducts();
+      if (visible.length === 1) return visible[0];
       const real = products.filter((p) => !/^New product(\s+\d+)?$/i.test(String(p.name || '').trim()));
       if (real.length === 1) return real[0];
     }
 
+    const fromKeywords = findProductFromKeywords(text);
+    if (fromKeywords) return fromKeywords;
+
+    const visibleOnly = getVisibleProducts();
+    if (visibleOnly.length === 1 && /(?:change|replace|update|image|photo|model|gallery)/i.test(text || '')) {
+      return visibleOnly[0];
+    }
+
     return null;
+  }
+
+  function updateFocusChip() {
+    const el = $('adminAiFocus');
+    if (!el) return;
+    const name = sessionCtx.focusedProductName;
+    if (sessionCtx.focusedProductId != null && name) {
+      el.hidden = false;
+      el.textContent =
+        msg('admin-ai-focus-on', 'Focused: ') +
+        name +
+        ' — ' +
+        msg('admin-ai-focus-hint', 'AI commands apply to this product');
+    } else {
+      el.hidden = false;
+      el.textContent = msg(
+        'admin-ai-focus-none',
+        'No product selected — click a product card before saying "this product"'
+      );
+    }
+  }
+
+  function setAdminListContext(ctx) {
+    sessionCtx.adminVisibleIds = Array.isArray(ctx && ctx.visibleIds) ? ctx.visibleIds.slice() : [];
+    updateFocusChip();
+  }
+
+  function getFocusedProductId() {
+    return sessionCtx.focusedProductId;
   }
 
   function setFocusedProduct(id, name) {
     sessionCtx.focusedProductId = id != null ? parseInt(id, 10) : null;
     sessionCtx.focusedProductName = name ? String(name) : '';
     if (name) trackProduct(name);
+    updateFocusChip();
+    persistChatSession();
+    if (typeof global.renderAdminProducts === 'function') global.renderAdminProducts();
   }
 
   function wantsImagesOnOneProduct(text, files) {
@@ -956,8 +1056,8 @@ Product screenshots / admin UI shots → update existing product, never add_prod
           /(?:for|this|product|produit|produkt)/.test(t)));
 
     const wantsAiGenerate =
-      /(?:generate|create|make|ai|nano|banana|gemini)/.test(t) &&
-      (wantsImageWork || /different|another|variation|variant|other images|display images|more images/.test(t));
+      /(?:generate|create|make|ai|nano|banana|gemini|model|mannequin|portrait)/.test(t) &&
+      (wantsImageWork || /different|another|variation|variant|other images|display images|more images|wearing/.test(t));
 
     const wantsGallery =
       /(?:gallery|more\s+images|fler\s+bilder|extra\s+images|display\s+images|andra\s+bilder|make other images|other images|product images)/.test(
@@ -1132,6 +1232,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
   async function generateProductImage(prompt, referenceDataUrl, onProgress) {
     const key = geminiKey();
+    if (!key) throw new Error(cloudAISetupMessage());
     const models = imageModels();
     const imageSize = getCfg().geminiImageSize || '2K';
     const aspectRatio = getCfg().geminiImageAspect || '3:4';
@@ -1363,7 +1464,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
     if (type === 'delete_product' || type === 'remove_product') {
       const target = findProductFromContext(action.match || action.name || 'focused', sessionCtx.lastUserText || '');
-      if (!target) return msg('admin-ai-err-missing', 'Product not found.');
+      if (!target) return productNotFoundMessage();
       const products = S().getProducts().filter((p) => p.id !== target.id);
       await S().saveProducts(products);
       S().syncHomeFeaturedFlags();
@@ -1378,15 +1479,17 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
     if (type === 'generate_product_images' || type === 'append_product_images') {
       const target = findProductFromContext(action.match || action.name || 'focused', sessionCtx.lastUserText || '');
-      if (!target) return msg('admin-ai-err-missing', 'Product not found.');
+      if (!target) return productNotFoundMessage();
+
+      const hasGalleryShots = !!(action.galleryShots || action.shots || action.prompts);
+      const attachIdxs = resolveImageIndices(action, files).map((i) => files[i].dataUrl).filter(Boolean);
+      const uploadOnlyAppend = type === 'append_product_images' && attachIdxs.length && !hasGalleryShots;
+
+      if (!uploadOnlyAppend && !hasCloudAI()) return cloudAISetupMessage();
 
       const products = S().getProducts();
       const idx = products.findIndex((p) => p.id === target.id);
       const existing = S().normalizeProductImages(products[idx]);
-      const attachIdxs = resolveImageIndices(action, files).map((i) => files[i].dataUrl).filter(Boolean);
-
-      const hasGalleryShots = !!(action.galleryShots || action.shots || action.prompts);
-      const uploadOnlyAppend = type === 'append_product_images' && attachIdxs.length && !hasGalleryShots;
 
       if (uploadOnlyAppend) {
         const nextImages = existing.concat(attachIdxs.filter((url) => !existing.includes(url)));
@@ -1480,12 +1583,9 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
     if (type === 'replace_product_image' || type === 'regenerate_product_image') {
       const target = findProductFromContext(action.match || action.name || 'focused', sessionCtx.lastUserText || '');
-      if (!target) {
-        return msg(
-          'admin-ai-err-which-product',
-          'Could not find which product to update. Click Edit on the product first, or name it in your message.'
-        );
-      }
+      if (!target) return productNotFoundMessage();
+
+      if (!hasCloudAI()) return cloudAISetupMessage();
 
       const refIdx = action.referenceImageIndex != null ? action.referenceImageIndex : 0;
       const uploadedRef = files[refIdx] && files[refIdx].dataUrl;
@@ -1636,7 +1736,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       }
 
       if (!target) target = findProductFromContext(name, sessionCtx.lastUserText || '');
-      if (!target) return msg('admin-ai-err-missing', 'Product not found: ') + esc(name);
+      if (!target) return productNotFoundMessage();
 
       const idx = products.findIndex((p) => p.id === target.id);
       const next = {
@@ -1675,7 +1775,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
     if (type === 'update_product_image') {
       const target = findProductFromContext(action.name || action.match || 'focused', sessionCtx.lastUserText || '');
-      if (!target) return msg('admin-ai-err-missing', 'Product not found.');
+      if (!target) return productNotFoundMessage();
       const indices = resolveImageIndices(action, files);
       if (!indices.length) return msg('admin-ai-need-image', 'Attach an image with + first.');
       const newImgs = indices.map((i) => files[i].dataUrl).filter(Boolean);
@@ -1851,13 +1951,16 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     }
 
     if (intent.wantsUpdateExisting && intent.wantsAiGenerate && imgs.length) {
+      const modelShot = /model|mannequin|portrait|wearing/.test(t);
       actions.push({
         type: 'replace_product_image',
         match: productRef,
-        prompt:
-          text.trim() ||
-          'Same product as reference, new professional catalog photo with different composition and soft Nordic styling',
+        prompt: modelShot
+          ? 'Professional fashion model wearing the same garment from the reference photo, full-body e-commerce catalog shot, Scandinavian minimal styling, soft natural light'
+          : text.trim() ||
+            'Same product as reference, new professional catalog photo with different composition and soft Nordic styling',
         referenceImageIndex: 0,
+        useUploadedReference: !!imgs.length,
       });
       return actions;
     }
@@ -2138,14 +2241,16 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       let parsed = null;
       let actions = [];
       let usedCloud = false;
+      let cloudErr = null;
 
       if (hasCloudAI()) {
         try {
           parsed = await callCloudAI(text, files);
           actions = normalizeActions((parsed && parsed.actions) || [], text, files);
           usedCloud = true;
-        } catch (cloudErr) {
-          console.warn('admin ai cloud fallback', cloudErr);
+        } catch (e) {
+          cloudErr = e;
+          console.warn('admin ai cloud fallback', e);
           actions = rewriteMisclassifiedActions(parseLocalCommands(text, files), text, files);
         }
       } else {
@@ -2179,7 +2284,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       const intro = parsed && parsed.reply ? esc(parsed.reply) + '<br>' : '';
       replyHtml = finalizeAssistantReply({ ...exec, html: intro + exec.html });
 
-      if (!usedCloud && !$('adminAiMessages').dataset.hinted) {
+      if (!hasCloudAI() && !$('adminAiMessages').dataset.hinted) {
         replyHtml +=
           '<br><small class="admin-ai-hint">' +
           esc(
@@ -2190,6 +2295,13 @@ Product screenshots / admin UI shots → update existing product, never add_prod
           ) +
           '</small>';
         $('adminAiMessages').dataset.hinted = '1';
+      } else if (hasCloudAI() && !usedCloud && cloudErr && !$('adminAiMessages').dataset.cloudErr) {
+        replyHtml +=
+          '<br><small class="admin-ai-hint">' +
+          esc(msg('admin-ai-err-cloud', 'Cloud AI error: ')) +
+          esc(String(cloudErr.message || cloudErr).slice(0, 180)) +
+          '</small>';
+        $('adminAiMessages').dataset.cloudErr = '1';
       }
 
       setLastBubble(replyHtml);
@@ -2308,6 +2420,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     $('adminAi').dataset.inited = '1';
     clearExpiredChatSession();
     bind();
+    updateFocusChip();
     if (!restoreChatSession()) {
       showWelcomeBubble();
     }
@@ -2319,6 +2432,9 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     parseLocalCommands,
     executeAll,
     setFocusedProduct,
+    getFocusedProductId,
+    setAdminListContext,
+    updateFocusChip,
     classifyIntent,
     expandMultiImageActions,
     wantsCreateMultipleProducts,

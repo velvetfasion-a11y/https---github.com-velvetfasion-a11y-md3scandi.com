@@ -447,6 +447,11 @@ body.admin-active #md3-site-header {
   box-shadow: 0 0 0 2px rgba(184, 148, 106, 0.14);
 }
 
+#page-admin .adm-pc.adm-pc--ai-focus {
+  border-color: #6b8f71;
+  box-shadow: 0 0 0 2px rgba(107, 143, 113, 0.28);
+}
+
 #page-admin .adm-cim {
   position: relative;
   aspect-ratio: 3 / 4;
@@ -776,6 +781,19 @@ body.admin-active .modal {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--admin-muted);
+}
+
+#page-admin .admin-ai-focus {
+  padding: 0.45rem 1rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--admin-muted);
+  background: #faf8f4;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+#page-admin .admin-ai-focus:not([hidden]) {
+  display: block;
 }
 
 #page-admin .admin-ai-toggle {
