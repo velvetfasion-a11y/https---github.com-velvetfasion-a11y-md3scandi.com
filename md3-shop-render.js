@@ -41,12 +41,14 @@
           : p && p.image
             ? [p.image]
             : [];
-    // Prefer local / data URLs — remote https often 404s on the live site
-    const local = (imgs || []).find((src) => {
+    const list = imgs || [];
+    const local = list.find((src) => {
       const s = String(src || '');
       return s.startsWith('images/') || s.startsWith('/') || s.startsWith('data:image');
     });
     if (local) return local;
+    const remote = list.find((src) => /^https?:\/\//i.test(String(src || '')));
+    if (remote) return remote;
     return fallback;
   }
 
@@ -61,7 +63,7 @@
       ? `<span class="home-product-badge">${esc(labels.limitedBadge || 'Édition')}</span>`
       : '';
     const imgHtml = image
-      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${fallback}'" />`
+      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="eager" decoding="async" fetchpriority="low" onerror="this.onerror=null;this.src='${fallback}'" />`
       : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
     return `
       <a href="${href}" class="home-product-card">
@@ -238,13 +240,20 @@
     if (groups.length < 2) {
       const clone = group.cloneNode(true);
       clone.setAttribute('aria-hidden', 'true');
+      clone.querySelectorAll('a').forEach((a) => a.setAttribute('tabindex', '-1'));
       track.appendChild(clone);
     }
 
+    // Eager-load every photo so animated clones never flash empty
+    track.querySelectorAll('img').forEach((img) => {
+      img.loading = 'eager';
+      img.setAttribute('decoding', 'async');
+      if (!img.complete && img.dataset.src) img.src = img.dataset.src;
+    });
+
     const cards = group.querySelectorAll('.home-product-card');
     const n = Math.max(1, cards.length);
-    // ~2.5s of travel per card → full loop = one group width
-    const seconds = Math.max(20, Math.min(80, n * 2.5));
+    const seconds = Math.max(24, Math.min(72, n * 3));
     track.style.setProperty('--featured-marquee-duration', seconds + 's');
     track.style.removeProperty('transform');
     track.style.removeProperty('transition');
