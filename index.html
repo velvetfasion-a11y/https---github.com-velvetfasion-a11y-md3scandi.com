@@ -24,7 +24,7 @@
 <noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@300;400;500&family=Noto+Sans+Arabic:wght@300;400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="md3-header.css?v=17" />
 <link rel="stylesheet" href="md3-responsive.css?v=11" />
-<link rel="stylesheet" href="md3-home.css?v=25" />
+<link rel="stylesheet" href="md3-home.css?v=26" />
 </head>
 <body class="home-page">
 <script src="md3-viewport.js"></script>
@@ -205,14 +205,14 @@
 <script src="firebase-config.js"></script>
 <script src="md3-firebase.js?v=3"></script>
 <script src="md3-sizes.js?v=1" defer></script>
-<script src="md3-store.js?v=10" defer></script>
+<script src="md3-store.js?v=11" defer></script>
 <script src="md3-site-assets.js?v=6" defer></script>
 <script src="md3-nav-icons.js" defer></script>
 <script src="md3-header.js?v=16" defer></script>
 <script src="md3-lang.js?v=29" defer></script>
 <script src="md3-currency.js?v=4" defer></script>
 <script src="md3-hero-fit.js?v=5" defer></script>
-<script src="md3-shop-render.js?v=12" defer></script>
+<script src="md3-shop-render.js?v=13" defer></script>
 <script defer>
   function updateCartBadge() {
     MD3Header.updateCartBadge();
@@ -243,33 +243,85 @@
 
   let featuredTimer = null;
   function renderFeatured() {
-    if (!window.MD3Store) return;
-    let products = MD3Store.getFeaturedProducts
-      ? MD3Store.getFeaturedProducts()
-      : MD3Store.getHomeFeaturedProducts();
-    if (!products.length && MD3Store.getProducts) {
-      products = MD3Store.getProducts().slice(0, 4);
+    try {
+      const grid = document.getElementById('featuredGrid');
+      const empty = document.getElementById('featuredEmpty');
+      const carousel = document.getElementById('featuredCarousel');
+      const section = document.getElementById('boutique');
+      if (section) section.classList.add('in-view');
+      if (!grid) return;
+
+      if (!window.MD3Store) {
+        if (empty) empty.hidden = false;
+        if (carousel) carousel.hidden = true;
+        return;
+      }
+
+      if (MD3Store.ensureCaches) MD3Store.ensureCaches();
+      let products = MD3Store.getFeaturedProducts
+        ? MD3Store.getFeaturedProducts()
+        : MD3Store.getHomeFeaturedProducts
+          ? MD3Store.getHomeFeaturedProducts()
+          : [];
+      if (!products.length && MD3Store.getProducts) {
+        products = MD3Store.getProducts().slice(0, 4);
+      }
+      if (!products.length && MD3Store.defaultProducts) {
+        products = MD3Store.defaultProducts().filter((p) => p.featured);
+        if (!products.length) products = MD3Store.defaultProducts().slice(0, 4);
+      }
+
+      if (!products.length) {
+        grid.innerHTML = '';
+        grid.classList.remove('is-ready');
+        if (empty) empty.hidden = false;
+        if (carousel) carousel.hidden = true;
+        return;
+      }
+
+      if (empty) empty.hidden = true;
+      if (carousel) {
+        carousel.hidden = false;
+        carousel.style.display = '';
+      }
+
+      if (window.MD3Shop && MD3Shop.renderHomeCarousel) {
+        MD3Shop.renderHomeCarousel(grid, products, MD3Shop.homeLabels());
+      } else if (window.MD3Shop && MD3Shop.renderHomeGrid) {
+        MD3Shop.renderHomeGrid(grid, products, MD3Shop.homeLabels());
+      } else {
+        // Last-resort inline cards so the photo strip is never blank
+        grid.innerHTML =
+          '<div class="home-featured-group">' +
+          products
+            .map((p) => {
+              const imgs =
+                window.MD3Store && MD3Store.normalizeProductImages
+                  ? MD3Store.normalizeProductImages(p)
+                  : p.images || (p.image ? [p.image] : []);
+              const src = imgs[0] || '';
+              const name = (p && p.name) || '';
+              const media = src
+                ? '<img src="' + src + '" alt="' + name.replace(/"/g, '') + '" loading="lazy" />'
+                : '<div class="featured-emoji-fallback">' + (p.emoji || '✦') + '</div>';
+              return (
+                '<a class="home-product-card" href="product.html?id=' +
+                encodeURIComponent(String(p.id)) +
+                '"><div class="home-product-visual">' +
+                media +
+                '</div><div class="home-product-meta"><div class="home-product-name display-serif">' +
+                name +
+                '</div></div></a>'
+              );
+            })
+            .join('') +
+          '</div>';
+        grid.classList.add('is-ready');
+      }
+      updateCartBadge();
+    } catch (e) {
+      console.error('renderFeatured', e);
     }
-    const grid = document.getElementById('featuredGrid');
-    const empty = document.getElementById('featuredEmpty');
-    const carousel = document.getElementById('featuredCarousel');
-    const section = document.getElementById('boutique');
-    if (section) section.classList.add('in-view');
-    if (!grid) return;
-    if (!products.length) {
-      grid.innerHTML = '';
-      if (empty) empty.hidden = false;
-      if (carousel) carousel.hidden = true;
-      return;
-    }
-    if (empty) empty.hidden = true;
-    if (carousel) carousel.hidden = false;
-    if (MD3Shop && MD3Shop.renderHomeCarousel) {
-      MD3Shop.renderHomeCarousel(grid, products, MD3Shop.homeLabels());
-    } else if (MD3Shop && MD3Shop.renderHomeGrid) {
-      MD3Shop.renderHomeGrid(grid, products, MD3Shop.homeLabels());
-    }
-    updateCartBadge();
   }
 
   function scheduleFeaturedRender() {

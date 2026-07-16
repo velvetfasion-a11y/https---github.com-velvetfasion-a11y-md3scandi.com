@@ -157,8 +157,14 @@
         global.MD3Currency && global.MD3Currency.formatPrice
           ? global.MD3Currency.formatPrice(n)
           : `${n} €`,
-      catLabel: (c) => global.MD3Lang.translateCategory(c),
-      subLabel: (s) => global.MD3Lang.translateSub(s),
+      catLabel: (c) =>
+        global.MD3Lang && global.MD3Lang.translateCategory
+          ? global.MD3Lang.translateCategory(c)
+          : c || '',
+      subLabel: (s) =>
+        global.MD3Lang && global.MD3Lang.translateSub
+          ? global.MD3Lang.translateSub(s)
+          : s || '',
       cartSvg,
       minimal: false,
     };

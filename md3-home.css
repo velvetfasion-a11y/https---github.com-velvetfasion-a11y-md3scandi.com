@@ -628,7 +628,7 @@ html.is-mobile #md3-hero .hero-bg-img {
   100% { transform: translateX(-50%); }
 }
 
-/* Phones: starred products as a swipeable carousel */
+/* Phones: starred products as a swipeable photo carousel */
 @media (max-width: 767px) {
   .home-featured-carousel {
     overflow-x: auto;
@@ -638,10 +638,15 @@ html.is-mobile #md3-hero .hero-bg-img {
     overscroll-behavior-x: contain;
     width: 100%;
     margin: 0;
-    min-height: 280px;
+    min-height: 320px;
     mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
     -webkit-mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
     padding: 0 0 0.35rem;
+    display: block !important;
+  }
+
+  .home-featured-carousel[hidden] {
+    display: none !important;
   }
 
   .home-featured-track,
@@ -653,11 +658,11 @@ html.is-mobile #md3-hero .hero-bg-img {
     gap: 0;
     animation: none !important;
     transform: none !important;
-    min-height: 260px;
+    min-height: 300px;
   }
 
   .home-featured-group {
-    display: flex;
+    display: flex !important;
     align-items: stretch;
     gap: 0.85rem;
     padding-right: 0.85rem;
@@ -671,6 +676,10 @@ html.is-mobile #md3-hero .hero-bg-img {
     width: min(68vw, 220px) !important;
     flex: 0 0 auto;
     scroll-snap-align: start;
+  }
+
+  .home-featured .home-product-visual {
+    background: #ebe6dc;
   }
 }
 
