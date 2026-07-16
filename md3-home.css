@@ -598,21 +598,12 @@ html.is-mobile #md3-hero .hero-bg-img {
 }
 
 .home-featured-carousel {
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   width: 100%;
   min-height: 300px;
-  -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  overscroll-behavior-x: contain;
-  mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
-  scrollbar-width: none;
-}
-
-.home-featured-carousel::-webkit-scrollbar {
-  display: none;
+  touch-action: pan-y;
+  mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
 }
 
 @media (min-width: 768px) {
@@ -630,46 +621,40 @@ html.is-mobile #md3-hero .hero-bg-img {
   align-items: center;
   gap: 0;
   min-height: 280px;
-  padding: 1rem 0;
+  padding: 1.25rem 0;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
   animation: none !important;
-  transform: none !important;
 }
 
 .home-featured-track.is-ready {
   animation: none !important;
 }
 
-.home-featured-carousel:hover .home-featured-track.is-ready {
-  animation-play-state: unset;
-}
-
 .home-featured-group {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  /* Side padding so first/last can still center while ~3 cards stay in view */
-  padding: 0 max(0.75rem, calc(50vw - 1.5 * ((100vw - 2.5rem) / 3)));
+  padding: 0;
 }
 
 @media (min-width: 768px) {
   .home-featured-group {
     gap: 1.1rem;
-    padding: 0 max(1.25rem, calc(50vw - 2 * ((100vw - 4rem) / 4)));
   }
 }
 
 @media (min-width: 1100px) {
   .home-featured-group {
     gap: 1.25rem;
-    padding: 0 max(1.5rem, calc(50vw - 2.5 * ((100vw - 5rem) / 5)));
   }
 }
 
 .home-featured-group[aria-hidden='true'] {
-  display: none !important;
+  display: flex !important; /* needed for seamless loop clone */
 }
 
-/* Always fit ≥3 cards on screen; center card is only scaled (keeps 3 visible) */
+/* ≥3 cards visible; center card scales up without changing layout width */
 .home-featured .home-product-card {
   display: block;
   text-decoration: none;
@@ -677,16 +662,14 @@ html.is-mobile #md3-hero .hero-bg-img {
   flex: 0 0 auto;
   width: calc((100vw - 2.5rem) / 3);
   max-width: 200px;
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
-  transform: scale(0.92);
-  opacity: 0.7;
-  transition: transform 0.35s ease, opacity 0.35s ease;
+  transform: scale(0.9);
+  opacity: 0.68;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.55s ease;
   transform-origin: center center;
 }
 
 .home-featured .home-product-card.is-center {
-  transform: scale(1.08);
+  transform: scale(1.1);
   opacity: 1;
   z-index: 2;
 }
@@ -705,7 +688,6 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 }
 
-/* Phones */
 @media (max-width: 767px) {
   .home-featured-carousel {
     min-height: 300px;

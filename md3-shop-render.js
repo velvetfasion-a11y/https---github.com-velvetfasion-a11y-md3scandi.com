@@ -26,17 +26,36 @@
   function storeCardHomeHtml(p, labels) {
     const href = global.MD3Store.productHref(p.id);
     const name = localizedName(p);
-    const image =
+    let image =
       global.MD3Store && global.MD3Store.normalizeProductImages
         ? global.MD3Store.normalizeProductImages(p)[0]
         : p && p.image;
+    // Prefer reliable local photos when remote/broken URLs would empty the carousel
+    const catKey = String((p && p.category) || '');
+    const fallback =
+      /maison|home/i.test(catKey)
+        ? 'images/cat-maison.jpg'
+        : /lifestyle/i.test(catKey)
+          ? 'images/cat-lifestyle.jpg'
+          : /édition|edition|limit/i.test(catKey)
+            ? 'images/journal-linen.jpg'
+            : 'images/cat-mode.jpg';
+    if (
+      !image ||
+      (!String(image).startsWith('images/') &&
+        !String(image).startsWith('/') &&
+        !String(image).startsWith('data:image') &&
+        !/^https?:\/\//i.test(String(image)))
+    ) {
+      image = fallback;
+    }
     const cat = labels.catLabel ? labels.catLabel(p.category) : p.category;
     const isLimited = /édition|edition|limit/i.test(String(p.category || ''));
     const badge = isLimited
       ? `<span class="home-product-badge">${esc(labels.limitedBadge || 'Édition')}</span>`
       : '';
     const imgHtml = image
-      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="lazy" />`
+      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="lazy" onerror="this.onerror=null;this.src='${fallback}'" />`
       : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
     return `
       <a href="${href}" class="home-product-card">
@@ -193,81 +212,107 @@
     container.innerHTML = products.map((p) => storeCardHomeHtml(p, lbl)).join('');
   }
 
-  /** Featured strip — centered focus card + 2s auto-advance. */
+  /** Infinite looping featured carousel — smooth circle, 2.5s per step. */
   let featuredAutoplayTimer = null;
-  let featuredScrollLock = false;
+  let featuredTransitionTimer = null;
+  let featuredIndex = 0;
 
   function stopFeaturedAutoplay() {
     if (featuredAutoplayTimer) {
       clearInterval(featuredAutoplayTimer);
       featuredAutoplayTimer = null;
     }
+    if (featuredTransitionTimer) {
+      clearTimeout(featuredTransitionTimer);
+      featuredTransitionTimer = null;
+    }
   }
 
-  function centerFeaturedCard(carousel, card) {
-    if (!carousel || !card) return;
-    const left = card.offsetLeft - (carousel.clientWidth - card.offsetWidth) / 2;
-    featuredScrollLock = true;
-    carousel.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
-    window.setTimeout(function () {
-      featuredScrollLock = false;
-    }, 450);
+  function featuredCardStep(carousel, track) {
+    const group = track && track.querySelector('.home-featured-group');
+    if (!carousel || !track || !group) return 0;
+    const card = group.querySelector('.home-product-card');
+    if (!card) return 0;
+    const styles = window.getComputedStyle(group);
+    const gap = parseFloat(styles.columnGap || styles.gap) || 0;
+    return card.offsetWidth + gap;
   }
 
-  function markCenteredCard(carousel) {
-    if (!carousel) return 0;
-    const cards = carousel.querySelectorAll('.home-product-card');
-    if (!cards.length) return 0;
-    const mid = carousel.scrollLeft + carousel.clientWidth / 2;
-    let best = 0;
-    let bestDist = Infinity;
+  function setFeaturedOffset(track, px, animate) {
+    if (!track) return;
+    track.style.transition = animate ? 'transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)' : 'none';
+    track.style.transform = 'translate3d(' + px + 'px, 0, 0)';
+  }
+
+  function markFeaturedCenter(track, logicalIndex, count) {
+    if (!track || !count) return;
+    const cards = track.querySelectorAll('.home-product-card');
+    const i = ((logicalIndex % count) + count) % count;
     cards.forEach((card, idx) => {
-      const c = card.offsetLeft + card.offsetWidth / 2;
-      const d = Math.abs(c - mid);
-      if (d < bestDist) {
-        bestDist = d;
-        best = idx;
-      }
+      card.classList.toggle('is-center', idx % count === i);
     });
-    cards.forEach((card, idx) => card.classList.toggle('is-center', idx === best));
-    return best;
   }
 
   function startFeaturedAutoplay(carousel) {
     stopFeaturedAutoplay();
     if (!carousel) return;
-    const cards = carousel.querySelectorAll('.home-product-card');
-    if (cards.length < 2) {
-      if (cards[0]) cards[0].classList.add('is-center');
-      return;
+
+    const track = carousel.querySelector('.home-featured-track') || carousel.firstElementChild;
+    if (!track) return;
+
+    const groups = track.querySelectorAll('.home-featured-group');
+    const group = groups[0];
+    if (!group) return;
+
+    const baseCards = group.querySelectorAll('.home-product-card');
+    const count = baseCards.length;
+    if (count < 1) return;
+
+    // Ensure a duplicate group for seamless wrap
+    if (groups.length < 2) {
+      const clone = group.cloneNode(true);
+      clone.setAttribute('aria-hidden', 'true');
+      track.appendChild(clone);
     }
 
-    let index = markCenteredCard(carousel);
-    centerFeaturedCard(carousel, cards[index]);
+    featuredIndex = 0;
+    const sidePad = () => Math.max(0, (carousel.clientWidth - baseCards[0].offsetWidth) / 2);
+
+    function apply(animate) {
+      const step = featuredCardStep(carousel, track);
+      const x = sidePad() - featuredIndex * step;
+      setFeaturedOffset(track, x, animate);
+      markFeaturedCenter(track, featuredIndex, count);
+    }
+
+    // Start centered on first card
+    apply(false);
+    requestAnimationFrame(function () {
+      apply(false);
+    });
 
     featuredAutoplayTimer = window.setInterval(function () {
-      const list = carousel.querySelectorAll('.home-product-card');
-      if (!list.length) return;
-      index = (index + 1) % list.length;
-      centerFeaturedCard(carousel, list[index]);
-      list.forEach((card, idx) => card.classList.toggle('is-center', idx === index));
-    }, 2000); // exactly 2 seconds per card
+      featuredIndex += 1;
+      apply(true);
 
-    if (!carousel.dataset.md3FeaturedBound) {
-      carousel.dataset.md3FeaturedBound = '1';
-      let scrollEndTimer = null;
-      carousel.addEventListener(
-        'scroll',
+      // After landing on the clone of card 0, jump back without a flash
+      if (featuredIndex >= count) {
+        featuredTransitionTimer = window.setTimeout(function () {
+          featuredIndex = 0;
+          apply(false);
+        }, 720);
+      }
+    }, 2500);
+
+    if (!carousel.dataset.md3LoopBound) {
+      carousel.dataset.md3LoopBound = '1';
+      window.addEventListener(
+        'resize',
         function () {
-          if (featuredScrollLock) return;
-          window.clearTimeout(scrollEndTimer);
-          scrollEndTimer = window.setTimeout(function () {
-            index = markCenteredCard(carousel);
-          }, 80);
+          apply(false);
         },
         { passive: true }
       );
-      carousel.addEventListener('pointerdown', stopFeaturedAutoplay, { passive: true });
     }
   }
 
@@ -283,16 +328,20 @@
       return;
     }
 
-    // Always enough cards to keep ≥3 visible in the strip
+    // Enough unique slides for a strip, then duplicate group for infinite loop
     let list = products.slice();
     while (list.length < 3) list = list.concat(products);
 
+    const cards = list.map((p) => storeCardHomeHtml(p, lbl)).join('');
     container.innerHTML =
       '<div class="home-featured-group">' +
-      list.map((p) => storeCardHomeHtml(p, lbl)).join('') +
+      cards +
+      '</div><div class="home-featured-group" aria-hidden="true">' +
+      cards +
       '</div>';
     container.classList.add('is-ready');
     container.style.removeProperty('--featured-marquee-duration');
+    container.style.transform = 'translate3d(0,0,0)';
 
     requestAnimationFrame(function () {
       startFeaturedAutoplay(carousel);
