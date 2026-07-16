@@ -33,6 +33,12 @@
 
   function pickReliableHomeImage(p) {
     const fallback = categoryFallbackImage(p);
+    const pool = [
+      'images/cat-mode.jpg',
+      'images/cat-maison.jpg',
+      'images/cat-lifestyle.jpg',
+      'images/journal-linen.jpg',
+    ];
     const imgs =
       global.MD3Store && global.MD3Store.normalizeProductImages
         ? global.MD3Store.normalizeProductImages(p)
@@ -41,12 +47,20 @@
           : p && p.image
             ? [p.image]
             : [];
-    // Prefer local / data URLs — remote https often 404s on the live site
-    const local = (imgs || []).find((src) => {
+    const list = imgs || [];
+    const local = list.find((src) => {
       const s = String(src || '');
       return s.startsWith('images/') || s.startsWith('/') || s.startsWith('data:image');
     });
     if (local) return local;
+
+    // Allow remote URLs (onerror swaps to fallback) so real photos show when available
+    const remote = list.find((src) => /^https?:\/\//i.test(String(src || '')));
+    if (remote) return remote;
+
+    // Diversify fallbacks so a thin catalog doesn't look like one repeating card
+    const idNum = parseInt(p && p.id, 10);
+    if (!Number.isNaN(idNum) && idNum > 0) return pool[idNum % pool.length];
     return fallback;
   }
 
@@ -60,9 +74,9 @@
     const badge = isLimited
       ? `<span class="home-product-badge">${esc(labels.limitedBadge || 'Édition')}</span>`
       : '';
-    // Eager load: lazy + CSS transform marquees often drop images mid-scroll
+    // eager: lazy + CSS transform marquees often blank images (esp. clone group / Safari)
     const imgHtml = image
-      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="eager" decoding="async" onerror="this.onerror=null;this.src='${fallback}'" />`
+      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="eager" decoding="async" draggable="false" onerror="this.onerror=null;this.src='${fallback}'" />`
       : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
     return `
       <a href="${href}" class="home-product-card">
@@ -232,25 +246,20 @@
     const track = carousel.querySelector('.home-featured-track') || carousel.firstElementChild;
     if (!track) return;
 
-    let groups = track.querySelectorAll('.home-featured-group');
+    const groups = track.querySelectorAll('.home-featured-group');
     const group = groups[0];
     if (!group) return;
 
-    // Keep exactly two identical groups (extra clones break -50% math → overlap/jump)
-    while (groups.length > 2) {
-      track.removeChild(groups[groups.length - 1]);
-      groups = track.querySelectorAll('.home-featured-group');
-    }
     if (groups.length < 2) {
       const clone = group.cloneNode(true);
       clone.setAttribute('aria-hidden', 'true');
-      clone.querySelectorAll('a').forEach((a) => a.setAttribute('tabindex', '-1'));
       track.appendChild(clone);
     }
 
     const cards = group.querySelectorAll('.home-product-card');
     const n = Math.max(1, cards.length);
-    const seconds = Math.max(24, Math.min(72, n * 3));
+    // ~2.5s of travel per card → full loop = one group width
+    const seconds = Math.max(20, Math.min(80, n * 2.5));
     track.style.setProperty('--featured-marquee-duration', seconds + 's');
     track.style.removeProperty('transform');
     track.style.removeProperty('transition');
