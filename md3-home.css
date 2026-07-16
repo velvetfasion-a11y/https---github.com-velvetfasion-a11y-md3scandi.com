@@ -287,11 +287,29 @@ html.is-mobile #md3-hero .hero-bg-img {
   .home-hero-foot {
     left: 1.15rem;
     right: 1.15rem;
-    bottom: max(4.5%, calc(env(safe-area-inset-bottom, 0px) + 0.85rem));
+    /* Start higher; JS clamps sticky follow so it never goes below the hero stop */
+    bottom: max(18%, calc(env(safe-area-inset-bottom, 0px) + 5.5rem));
     max-width: none;
     width: auto;
     box-sizing: border-box;
     text-align: left;
+    z-index: 6;
+  }
+
+  .home-hero-foot.is-cta-fixed {
+    position: fixed !important;
+    left: 1.15rem !important;
+    right: 1.15rem !important;
+    width: auto !important;
+    max-width: none !important;
+    z-index: 30;
+  }
+
+  .home-hero-foot.is-cta-parked {
+    position: absolute !important;
+    bottom: max(4.5%, calc(env(safe-area-inset-bottom, 0px) + 0.85rem)) !important;
+    left: 1.15rem !important;
+    right: 1.15rem !important;
   }
 
   .home-hero-tagline {
