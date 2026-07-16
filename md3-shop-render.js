@@ -187,7 +187,7 @@
     container.innerHTML = products.map((p) => storeCardHomeHtml(p, lbl)).join('');
   }
 
-  /** Featured strip — 2-col grid on phones, marquee on desktop. */
+  /** Featured strip — swipe carousel on phones, marquee on desktop. */
   function renderHomeCarousel(container, products, labels) {
     if (!container) return;
     const lbl = labels || homeLabels();
@@ -202,7 +202,11 @@
       (document.documentElement && document.documentElement.dataset.viewport === 'mobile');
 
     if (isMobile) {
-      container.innerHTML = products.map((p) => storeCardHomeHtml(p, lbl)).join('');
+      // One group — user swipes; hide duplicate via CSS
+      container.innerHTML =
+        '<div class="home-featured-group">' +
+        products.map((p) => storeCardHomeHtml(p, lbl)).join('') +
+        '</div>';
       container.classList.add('is-ready');
       container.style.removeProperty('--featured-marquee-duration');
       return;

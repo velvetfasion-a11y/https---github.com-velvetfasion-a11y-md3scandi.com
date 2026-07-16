@@ -82,7 +82,8 @@ body.home-page {
 
 html[data-viewport='mobile'] #md3-hero .hero-bg-img,
 html.is-mobile #md3-hero .hero-bg-img {
-  object-position: 58% 42%;
+  /* Model sits ~68–72% from left in NyZx3 — bias crop onto her face/torso */
+  object-position: 70% 34%;
 }
 
 .home-hero-overlay {
@@ -264,13 +265,13 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 }
 
-/* Phone hero: centered title + full-width CTAs */
+/* Phone hero: left-aligned title (editorial), full-width CTAs */
 @media (max-width: 767px) {
   .home-hero-heading {
     left: 1.15rem;
-    right: 1.15rem;
-    max-width: none;
-    text-align: center;
+    right: auto;
+    max-width: min(88%, 20rem);
+    text-align: left;
   }
 
   .home-hero-line1 {
@@ -279,7 +280,7 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 
   .home-hero-line2 {
-    margin-left: 0;
+    margin-left: 0.15rem;
     font-size: clamp(1.3rem, 7vw, 2rem);
   }
 
@@ -290,12 +291,12 @@ html.is-mobile #md3-hero .hero-bg-img {
     max-width: none;
     width: auto;
     box-sizing: border-box;
-    text-align: center;
+    text-align: left;
   }
 
   .home-hero-tagline {
-    margin-left: auto;
-    margin-right: auto;
+    margin-left: 0;
+    margin-right: 0;
     max-width: 22rem;
     font-size: 0.78rem;
     margin-bottom: 1.1rem;
@@ -329,6 +330,11 @@ html.is-mobile #md3-hero .hero-bg-img {
   .home-univers-card:nth-child(3) {
     grid-column: 1 / -1;
     aspect-ratio: 2.15 / 1;
+  }
+
+  /* Keep the model (right-center of NyZx3) in the phone crop */
+  #md3-hero .hero-bg-img {
+    object-position: 70% 34%;
   }
 }
 
@@ -604,33 +610,39 @@ html.is-mobile #md3-hero .hero-bg-img {
   100% { transform: translateX(-50%); }
 }
 
-/* Phones: starred products as a visible 2-column grid */
+/* Phones: starred products as a swipeable carousel */
 @media (max-width: 767px) {
   .home-featured-carousel {
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
     width: 100%;
     margin: 0;
-    min-height: 0;
-    mask-image: none;
-    -webkit-mask-image: none;
-    padding: 0;
+    min-height: 280px;
+    mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+    padding: 0 0 0.35rem;
   }
 
   .home-featured-track,
   .home-featured-track.is-ready,
   .home-featured-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.1rem 0.75rem;
-    width: 100% !important;
-    max-width: 100%;
+    display: flex !important;
+    width: max-content !important;
+    max-width: none;
+    gap: 0;
     animation: none !important;
     transform: none !important;
-    min-height: 0;
+    min-height: 260px;
   }
 
   .home-featured-group {
-    display: contents;
+    display: flex;
+    align-items: stretch;
+    gap: 0.85rem;
+    padding-right: 0.85rem;
   }
 
   .home-featured-group[aria-hidden='true'] {
@@ -638,9 +650,9 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 
   .home-featured .home-product-card {
-    width: auto !important;
-    flex: none;
-    scroll-snap-align: unset;
+    width: min(68vw, 220px) !important;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
   }
 }
 

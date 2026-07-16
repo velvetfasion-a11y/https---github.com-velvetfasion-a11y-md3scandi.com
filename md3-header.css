@@ -501,13 +501,29 @@ body.admin-active #md3-site-header {
   display: none;
 }
 
-/* Phone header: less crowding */
+/* Phone header: true viewport-centered logo (equal side columns) */
 @media (max-width: 767px) {
   .site-header .header-inner {
     padding: 0.45rem 1rem;
     min-height: 3.5rem;
     gap: 0.35rem;
-    grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  .header-left {
+    justify-self: start;
+  }
+
+  .header-center {
+    justify-self: center;
+    grid-column: 2;
+  }
+
+  .header-util {
+    justify-self: end;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .site-header .logo {
@@ -517,12 +533,6 @@ body.admin-active #md3-site-header {
 
   .site-header .logo em {
     margin-left: 0.2rem;
-  }
-
-  .header-util {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.5rem;
   }
 
   /* Lang lives in the drawer on phones — frees header space */

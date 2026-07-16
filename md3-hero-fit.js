@@ -16,8 +16,8 @@
   }
 
   /**
-   * NyZx3.jpg is landscape; keep the subject (center-right) in frame.
-   * On tall mobile covers, bias X toward the model and Y slightly up.
+   * NyZx3.jpg is landscape; model is right-of-center (~70% X).
+   * On tall phone covers, crop onto her face and dress — not the plant.
    */
   function updateHeroBgFocus() {
     const img = document.querySelector("#md3-hero .hero-bg-img");
@@ -29,18 +29,19 @@
     const ar = w / h;
 
     if (isMobile) {
-      img.style.objectPosition = "58% 40%";
+      // Portrait cover: keep face in upper third, body framed
+      img.style.objectPosition = "70% 34%";
       return;
     }
 
     if (DESKTOP_MQ.matches) {
-      const x = Math.min(56, Math.max(50, 52 + (ar - 1.6) * 2));
-      const y = Math.min(50, Math.max(42, 46 + (1.85 - ar) * 4));
+      const x = Math.min(62, Math.max(52, 56 + (ar - 1.6) * 2));
+      const y = Math.min(50, Math.max(40, 44 + (1.85 - ar) * 4));
       img.style.objectPosition = x.toFixed(1) + "% " + y.toFixed(1) + "%";
       return;
     }
 
-    img.style.objectPosition = "54% 44%";
+    img.style.objectPosition = "64% 40%";
   }
 
   function scheduleUpdates() {
