@@ -33,13 +33,14 @@
     }
 
     if (DESKTOP_MQ.matches) {
-      const x = Math.min(62, Math.max(52, 56 + (ar - 1.6) * 2));
-      const y = Math.min(50, Math.max(40, 44 + (1.85 - ar) * 4));
+      // Keep her face below the header/nav band
+      const x = Math.min(62, Math.max(54, 58 + (ar - 1.6) * 2));
+      const y = Math.min(32, Math.max(22, 26 + (1.85 - ar) * 3));
       img.style.objectPosition = x.toFixed(1) + '% ' + y.toFixed(1) + '%';
       return;
     }
 
-    img.style.objectPosition = '64% 40%';
+    img.style.objectPosition = '58% 30%';
   }
 
   function clearCtaScrollState() {
