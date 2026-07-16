@@ -598,6 +598,7 @@ html.is-mobile #md3-hero .hero-bg-img {
 .home-featured-carousel {
   overflow: hidden;
   width: 100%;
+  max-width: 100%;
   min-height: 300px;
   touch-action: pan-y;
   mask-image: none;
@@ -606,21 +607,18 @@ html.is-mobile #md3-hero .hero-bg-img {
 
 @media (min-width: 768px) {
   .home-featured-carousel {
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-    margin-right: calc(50% - 50vw);
-    min-height: 400px;
+    min-height: 380px;
   }
 }
 
 .home-featured-track {
+  --featured-card-w: 200px;
   display: flex;
   width: max-content;
-  align-items: center;
+  align-items: flex-start;
   gap: 0;
   min-height: 280px;
-  padding: 1rem 0;
-  will-change: transform;
+  padding: 0.35rem 0 1rem;
   transform: translate3d(0, 0, 0);
   animation: none !important;
 }
@@ -631,58 +629,45 @@ html.is-mobile #md3-hero .hero-bg-img {
 
 .home-featured-group {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  align-items: flex-start;
+  flex: 0 0 auto;
+  gap: 1rem;
   padding: 0;
 }
 
 @media (min-width: 768px) {
   .home-featured-group {
-    gap: 1.1rem;
+    gap: 1.25rem;
   }
 }
 
 .home-featured-group[aria-hidden='true'] {
-  display: flex !important; /* clone for infinite step loop */
+  display: flex !important;
 }
 
-/* Three photos visible; center stays slightly stronger for 2s each */
+/* Equal cards — no scale hierarchy (avoids overlap + lag) */
 .home-featured .home-product-card {
   display: block;
   text-decoration: none;
   color: inherit;
-  flex: 0 0 auto;
-  width: calc((100vw - 2.5rem) / 3);
-  max-width: 200px;
-  transform: scale(0.92);
-  opacity: 0.72;
-  transition: transform 0.45s ease, opacity 0.45s ease;
-  transform-origin: center center;
+  flex: 0 0 var(--featured-card-w);
+  width: var(--featured-card-w);
+  max-width: var(--featured-card-w);
+  min-width: var(--featured-card-w);
+  box-sizing: border-box;
+  overflow: hidden;
+  transform: none;
+  opacity: 1;
 }
 
 .home-featured .home-product-card.is-center {
-  transform: scale(1.06);
+  transform: none;
   opacity: 1;
-  z-index: 2;
-}
-
-@media (min-width: 768px) {
-  .home-featured .home-product-card {
-    width: calc((100vw - 4rem) / 3.2);
-    max-width: 240px;
-  }
-}
-
-@media (min-width: 1100px) {
-  .home-featured .home-product-card {
-    width: calc((100vw - 5rem) / 3.5);
-    max-width: 260px;
-  }
 }
 
 @media (max-width: 767px) {
   .home-featured-carousel {
-    min-height: 300px;
+    min-height: 280px;
     margin: 0;
     padding: 0 0 0.35rem;
     display: block !important;
@@ -697,18 +682,13 @@ html.is-mobile #md3-hero .hero-bg-img {
   .home-featured-grid {
     display: flex !important;
     width: max-content !important;
-    min-height: 280px;
+    min-height: 260px;
     animation: none !important;
   }
 
   .home-featured-group {
     display: flex !important;
-    gap: 0.65rem;
-  }
-
-  .home-featured .home-product-card {
-    width: calc((100vw - 2rem) / 3);
-    max-width: none;
+    gap: 0.75rem;
   }
 
   .home-featured .home-product-visual {

@@ -220,13 +220,12 @@
   }
 
   /**
-   * 3-up featured carousel: center one product for 2s, then step to the next.
-   * Duplicated group → seamless infinite loop.
+   * 3 equal photos visible; step one card every 2s; seamless infinite loop.
+   * No center-scale (that caused overlap + lag).
    */
   let featuredAutoplayTimer = null;
   let featuredTransitionTimer = null;
   let featuredIndex = 0;
-  let featuredScrollLock = false;
 
   function stopFeaturedAutoplay() {
     if (featuredAutoplayTimer) {
@@ -239,21 +238,6 @@
     }
   }
 
-  function setFeaturedOffset(track, px, animate) {
-    if (!track) return;
-    track.style.transition = animate ? 'transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)' : 'none';
-    track.style.transform = 'translate3d(' + px + 'px, 0, 0)';
-  }
-
-  function markFeaturedCenter(track, logicalIndex, count) {
-    if (!track || !count) return;
-    const cards = track.querySelectorAll('.home-product-card');
-    const i = ((logicalIndex % count) + count) % count;
-    cards.forEach((card, idx) => {
-      card.classList.toggle('is-center', idx % count === i);
-    });
-  }
-
   function startFeaturedAutoplay(carousel) {
     stopFeaturedAutoplay();
     if (!carousel) return;
@@ -262,7 +246,7 @@
     if (!track) return;
 
     track.style.animation = 'none';
-    track.classList.remove('is-ready');
+    track.classList.add('is-ready');
 
     let groups = track.querySelectorAll('.home-featured-group');
     const group = groups[0];
@@ -280,57 +264,67 @@
 
     featuredIndex = 0;
     let wrapping = false;
+    let stepPx = 0;
 
-    function sidePad() {
-      const card = baseCards[0];
-      return Math.max(0, (carousel.clientWidth - (card ? card.offsetWidth : 0)) / 2);
+    function measureStep() {
+      const card = group.querySelector('.home-product-card');
+      if (!card) return 0;
+      const styles = window.getComputedStyle(group);
+      const gap = parseFloat(styles.columnGap || styles.gap) || 0;
+      // Use layout width (ignore CSS scale — we no longer scale cards)
+      return card.getBoundingClientRect().width + gap;
     }
 
-    function offsetForIndex(index) {
-      const cards = track.querySelectorAll('.home-product-card');
-      const card = cards[index];
-      if (!card) return sidePad();
-      return sidePad() - card.offsetLeft;
+    function layoutCards() {
+      // Exactly 3 equal cards fit the carousel width
+      const gap = parseFloat(window.getComputedStyle(group).columnGap || window.getComputedStyle(group).gap) || 0;
+      const w = Math.max(120, (carousel.clientWidth - gap * 2) / 3);
+      track.style.setProperty('--featured-card-w', w.toFixed(2) + 'px');
+      stepPx = measureStep();
     }
 
     function apply(animate) {
-      setFeaturedOffset(track, offsetForIndex(featuredIndex), animate);
-      markFeaturedCenter(track, featuredIndex, count);
+      if (!stepPx) layoutCards();
+      const x = -(featuredIndex * stepPx);
+      track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1)' : 'none';
+      track.style.transform = 'translate3d(' + x + 'px, 0, 0)';
     }
 
+    layoutCards();
     apply(false);
+    // Remeasure after fonts/images settle once
     requestAnimationFrame(function () {
+      layoutCards();
       apply(false);
     });
 
     featuredAutoplayTimer = window.setInterval(function () {
-      if (wrapping || featuredScrollLock) return;
+      if (wrapping) return;
       featuredIndex += 1;
       apply(true);
 
+      // After sliding onto the clone of card 0, jump back with no transition
       if (featuredIndex >= count) {
         wrapping = true;
         featuredTransitionTimer = window.setTimeout(function () {
           featuredIndex = 0;
           apply(false);
           wrapping = false;
-        }, 560);
+        }, 520);
       }
     }, 2000);
 
     if (!carousel.dataset.md3StepBound) {
       carousel.dataset.md3StepBound = '1';
+      let resizeTimer = null;
       window.addEventListener(
         'resize',
         function () {
-          apply(false);
-        },
-        { passive: true }
-      );
-      carousel.addEventListener(
-        'pointerdown',
-        function () {
-          stopFeaturedAutoplay();
+          window.clearTimeout(resizeTimer);
+          resizeTimer = window.setTimeout(function () {
+            layoutCards();
+            apply(false);
+          }, 100);
         },
         { passive: true }
       );
@@ -383,7 +377,6 @@
       cards +
       '</div>';
     container.classList.add('is-ready');
-    container.style.removeProperty('--featured-marquee-duration');
 
     requestAnimationFrame(function () {
       startFeaturedAutoplay(carousel);
