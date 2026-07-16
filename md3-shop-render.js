@@ -41,14 +41,12 @@
           : p && p.image
             ? [p.image]
             : [];
-    const list = imgs || [];
-    const local = list.find((src) => {
+    // Prefer local / data URLs — remote https often 404s on the live site
+    const local = (imgs || []).find((src) => {
       const s = String(src || '');
       return s.startsWith('images/') || s.startsWith('/') || s.startsWith('data:image');
     });
     if (local) return local;
-    const remote = list.find((src) => /^https?:\/\//i.test(String(src || '')));
-    if (remote) return remote;
     return fallback;
   }
 
@@ -62,8 +60,9 @@
     const badge = isLimited
       ? `<span class="home-product-badge">${esc(labels.limitedBadge || 'Édition')}</span>`
       : '';
+    // Eager load: lazy + CSS transform marquees often drop images mid-scroll
     const imgHtml = image
-      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="eager" decoding="async" fetchpriority="low" onerror="this.onerror=null;this.src='${fallback}'" />`
+      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="eager" decoding="async" onerror="this.onerror=null;this.src='${fallback}'" />`
       : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
     return `
       <a href="${href}" class="home-product-card">
@@ -233,23 +232,21 @@
     const track = carousel.querySelector('.home-featured-track') || carousel.firstElementChild;
     if (!track) return;
 
-    const groups = track.querySelectorAll('.home-featured-group');
+    let groups = track.querySelectorAll('.home-featured-group');
     const group = groups[0];
     if (!group) return;
 
+    // Keep exactly two identical groups (extra clones break -50% math → overlap/jump)
+    while (groups.length > 2) {
+      track.removeChild(groups[groups.length - 1]);
+      groups = track.querySelectorAll('.home-featured-group');
+    }
     if (groups.length < 2) {
       const clone = group.cloneNode(true);
       clone.setAttribute('aria-hidden', 'true');
       clone.querySelectorAll('a').forEach((a) => a.setAttribute('tabindex', '-1'));
       track.appendChild(clone);
     }
-
-    // Eager-load every photo so animated clones never flash empty
-    track.querySelectorAll('img').forEach((img) => {
-      img.loading = 'eager';
-      img.setAttribute('decoding', 'async');
-      if (!img.complete && img.dataset.src) img.src = img.dataset.src;
-    });
 
     const cards = group.querySelectorAll('.home-product-card');
     const n = Math.max(1, cards.length);

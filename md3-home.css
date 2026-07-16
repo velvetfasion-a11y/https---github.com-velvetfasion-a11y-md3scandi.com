@@ -600,9 +600,9 @@ html.is-mobile #md3-hero .hero-bg-img {
   width: 100%;
   min-height: 320px;
   touch-action: pan-y;
-  /* Soft edge fade — keep enough opaque area so cards don’t “vanish” */
-  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  /* Soft equal fades so left/right feel symmetrical */
+  mask-image: linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%);
 }
 
 @media (min-width: 768px) {
@@ -615,8 +615,8 @@ html.is-mobile #md3-hero .hero-bg-img {
 }
 
 .home-featured-track {
-  --featured-marquee-duration: 28s;
-  --featured-gap: 1.25rem;
+  --featured-marquee-duration: 32s;
+  --featured-card-gap: 1.25rem;
   display: flex;
   width: max-content;
   align-items: flex-start;
@@ -636,27 +636,14 @@ html.is-mobile #md3-hero .hero-bg-img {
   animation-play-state: paused;
 }
 
+/* Identical groups — gap via card margin so -50% seam stays even */
 .home-featured-group {
   display: flex;
   align-items: flex-start;
-  flex: 0 0 auto;
-  gap: var(--featured-gap);
-  /* Same trailing gap on BOTH groups → seamless -50% loop + even spacing */
+  flex-shrink: 0;
+  gap: 0;
   padding: 0;
   margin: 0;
-  margin-inline-end: var(--featured-gap);
-}
-
-@media (min-width: 768px) {
-  .home-featured-track {
-    --featured-gap: 1.5rem;
-  }
-}
-
-@media (min-width: 1100px) {
-  .home-featured-track {
-    --featured-gap: 1.75rem;
-  }
 }
 
 .home-featured-group[aria-hidden='true'] {
@@ -672,15 +659,15 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 }
 
-/* Fixed card boxes — equal size, no overflow into neighbors */
+/* Fixed-width cards: equal size, text cannot spill into the next card */
 .home-featured .home-product-card {
   display: flex;
   flex-direction: column;
-  flex: 0 0 180px;
-  width: 180px;
-  max-width: 180px;
-  min-width: 180px;
+  flex: 0 0 auto;
   box-sizing: border-box;
+  width: 180px;
+  margin: 0 var(--featured-card-gap) 0 0;
+  padding: 0;
   overflow: hidden;
   text-decoration: none;
   color: inherit;
@@ -694,32 +681,26 @@ html.is-mobile #md3-hero .hero-bg-img {
 }
 
 @media (min-width: 768px) {
+  .home-featured-track {
+    --featured-card-gap: 1.5rem;
+  }
+
   .home-featured .home-product-card {
-    flex-basis: 220px;
     width: 220px;
-    max-width: 220px;
-    min-width: 220px;
   }
 }
 
 @media (min-width: 1100px) {
   .home-featured .home-product-card {
-    flex-basis: 240px;
     width: 240px;
-    max-width: 240px;
-    min-width: 240px;
   }
 }
 
 @media (max-width: 767px) {
-  .home-featured-track {
-    --featured-gap: 1rem;
-  }
-
   .home-featured-carousel {
     min-height: 300px;
     margin: 0;
-    padding: 0 0 0.35rem;
+    padding: 0;
     display: block !important;
   }
 
@@ -727,12 +708,16 @@ html.is-mobile #md3-hero .hero-bg-img {
     display: none !important;
   }
 
+  .home-featured-track {
+    --featured-card-gap: 1rem;
+    min-height: 280px;
+  }
+
   .home-featured-track,
   .home-featured-track.is-ready,
   .home-featured-grid {
     display: flex !important;
     width: max-content !important;
-    min-height: 280px;
   }
 
   .home-featured-group {
@@ -740,10 +725,7 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 
   .home-featured .home-product-card {
-    flex-basis: 160px;
-    width: 160px;
-    max-width: 160px;
-    min-width: 160px;
+    width: 150px;
   }
 
   .home-featured .home-product-visual {
@@ -755,24 +737,28 @@ html.is-mobile #md3-hero .hero-bg-img {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
-  flex: 0 0 auto;
   background: var(--home-cream);
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .home-featured .home-product-visual img,
 .home-featured .home-product-visual .featured-emoji-fallback {
-  position: absolute;
-  inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
+  object-position: center;
+  border: 0;
+  /* Avoid flicker / “disappear” while the track translates */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
   transition: transform 0.8s ease-out;
 }
 
 .home-featured .home-product-card:hover .home-product-visual img {
-  transform: scale(1.04);
+  transform: translateZ(0) scale(1.04);
 }
 
 .home-featured .featured-emoji-fallback {
@@ -786,8 +772,8 @@ html.is-mobile #md3-hero .hero-bg-img {
   margin-top: 0.85rem;
   width: 100%;
   max-width: 100%;
-  box-sizing: border-box;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .home-featured .home-product-cat,
