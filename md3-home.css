@@ -277,8 +277,17 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 }
 
-/* Phone hero: title above buttons (inside copy); keep sticky CTAs */
+/* Phone hero: title above buttons; CSS sticky (no JS) so scroll stays smooth */
 @media (max-width: 767px) {
+  #md3-hero.home-hero,
+  #md3-hero.home-hero--cinema {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 100svh;
+    min-height: 100dvh;
+  }
+
   .home-hero-heading.only-mobile {
     position: relative;
     top: auto;
@@ -300,30 +309,18 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 
   .home-hero-copy {
-    left: 1.15rem;
-    right: 1.15rem;
-    bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem));
+    position: sticky;
+    bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+    left: auto;
+    right: auto;
+    margin: 0 1.15rem max(0.75rem, env(safe-area-inset-bottom, 0px));
     max-width: none;
     width: auto;
     box-sizing: border-box;
     z-index: 6;
-  }
-
-  .home-hero-copy.is-cta-fixed {
-    position: fixed !important;
-    left: 1.15rem !important;
-    right: 1.15rem !important;
-    width: auto !important;
-    max-width: none !important;
-    bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem)) !important;
-    z-index: 30;
-  }
-
-  .home-hero-copy.is-cta-parked {
-    position: absolute !important;
-    bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem)) !important;
-    left: 1.15rem !important;
-    right: 1.15rem !important;
+    /* Promote to own layer — sticky without layout thrash */
+    transform: translateZ(0);
+    will-change: transform;
   }
 
   .home-hero-foot {
@@ -358,6 +355,7 @@ html.is-mobile #md3-hero .hero-bg-img {
     font-size: 10px;
     letter-spacing: 0.11em;
     white-space: normal;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
 
   .home-univers-grid {

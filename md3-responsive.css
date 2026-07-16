@@ -118,9 +118,11 @@ html.is-mobile .home-hero-line2 {
 
 html[data-viewport='mobile'] .home-hero-copy,
 html.is-mobile .home-hero-copy {
-  left: 1.15rem;
-  right: 1.15rem;
-  bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem));
+  position: sticky;
+  left: auto;
+  right: auto;
+  bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  margin: 0 1.15rem max(0.75rem, env(safe-area-inset-bottom, 0px));
   max-width: none;
   width: auto;
   box-sizing: border-box;

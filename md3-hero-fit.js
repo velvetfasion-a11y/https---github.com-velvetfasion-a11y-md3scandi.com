@@ -1,4 +1,4 @@
-/** Hero focal crop + phone CTA sticky follow within the hero */
+/** Hero focal crop — CTAs use CSS sticky on mobile (no scroll JS) */
 (function () {
   const DESKTOP_MQ = window.matchMedia('(min-width: 769px)');
   const MOBILE_MQ = window.matchMedia('(max-width: 767px)');
@@ -42,51 +42,19 @@
     img.style.objectPosition = '64% 40%';
   }
 
-  /**
-   * Phone CTAs (+ mobile title): start higher, stick while scrolling the hero,
-   * then park at the hero bottom (never follow into the next section).
-   */
-  function updateStickyCtas() {
-    const hero = document.getElementById('md3-hero');
+  function clearStickyCtaInline() {
     const copy = document.getElementById('homeHeroCopy');
-    if (!hero || !copy) return;
-
-    if (!MOBILE_MQ.matches) {
-      copy.classList.remove('is-cta-fixed', 'is-cta-parked');
-      copy.style.bottom = '';
-      return;
-    }
-
-    const vh = window.innerHeight || 1;
-    const copyH = copy.offsetHeight || 220;
-    // Pin to the lower edge of the phone
-    const stopBottom = 12;
-    const startBottom = 12;
-
-    const heroRect = hero.getBoundingClientRect();
-    const heroBottom = heroRect.bottom;
-    const copyBottomIfFixed = vh - startBottom;
-    const maxAllowedCopyBottom = heroBottom - stopBottom;
-
-    const park =
-      heroBottom <= stopBottom + copyH * 0.35 || copyBottomIfFixed > maxAllowedCopyBottom;
-
-    if (park) {
-      copy.classList.add('is-cta-parked');
-      copy.classList.remove('is-cta-fixed');
-      copy.style.bottom = '';
-    } else {
-      copy.classList.add('is-cta-fixed');
-      copy.classList.remove('is-cta-parked');
-      copy.style.bottom = 'max(0.75rem, env(safe-area-inset-bottom, 0px))';
-    }
+    if (!copy) return;
+    copy.classList.remove('is-cta-fixed', 'is-cta-parked');
+    copy.style.bottom = '';
+    copy.style.position = '';
   }
 
   function scheduleUpdates() {
     requestAnimationFrame(function () {
       fitHeroTitle();
       updateHeroBgFocus();
-      updateStickyCtas();
+      clearStickyCtaInline();
     });
   }
 
@@ -96,8 +64,7 @@
     document.fonts.ready.then(scheduleUpdates).catch(function () {});
   }
 
-  window.addEventListener('scroll', updateStickyCtas, { passive: true });
-  window.addEventListener('resize', scheduleUpdates);
+  window.addEventListener('resize', scheduleUpdates, { passive: true });
   if (DESKTOP_MQ.addEventListener) {
     DESKTOP_MQ.addEventListener('change', scheduleUpdates);
     MOBILE_MQ.addEventListener('change', scheduleUpdates);
@@ -109,6 +76,6 @@
   window.MD3HeroFit = {
     fit: scheduleUpdates,
     updateBg: updateHeroBgFocus,
-    updateCtas: updateStickyCtas,
+    updateCtas: clearStickyCtaInline,
   };
 })();
