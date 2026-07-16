@@ -345,7 +345,11 @@
     products.forEach((p) => {
       const id = p && p.id != null ? String(p.id) : '';
       if (!id || seen.has(id)) return;
-      if (p && p.featured === false) return;
+      const featuredOk =
+        global.MD3Store && global.MD3Store.isProductFeatured
+          ? global.MD3Store.isProductFeatured(p)
+          : p && p.featured !== false;
+      if (!featuredOk) return;
       seen.add(id);
       list.push(p);
     });

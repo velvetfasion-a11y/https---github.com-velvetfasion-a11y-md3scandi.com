@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="md3-header.css?v=19" />
 <link rel="stylesheet" href="md3-responsive.css?v=17" />
-<link rel="stylesheet" href="md3-admin.css?v=15" />
+<link rel="stylesheet" href="md3-admin.css?v=16" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" crossorigin="anonymous" />
 <style>
   :root {
@@ -2568,7 +2568,9 @@ function paintAdminProductsList() {
             const status = p.stock === 0
               ? `<span class="admin-badge admin-badge--out">${L('stock-out-lbl')}</span>`
               : `<span class="admin-badge admin-badge--in">${L('stock-in')}</span>`;
-            const feat = p.featured ? ` <span class="admin-badge admin-badge--feat" title="${esc(L('stat-featured'))}">★</span>` : '';
+            const feat = p.featured
+              ? ` <button type="button" class="admin-star admin-star--on" title="${esc(L('stat-featured'))}" aria-label="${esc(L('stat-featured'))}" onclick="event.stopPropagation();toggleFeatured(${p.id}, false)">★</button>`
+              : ` <button type="button" class="admin-star" title="${esc(L('label-featured') || 'En vedette')}" aria-label="Star" onclick="event.stopPropagation();toggleFeatured(${p.id}, true)">☆</button>`;
             const thumbHtml = thumb
               ? `<img class="admin-table-thumb" src="${esc(thumb)}" alt="" />`
               : `<span class="admin-table-thumb-placeholder">${esc(p.emoji || '✦')}</span>`;
@@ -2577,7 +2579,7 @@ function paintAdminProductsList() {
                 <div class="admin-table-product">
                   ${thumbHtml}
                   <div>
-                    <div class="admin-table-name">${esc(p.name)}</div>
+                    <div class="admin-table-name">${esc(p.name)}${feat}</div>
                     <div class="admin-table-meta">${esc(MD3Lang.translateSub(p.sub))}</div>
                   </div>
                 </div>
@@ -2585,7 +2587,7 @@ function paintAdminProductsList() {
               <td>${esc(MD3Lang.translateCategory(p.category))}</td>
               <td>${fmtPrice(p.price)}</td>
               <td>${p.stock}</td>
-              <td><div class="admin-status-cell">${status}${feat}</div></td>
+              <td><div class="admin-status-cell">${status}</div></td>
               <td><button type="button" class="admin-btn-outline admin-btn-sm" onclick="event.stopPropagation();openEditProduct(${p.id})">${L('btn-modify')}</button></td>
             </tr>`;
           }).join('') : `<tr><td colspan="6"><p class="admin-sub" style="padding:1.25rem 0">${L('admin-no-results')}</p></td></tr>`}
@@ -2598,15 +2600,19 @@ function setAdminFilter(cat) { adminFilter = cat; paintAdminProductsList(); }
 
 async function toggleFeatured(id, checked) {
   const products = S.getProducts();
-  const idx = products.findIndex(p => p.id === id);
+  const wantId = Number(id);
+  const idx = products.findIndex((p) => Number(p.id) === wantId);
   if (idx === -1) return;
-  products[idx].featured = !!checked;
+  products[idx] = { ...products[idx], featured: !!checked };
   try {
-    await S.saveProducts(products, { onlyIds: [id] });
+    await S.saveProducts(products, { onlyIds: [wantId] });
   } catch (e) {
     console.error('toggleFeatured', e);
   }
   paintAdminProductsList();
+  try {
+    window.dispatchEvent(new CustomEvent('md3-products-updated'));
+  } catch (_) {}
 }
 
 async function changeStock(id, delta) {

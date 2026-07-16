@@ -276,14 +276,14 @@
 <script src="firebase-config.js"></script>
 <script src="md3-firebase.js?v=3"></script>
 <script src="md3-sizes.js?v=1"></script>
-<script src="md3-store.js?v=13"></script>
+<script src="md3-store.js?v=14"></script>
 <script src="md3-site-assets.js?v=7"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js?v=19"></script>
 <script src="md3-lang.js?v=29"></script>
 <script src="md3-currency.js?v=4"></script>
 <script src="md3-hero-fit.js?v=12"></script>
-<script src="md3-shop-render.js?v=26"></script>
+<script src="md3-shop-render.js?v=27"></script>
 <script>
   function updateCartBadge() {
     try {
@@ -336,13 +336,19 @@
 
       let products = [];
       try {
+        if (MD3Store.syncHomeFeaturedFlags) MD3Store.syncHomeFeaturedFlags();
         products = MD3Store.getFeaturedProducts
           ? MD3Store.getFeaturedProducts()
           : MD3Store.getHomeFeaturedProducts
             ? MD3Store.getHomeFeaturedProducts()
             : [];
-        // Strict: only favourited/starred products — never fill with the rest of the catalog
-        products = (products || []).filter((p) => p && p.featured);
+        // Only admin-starred products (featured)
+        const isFeat =
+          MD3Store.isProductFeatured ||
+          function (p) {
+            return !!(p && p.featured);
+          };
+        products = (products || []).filter(isFeat);
       } catch (e) {
         console.error('featured products', e);
         products = [];

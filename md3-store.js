@@ -65,10 +65,12 @@
   function normalizeProductFields(p) {
     if (!p || typeof p !== 'object') return p;
     const images = normalizeProductImages(p);
+    const feat = p.featured;
+    const featured = feat === true || feat === 1 || feat === '1' || feat === 'true' || feat === 'yes';
     const out = {
       ...p,
       category: canonicalCategory(p.category),
-      featured: !!p.featured,
+      featured,
       desc: typeof p.desc === 'string' ? p.desc : '',
     };
     if (images.length) {
@@ -216,9 +218,10 @@
 
   function setProductsCache(p) {
     const prevSnap = productsSnapshot(productsCache);
-    productsCache = p;
+    const list = Array.isArray(p) ? p.map(normalizeProductFields) : [];
+    productsCache = list;
     try {
-      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(p));
+      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(list));
     } catch (_) {}
     if (pruneAllCartsLocal()) notifyCartsUpdated();
     if (productsSnapshot(productsCache) !== prevSnap) notifyProductsUpdated();
@@ -227,6 +230,12 @@
   function getProducts() {
     ensureCaches();
     return productsCache.map((x) => ({ ...x }));
+  }
+
+  function isProductFeatured(p) {
+    if (!p) return false;
+    const v = p.featured;
+    return v === true || v === 1 || v === '1' || v === 'true' || v === 'yes';
   }
 
   function markProductsPendingCloud(list) {
@@ -281,11 +290,11 @@
       const result = await global.MD3Firebase.saveProducts(list, opts);
       clearProductsPendingCloud();
       if (result && Array.isArray(result)) {
-        const byId = new Map(result.map((x) => [x.id, x]));
+        const byId = new Map(result.map((x) => [String(x.id), x]));
         const merged = list.map((item) => {
-          const u = byId.get(item.id);
+          const u = byId.get(String(item.id));
           if (!u) return item;
-          return { ...item, ...u };
+          return normalizeProductFields({ ...item, ...u, featured: item.featured });
         });
         setProductsCache(merged);
       }
@@ -319,9 +328,9 @@
     return Number.isFinite(n) ? n : null;
   }
 
-  /** Homepage “Pieces to remember” — only products starred/favourited in admin (`featured: true`). */
+  /** Homepage “Pieces to remember” — only products starred in admin (`featured`). */
   function getHomeFeaturedProducts() {
-    return getProducts().filter((p) => p && p.featured);
+    return getProducts().filter(isProductFeatured);
   }
 
   /**
@@ -331,7 +340,7 @@
   function syncHomeFeaturedFlags() {
     const products = getProducts();
     if (!products.length) return false;
-    if (products.some((p) => p && p.featured)) return false;
+    if (products.some(isProductFeatured)) return false;
 
     const featuredSet = new Set(HOME_FEATURED_IDS.map(productIdNum).filter((n) => n != null));
     const hasDefaultIds = products.some((p) => {
@@ -897,15 +906,16 @@
     ensureCaches();
     syncHomeFeaturedFlags();
     pruneAllCartsLocal();
+    try {
+      await syncCloud();
+      syncHomeFeaturedFlags();
+      if (global.MD3Auth && global.MD3Auth.initSessionSync) {
+        await global.MD3Auth.initSessionSync();
+      }
+    } catch (e) {
+      console.error('MD3Store cloud sync', e);
+    }
     readyResolve();
-    syncCloud()
-      .then(() => {
-        syncHomeFeaturedFlags();
-        if (global.MD3Auth && global.MD3Auth.initSessionSync) {
-          return global.MD3Auth.initSessionSync();
-        }
-      })
-      .catch((e) => console.error('MD3Store cloud sync', e));
   }
 
   global.MD3Store = {
@@ -950,6 +960,7 @@
     normalizeProductFields,
     getFeaturedProducts,
     getHomeFeaturedProducts,
+    isProductFeatured,
     HOME_FEATURED_IDS,
     syncHomeFeaturedFlags,
     getProductById,

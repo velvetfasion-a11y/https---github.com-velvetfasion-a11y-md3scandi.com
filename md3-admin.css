@@ -625,6 +625,29 @@ body.admin-active #md3-site-header {
   padding: 0.28rem 0.45rem;
 }
 
+#page-admin .admin-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.2rem;
+  border: 0;
+  background: transparent;
+  color: rgba(26, 26, 26, 0.28);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+#page-admin .admin-star:hover {
+  color: var(--admin-wood);
+}
+
+#page-admin .admin-star--on {
+  color: var(--admin-wood);
+}
+
 /* ── Buttons ── */
 #page-admin .admin-btn,
 #page-admin .admin-btn-outline,
