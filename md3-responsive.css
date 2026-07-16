@@ -118,6 +118,7 @@ html.is-mobile .home-hero-line2 {
 
 html[data-viewport='mobile'] .home-hero-copy,
 html.is-mobile .home-hero-copy {
+  position: absolute;
   left: 1.15rem;
   right: 1.15rem;
   bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem));
@@ -125,25 +126,6 @@ html.is-mobile .home-hero-copy {
   width: auto;
   box-sizing: border-box;
   z-index: 6;
-}
-
-html[data-viewport='mobile'] .home-hero-copy.is-cta-fixed,
-html.is-mobile .home-hero-copy.is-cta-fixed {
-  position: fixed !important;
-  left: 1.15rem !important;
-  right: 1.15rem !important;
-  width: auto !important;
-  max-width: none !important;
-  bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem)) !important;
-  z-index: 30;
-}
-
-html[data-viewport='mobile'] .home-hero-copy.is-cta-parked,
-html.is-mobile .home-hero-copy.is-cta-parked {
-  position: absolute !important;
-  bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem)) !important;
-  left: 1.15rem !important;
-  right: 1.15rem !important;
 }
 
 html[data-viewport='mobile'] .home-hero-foot,

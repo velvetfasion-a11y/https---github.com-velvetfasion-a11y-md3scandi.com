@@ -277,12 +277,15 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 }
 
-/* Phone hero: title + buttons follow the bottom of the screen */
+/* Phone hero: title + buttons locked to the bottom of the hero image */
 @media (max-width: 767px) {
   #md3-hero.home-hero,
   #md3-hero.home-hero--cinema {
+    position: relative;
     min-height: 100svh;
     min-height: 100dvh;
+    max-height: none;
+    aspect-ratio: auto;
   }
 
   .home-hero-heading.only-mobile {
@@ -306,6 +309,7 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 
   .home-hero-copy {
+    position: absolute;
     left: 1.15rem;
     right: 1.15rem;
     bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem));
@@ -313,23 +317,8 @@ html.is-mobile #md3-hero .hero-bg-img {
     width: auto;
     box-sizing: border-box;
     z-index: 6;
-  }
-
-  .home-hero-copy.is-cta-fixed {
-    position: fixed !important;
-    left: 1.15rem !important;
-    right: 1.15rem !important;
-    width: auto !important;
-    max-width: none !important;
-    bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem)) !important;
-    z-index: 30;
-  }
-
-  .home-hero-copy.is-cta-parked {
-    position: absolute !important;
-    bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem)) !important;
-    left: 1.15rem !important;
-    right: 1.15rem !important;
+    /* Never toggle fixed/park — stays one place in the hero */
+    transform: none;
   }
 
   .home-hero-foot {

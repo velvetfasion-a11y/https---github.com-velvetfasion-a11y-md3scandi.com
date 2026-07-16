@@ -1,9 +1,7 @@
-/** Hero focal crop + phone title/CTAs pinned to the bottom of the screen */
+/** Hero focal crop only — phone title/CTAs are CSS-absolute in the hero (no scroll JS) */
 (function () {
   const DESKTOP_MQ = window.matchMedia('(min-width: 769px)');
   const MOBILE_MQ = window.matchMedia('(max-width: 767px)');
-
-  let ctaRaf = 0;
 
   function fitHeroTitle() {
     const el = document.getElementById('heroTitle');
@@ -44,59 +42,21 @@
     img.style.objectPosition = '64% 40%';
   }
 
-  /**
-   * iPhone only: title + buttons stay glued to the bottom of the screen
-   * while the hero is in view, then park at the hero bottom (don't follow
-   * into the next section).
-   */
-  function updateStickyCtas() {
-    const hero = document.getElementById('md3-hero');
+  function clearCtaScrollState() {
     const copy = document.getElementById('homeHeroCopy');
-    if (!hero || !copy) return;
-
-    if (!MOBILE_MQ.matches) {
-      copy.classList.remove('is-cta-fixed', 'is-cta-parked');
-      copy.style.bottom = '';
-      return;
-    }
-
-    const vh = window.innerHeight || 1;
-    const copyH = copy.offsetHeight || 220;
-    const stopBottom = 12;
-    const startBottom = 12;
-
-    const heroRect = hero.getBoundingClientRect();
-    const heroBottom = heroRect.bottom;
-    const copyBottomIfFixed = vh - startBottom;
-    const maxAllowedCopyBottom = heroBottom - stopBottom;
-
-    const park =
-      heroBottom <= stopBottom + copyH * 0.35 || copyBottomIfFixed > maxAllowedCopyBottom;
-
-    if (park) {
-      copy.classList.add('is-cta-parked');
-      copy.classList.remove('is-cta-fixed');
-      copy.style.bottom = '';
-    } else {
-      copy.classList.add('is-cta-fixed');
-      copy.classList.remove('is-cta-parked');
-      copy.style.bottom = 'max(0.75rem, env(safe-area-inset-bottom, 0px))';
-    }
-  }
-
-  function onScrollCtas() {
-    if (ctaRaf) return;
-    ctaRaf = requestAnimationFrame(function () {
-      ctaRaf = 0;
-      updateStickyCtas();
-    });
+    if (!copy) return;
+    copy.classList.remove('is-cta-fixed', 'is-cta-parked');
+    copy.style.bottom = '';
+    copy.style.position = '';
+    copy.style.left = '';
+    copy.style.right = '';
   }
 
   function scheduleUpdates() {
     requestAnimationFrame(function () {
       fitHeroTitle();
       updateHeroBgFocus();
-      updateStickyCtas();
+      clearCtaScrollState();
     });
   }
 
@@ -106,7 +66,6 @@
     document.fonts.ready.then(scheduleUpdates).catch(function () {});
   }
 
-  window.addEventListener('scroll', onScrollCtas, { passive: true });
   window.addEventListener('resize', scheduleUpdates, { passive: true });
   if (DESKTOP_MQ.addEventListener) {
     DESKTOP_MQ.addEventListener('change', scheduleUpdates);
@@ -119,6 +78,6 @@
   window.MD3HeroFit = {
     fit: scheduleUpdates,
     updateBg: updateHeroBgFocus,
-    updateCtas: updateStickyCtas,
+    updateCtas: clearCtaScrollState,
   };
 })();
