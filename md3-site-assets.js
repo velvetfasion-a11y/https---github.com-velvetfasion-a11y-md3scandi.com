@@ -54,11 +54,14 @@
       admin: true,
     },
     limited: {
-      label: 'Édition limitée (legacy)',
+      label: 'Édition limitée card',
       labelKey: 'site-img-limited',
       aliases: ['limited', 'edition', 'édition limitée', 'limited card'],
-      selector: '.home-univers-card--lifestyle img',
-      admin: false,
+      selector: '.home-univers-card--limited img, .home-univers-card--lifestyle img',
+      defaultSrc: 'images/cat-lifestyle.jpg',
+      aspectRatio: 3 / 4,
+      maxWidth: 2400,
+      admin: true,
     },
     manifesto: {
       label: 'Manifesto section (legacy)',

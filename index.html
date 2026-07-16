@@ -23,8 +23,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@300;400;500&family=Noto+Sans+Arabic:wght@300;400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@300;400;500&family=Noto+Sans+Arabic:wght@300;400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="md3-header.css?v=16" />
-<link rel="stylesheet" href="md3-responsive.css?v=7" />
-<link rel="stylesheet" href="md3-home.css?v=21" />
+<link rel="stylesheet" href="md3-responsive.css?v=8" />
+<link rel="stylesheet" href="md3-home.css?v=22" />
 </head>
 <body class="home-page">
 <script src="md3-viewport.js"></script>
@@ -103,11 +103,11 @@
           <div class="home-univers-name display-serif"><span data-i18n="nav-home">Maison</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
         </div>
       </a>
-      <a href="boutique.html?cat=Lifestyle" class="home-univers-card home-univers-card--lifestyle">
-        <img src="images/cat-lifestyle.jpg" alt="Lifestyle" loading="lazy" />
+      <a href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" class="home-univers-card home-univers-card--lifestyle home-univers-card--limited">
+        <img src="images/cat-lifestyle.jpg" alt="Édition limitée" loading="lazy" />
         <div class="home-univers-card-body">
-          <div class="home-univers-sub" data-i18n="home-lifestyle-sub">Rituels du quotidien</div>
-          <div class="home-univers-name display-serif"><span data-i18n="nav-lifestyle">Lifestyle</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
+          <div class="home-univers-sub" data-i18n="home-limited-sub">Pièces rares</div>
+          <div class="home-univers-name display-serif"><span data-i18n="nav-limited">Édition limitée</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
         </div>
       </a>
     </div>
@@ -124,7 +124,7 @@
       <a href="boutique.html" class="home-featured-view" data-i18n="featured-view-all">Voir tout</a>
     </div>
     <div class="home-featured-carousel" id="featuredCarousel" aria-label="Featured products">
-      <div class="home-featured-track" id="featuredGrid"></div>
+      <div class="home-featured-track home-featured-grid" id="featuredGrid"></div>
     </div>
     <p class="shop-empty-state" id="featuredEmpty" hidden data-i18n="featured-empty">Aucun produit en vedette pour le moment.</p>
   </div>
@@ -198,15 +198,21 @@
   </div>
 </footer>
 
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="md3-firebase.js?v=3"></script>
 <script src="md3-sizes.js?v=1" defer></script>
-<script src="md3-store.js?v=9" defer></script>
+<script src="md3-store.js?v=10" defer></script>
 <script src="md3-site-assets.js?v=6" defer></script>
 <script src="md3-nav-icons.js" defer></script>
 <script src="md3-header.js?v=16" defer></script>
-<script src="md3-lang.js?v=28" defer></script>
+<script src="md3-lang.js?v=29" defer></script>
 <script src="md3-currency.js?v=4" defer></script>
 <script src="md3-hero-fit.js?v=3" defer></script>
-<script src="md3-shop-render.js?v=10" defer></script>
+<script src="md3-shop-render.js?v=11" defer></script>
 <script defer>
   function updateCartBadge() {
     MD3Header.updateCartBadge();
@@ -237,12 +243,18 @@
 
   let featuredTimer = null;
   function renderFeatured() {
-    const products = MD3Store.getFeaturedProducts
+    if (!window.MD3Store) return;
+    let products = MD3Store.getFeaturedProducts
       ? MD3Store.getFeaturedProducts()
       : MD3Store.getHomeFeaturedProducts();
+    if (!products.length && MD3Store.getProducts) {
+      products = MD3Store.getProducts().slice(0, 4);
+    }
     const grid = document.getElementById('featuredGrid');
     const empty = document.getElementById('featuredEmpty');
     const carousel = document.getElementById('featuredCarousel');
+    const section = document.getElementById('boutique');
+    if (section) section.classList.add('in-view');
     if (!grid) return;
     if (!products.length) {
       grid.innerHTML = '';
@@ -252,9 +264,9 @@
     }
     if (empty) empty.hidden = true;
     if (carousel) carousel.hidden = false;
-    if (MD3Shop.renderHomeCarousel) {
+    if (MD3Shop && MD3Shop.renderHomeCarousel) {
       MD3Shop.renderHomeCarousel(grid, products, MD3Shop.homeLabels());
-    } else {
+    } else if (MD3Shop && MD3Shop.renderHomeGrid) {
       MD3Shop.renderHomeGrid(grid, products, MD3Shop.homeLabels());
     }
     updateCartBadge();

@@ -264,6 +264,74 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 }
 
+/* Phone hero: centered title + full-width CTAs */
+@media (max-width: 767px) {
+  .home-hero-heading {
+    left: 1.15rem;
+    right: 1.15rem;
+    max-width: none;
+    text-align: center;
+  }
+
+  .home-hero-line1 {
+    font-size: clamp(1.7rem, 9.5vw, 2.6rem);
+    letter-spacing: -0.03em;
+  }
+
+  .home-hero-line2 {
+    margin-left: 0;
+    font-size: clamp(1.3rem, 7vw, 2rem);
+  }
+
+  .home-hero-foot {
+    left: 1.15rem;
+    right: 1.15rem;
+    bottom: max(4.5%, calc(env(safe-area-inset-bottom, 0px) + 0.85rem));
+    max-width: none;
+    width: auto;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+  .home-hero-tagline {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 22rem;
+    font-size: 0.78rem;
+    margin-bottom: 1.1rem;
+  }
+
+  .home-hero-ctas {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.6rem;
+  }
+
+  .home-btn {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0.85rem 0.85rem;
+    font-size: 10px;
+    letter-spacing: 0.11em;
+    white-space: normal;
+  }
+
+  .home-univers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    overflow: visible;
+    margin: 0;
+  }
+
+  .home-univers-card:nth-child(3) {
+    grid-column: 1 / -1;
+    aspect-ratio: 2.15 / 1;
+  }
+}
+
 @media (min-width: 1280px) {
   .home-hero-detail {
     display: block;
@@ -536,39 +604,43 @@ html.is-mobile #md3-hero .hero-bg-img {
   100% { transform: translateX(-50%); }
 }
 
-/* Phones: swipeable strip (marquee is flaky / invisible on iOS) */
+/* Phones: starred products as a visible 2-column grid */
 @media (max-width: 767px) {
   .home-featured-carousel {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x mandatory;
-    overscroll-behavior-x: contain;
+    overflow: visible;
+    width: 100%;
+    margin: 0;
+    min-height: 0;
     mask-image: none;
     -webkit-mask-image: none;
-    margin: 0 -0.25rem;
-    padding: 0 0.25rem 0.5rem;
+    padding: 0;
   }
 
   .home-featured-track,
-  .home-featured-track.is-ready {
+  .home-featured-track.is-ready,
+  .home-featured-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem 0.75rem;
+    width: 100% !important;
+    max-width: 100%;
     animation: none !important;
     transform: none !important;
-    width: max-content;
+    min-height: 0;
   }
 
   .home-featured-group {
-    gap: 0.85rem;
-    padding-right: 0.85rem;
+    display: contents;
   }
 
   .home-featured-group[aria-hidden='true'] {
-    display: none;
+    display: none !important;
   }
 
   .home-featured .home-product-card {
-    scroll-snap-align: start;
-    width: min(72vw, 240px);
+    width: auto !important;
+    flex: none;
+    scroll-snap-align: unset;
   }
 }
 
