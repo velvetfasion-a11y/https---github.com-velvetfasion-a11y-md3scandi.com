@@ -142,11 +142,10 @@
     }
 
     function update() {
-      // Desktop: white/cream bar always visible
+      // Desktop: cream bar always solid and in document flow (hero starts below it)
       if (!overlayHome || desktopMq.matches) {
         setSolid();
-        if (overlayHome && chrome) chrome.classList.add('is-fixed');
-        else if (chrome) chrome.classList.remove('is-fixed');
+        if (chrome) chrome.classList.remove('is-fixed');
         return;
       }
 

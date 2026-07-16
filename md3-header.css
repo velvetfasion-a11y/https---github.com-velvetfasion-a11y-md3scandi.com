@@ -84,7 +84,7 @@
   border-bottom-color: var(--md3-gold);
 }
 
-/* Home: chrome floats over the hero so overlay colors sit on the photo */
+/* Home: chrome floats over the hero on phone; desktop keeps it in flow above the hero */
 body.home-page #md3-site-header {
   position: absolute;
   left: 0;
@@ -104,8 +104,16 @@ body.home-page .site-header--solid {
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* Desktop: always show the cream top bar (never transparent over the hero) */
+/* Desktop: solid cream bar sits above the hero (does not cover the photo) */
 @media (min-width: 768px) {
+  body.home-page #md3-site-header,
+  body.home-page #md3-site-header.is-fixed {
+    position: sticky;
+    top: 0;
+    left: auto;
+    right: auto;
+  }
+
   body.home-page .site-header,
   body.home-page .site-header--overlay,
   body.home-page .site-header--solid {

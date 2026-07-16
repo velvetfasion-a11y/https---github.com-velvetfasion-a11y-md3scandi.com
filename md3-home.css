@@ -70,46 +70,27 @@ body.home-page {
   position: absolute;
   inset: 0;
   z-index: 0;
-  overflow: hidden;
 }
 
 #md3-hero .hero-bg-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 65% 40%;
+  /* Desktop: bias up so her face sits below the nav, not under LIFESTYLE / LIMITED */
+  object-position: 58% 18%;
   display: block;
 }
 
-/*
-  Desktop: NyZx3 AR matches the cinema frame, so object-position alone does nothing.
-  Her face sits ~10–35% from the top of the photo — under the floating nav.
-  Scale + shift down so nav sits on wall/ceiling and her face clears Lifestyle / Limited.
-*/
 @media (min-width: 769px) {
   #md3-hero .hero-bg-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: 68% 35%;
-    transform: scale(1.32) translate3d(0, 11%, 0);
-    transform-origin: 70% 0%;
-    will-change: transform;
+    object-position: 58% 16%;
   }
-}
-
-html[data-viewport='desktop'] #md3-hero .hero-bg-img,
-html.is-desktop #md3-hero .hero-bg-img {
-  object-position: 68% 35%;
-  transform: scale(1.32) translate3d(0, 11%, 0);
-  transform-origin: 70% 0%;
 }
 
 html[data-viewport='mobile'] #md3-hero .hero-bg-img,
 html.is-mobile #md3-hero .hero-bg-img {
   /* Model sits ~68–72% from left in NyZx3 — bias crop onto her face/torso */
   object-position: 70% 34%;
-  transform: none;
 }
 
 .home-hero-overlay {
@@ -174,6 +155,17 @@ html.is-mobile #md3-hero .hero-bg-img {
   max-width: min(52%, 46rem);
   margin: 0;
   animation: home-rise 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Desktop header is above the hero, so title no longer needs chrome offset */
+@media (min-width: 768px) {
+  .home-hero-heading {
+    top: 8%;
+  }
+
+  .home-hero-detail {
+    top: 8%;
+  }
 }
 
 .home-hero-title {
