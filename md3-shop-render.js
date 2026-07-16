@@ -19,20 +19,51 @@
     return `<div class="cemoji">${esc((p && p.emoji) || '✦')}</div>`;
   }
 
+  function localizedName(p) {
+    return global.MD3Lang && global.MD3Lang.productName ? global.MD3Lang.productName(p) : (p && p.name) || '';
+  }
+
+  function storeCardHomeHtml(p, labels) {
+    const href = global.MD3Store.productHref(p.id);
+    const name = localizedName(p);
+    const image =
+      global.MD3Store && global.MD3Store.normalizeProductImages
+        ? global.MD3Store.normalizeProductImages(p)[0]
+        : p && p.image;
+    const cat = labels.catLabel ? labels.catLabel(p.category) : p.category;
+    const isLimited = /édition|edition|limit/i.test(String(p.category || ''));
+    const badge = isLimited
+      ? `<span class="home-product-badge">${esc(labels.limitedBadge || 'Édition')}</span>`
+      : '';
+    const imgHtml = image
+      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="lazy" />`
+      : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
+    return `
+      <a href="${href}" class="home-product-card">
+        <div class="home-product-visual">${badge}${imgHtml}</div>
+        <div class="home-product-meta">
+          <div class="home-product-cat">${esc(cat)}</div>
+          <div class="home-product-name display-serif">${esc(name)}</div>
+          <div class="home-product-price">${labels.price(p.price)}</div>
+        </div>
+      </a>`;
+  }
+
   function storeCardMinimalHtml(p, labels) {
     const href = global.MD3Store.productHref(p.id);
+    const name = localizedName(p);
     const image =
       global.MD3Store && global.MD3Store.normalizeProductImages
         ? global.MD3Store.normalizeProductImages(p)[0]
         : p && p.image;
     const imgHtml = image
-      ? `<img src="${esc(image)}" alt="${esc(p.name)}" loading="lazy" />`
+      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="lazy" />`
       : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
     return `
       <a href="${href}" class="product-card">
         <div class="image-wrapper">${imgHtml}</div>
         <div class="product-info">
-          <span class="product-name">${esc(p.name)}</span>
+          <span class="product-name">${esc(name)}</span>
           <span class="product-price">${labels.price(p.price)}</span>
         </div>
       </a>`;
@@ -41,6 +72,7 @@
   function storeCardHtml(p, labels) {
     const out = !p.stock;
     const href = global.MD3Store.productHref(p.id);
+    const name = localizedName(p);
     const cat = labels.catLabel ? labels.catLabel(p.category) : p.category;
     const sub = labels.subLabel ? labels.subLabel(p.sub) : p.sub;
     const catLine = [cat, sub].filter(Boolean).join(' · ');
@@ -54,7 +86,7 @@
         </div>
         <div class="cinf">
           ${catLine ? `<div class="ccat">${esc(catLine)}</div>` : ''}
-          <div class="ctitle">${esc(p.name)}</div>
+          <div class="ctitle">${esc(name)}</div>
           <div class="cprice">${labels.price(p.price)}${labels.priceNote ? ` <small>${esc(labels.priceNote)}</small>` : ''}</div>
           <div class="cstock ${out ? 'out' : 'in'}">${esc(out ? labels.stockOut : labels.stockIn)}</div>
           <button type="button" class="ccbtn" ${out ? 'disabled' : ''} onclick="MD3Shop.addToCart(${p.id}, event)">
@@ -87,6 +119,17 @@
     }
     const S = global.MD3Store;
     const L = global.MD3Lang ? (k) => global.MD3Lang.t(k) : (k) => k;
+    const p = S.getProductById ? S.getProductById(id) : S.getProducts().find((x) => x.id == id);
+    if (p && global.MD3Sizes && global.MD3Sizes.productNeedsSize(p)) {
+      const href = S.productHref(p.id);
+      if (event) {
+        showToast(L('cart-select-size'));
+        setTimeout(() => { location.href = href; }, 600);
+      } else {
+        location.href = href;
+      }
+      return false;
+    }
     const res = await S.addToCart(id);
     if (!res.ok) {
       if (res.reason === 'out') showToast(L('cart-out-stock'));
@@ -125,6 +168,25 @@
     return { ...defaultLabels(), minimal: true };
   }
 
+  function homeLabels() {
+    const L = global.MD3Lang ? (k) => global.MD3Lang.t(k) : (k) => k;
+    return {
+      ...minimalLabels(),
+      homeStyle: true,
+      limitedBadge: L('home-limited-badge'),
+    };
+  }
+
+  function renderHomeGrid(container, products, labels) {
+    if (!container) return;
+    const lbl = labels || homeLabels();
+    if (!products.length) {
+      container.innerHTML = '';
+      return;
+    }
+    container.innerHTML = products.map((p) => storeCardHomeHtml(p, lbl)).join('');
+  }
+
   function renderGrid(container, products, labels) {
     if (!container) return;
     const lbl = labels || defaultLabels();
@@ -132,18 +194,21 @@
       container.innerHTML = '';
       return;
     }
-    const render = lbl.minimal ? storeCardMinimalHtml : storeCardHtml;
+    const render = lbl.homeStyle ? storeCardHomeHtml : lbl.minimal ? storeCardMinimalHtml : storeCardHtml;
     container.innerHTML = products.map((p) => render(p, lbl)).join('');
   }
 
   global.MD3Shop = {
     esc,
     storeCardHtml,
+    storeCardHomeHtml,
     productImageBlock,
     addToCart,
     showToast,
     defaultLabels,
     minimalLabels,
+    homeLabels,
     renderGrid,
+    renderHomeGrid,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

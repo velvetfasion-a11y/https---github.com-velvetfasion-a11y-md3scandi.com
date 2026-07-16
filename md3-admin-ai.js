@@ -52,16 +52,36 @@
     return k && !String(k).includes('YOUR_') ? String(k).trim() : '';
   }
 
+  function geminiModelUrl(model, method) {
+    return (
+      'https://generativelanguage.googleapis.com/v1beta/models/' +
+      encodeURIComponent(model) +
+      ':' +
+      (method || 'generateContent')
+    );
+  }
+
+  function geminiFetchOptions(key, body) {
+    return {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': key,
+      },
+      body: JSON.stringify(body),
+    };
+  }
+
   function geminiKeyIssue() {
     const k = geminiKey();
     if (!k) return 'missing';
-    if (/^AQ\.|^ya29\./i.test(k)) {
+    if (/^ya29\./i.test(k)) {
       return 'oauth_not_api_key';
     }
-    if (!/^AIza[\w-]{20,}/i.test(k)) {
-      return 'bad_format';
+    if (/^AQ\.[\w-]{20,}/i.test(k) || /^AIza[\w-]{20,}/i.test(k)) {
+      return '';
     }
-    return '';
+    return 'bad_format';
   }
 
   function hasGemini() {
@@ -89,13 +109,13 @@
     if (issue === 'oauth_not_api_key') {
       return msg(
         'admin-ai-err-bad-key-type',
-        'Wrong key type in GEMINI_API_KEY. You need an API key from aistudio.google.com/apikey (starts with AIza…), not an OAuth token (AQ.…). Update .env, run node scripts/sync-ai-config.mjs, and add the same key to GitHub Actions secrets for the live site.'
+        'Wrong key type in GEMINI_API_KEY. Use an API key from aistudio.google.com/apikey (AQ.… or AIza…), not a Google sign-in OAuth token (ya29.…). Update .env, run node scripts/sync-ai-config.mjs, and add the same key to GitHub Actions secrets for the live site.'
       );
     }
     if (issue === 'bad_format') {
       return msg(
         'admin-ai-err-bad-key-format',
-        'GEMINI_API_KEY does not look valid. Create a key at aistudio.google.com/apikey (starts with AIza…), put it in .env, then run node scripts/sync-ai-config.mjs.'
+        'GEMINI_API_KEY does not look valid. Create a key at aistudio.google.com/apikey (AQ.… or AIza…), put it in .env, then run node scripts/sync-ai-config.mjs.'
       );
     }
     return msg(
@@ -104,15 +124,28 @@
     );
   }
 
+  function geminiAuthFailureMessage() {
+    return msg(
+      'admin-ai-err-gemini-auth',
+      'Gemini rejected this API key (invalid or expired). Use a working key from aistudio.google.com/apikey in .env, run node scripts/sync-ai-config.mjs, then hard-refresh this page (Cmd+Shift+R).'
+    );
+  }
+
   function formatCloudError(err) {
     const raw = String((err && err.message) || err || '');
     if (/401|UNAUTHENTICATED|ACCESS_TOKEN_TYPE_UNSUPPORTED|invalid authentication/i.test(raw)) {
-      return cloudAISetupMessage();
+      return hasGemini() ? geminiAuthFailureMessage() : cloudAISetupMessage();
     }
     if (/403|PERMISSION_DENIED|blocked|not enabled/i.test(raw)) {
       return msg(
         'admin-ai-err-gemini-disabled',
         'Gemini API rejected this key. Create a new key at aistudio.google.com/apikey and enable the Generative Language API for your project.'
+      );
+    }
+    if (/Invalid value at.*aspect_ratio|Invalid value at.*image_size|response_format\.image/i.test(raw)) {
+      return msg(
+        'admin-ai-err-image-config',
+        'Image generation settings were rejected by Gemini. Retrying with updated API format — hard-refresh the admin page (Cmd+Shift+R) and try again.'
       );
     }
     return msg('admin-ai-err-cloud', 'Cloud AI error: ') + raw.slice(0, 220);
@@ -162,17 +195,25 @@
   }
 
   function chatModels() {
-    const preferred = getCfg().geminiModel || 'gemini-2.5-pro';
-    const fallbacks = ['gemini-3.1-pro-preview', 'gemini-3-pro-preview', 'gemini-2.5-pro', 'gemini-2.0-flash'];
+    const preferred = getCfg().geminiModel || 'gemini-3-flash-preview';
+    const fallbacks = [
+      'gemini-3.5-flash',
+      'gemini-3-flash-preview',
+      'gemini-3.1-pro-preview',
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+    ];
     return [preferred].concat(fallbacks.filter((m) => m !== preferred));
   }
 
   function imageModels() {
-    const preferred = getCfg().geminiImageModel || 'gemini-3-pro-image-preview';
+    const preferred = getCfg().geminiImageModel || 'gemini-3-pro-image';
     return [
       preferred,
+      'gemini-3-pro-image',
       'gemini-3-pro-image-preview',
       'gemini-3.1-flash-image',
+      'gemini-3.1-flash-image-preview',
       'gemini-2.5-flash-image',
     ].filter((m, i, a) => a.indexOf(m) === i);
   }
@@ -689,19 +730,11 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     const ref = dataUrlToGeminiPart(files[0].dataUrl);
     if (ref) parts.push(ref);
 
-    const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro'];
+    const models = chatModels().slice(0, 4);
     for (const model of models) {
-      const url =
-        'https://generativelanguage.googleapis.com/v1beta/models/' +
-        encodeURIComponent(model) +
-        ':generateContent?key=' +
-        encodeURIComponent(key);
+      const url = geminiModelUrl(model);
       try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts }] }),
-        });
+        const res = await fetch(url, geminiFetchOptions(key, { contents: [{ parts }] }));
         if (!res.ok) continue;
         const data = await res.json();
         const raw =
@@ -1091,7 +1124,9 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       /(?:add|create|list|publish|lägg till|ajouter|créer)\s+(?:these|those|all|each)\s+(?:as\s+)?(?:separate\s+)?(?:products?|produits?|items?)/.test(
         t
       ) ||
-      /(?:these|those)\s+(?:are\s+)?(?:different|separate|new)\s+(?:products?|produits?|items?)/.test(t)
+      /(?:these|those)\s+(?:are\s+)?(?:different|separate|new)\s+(?:products?|produits?|items?)/.test(t) ||
+      /(?:as|into)\s+(?:products?|produits?|items?|catalog(?:ue)?)/.test(t) ||
+      /(?:rings?|items?|pieces?|products?)\s+as\s+products?/.test(t)
     ) {
       return true;
     }
@@ -1132,11 +1167,28 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       /(?:den\s+här|denna|det\s+här|ce\s+produit|cette\s+produit|le\s+produit|same\s+product)/.test(t) ||
       /(?:change|replace|swap|update)\s+(?:the\s+)?(?:product\s+)?(?:image|photo|picture|bild)/.test(t) ||
       /(?:make|generate|create)\s+(?:other|more|extra|new|ai|display|additional)\s+(?:images?|photos?|pictures?)/.test(t) ||
-      /(?:other|more|extra|display|additional)\s+(?:images?|photos?).*(?:product|produit|produkt)/.test(t)
+      /(?:other|more|extra|display|additional)\s+(?:images?|photos?).*(?:product|produit|produkt)/.test(t) ||
+      (sessionCtx.focusedProductId != null && wantsFocusedProductImageEdit(text))
     ) {
       return true;
     }
     return false;
+  }
+
+  function wantsFocusedProductImageEdit(text) {
+    if (sessionCtx.focusedProductId == null) return false;
+    const t = normalizeUserIntentText(text).toLowerCase().trim();
+    if (!t) return false;
+    if (inferSiteImageSlot(text)) return false;
+    return (
+      /^(?:the\s+)?(?:image|photo|picture|model|shot|clothes?|garment)\s*\.?$/.test(t) ||
+      /(?:change|replace|swap|update|new|different|another)\s+(?:the\s+)?(?:model|mannequin|photo|image|picture|shot)/.test(t) ||
+      /(?:model|mannequin|portrait)\s+(?:for|of|on|with)/.test(t) ||
+      /(?:for|of)\s+(?:the\s+)?(?:clothes?|clothing|garment|outfit|product)/.test(t) ||
+      /(?:clothes?|clothing|garment|outfit).*(?:model|image|photo)/.test(t) ||
+      /(?:change|replace).*(?:clothes?|clothing|garment|model)/.test(t) ||
+      /\bthis\s+(?:model|image|photo)\b/.test(t)
+    );
   }
 
   function defaultGalleryShots(text) {
@@ -1605,6 +1657,31 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     return 'MD3 Scandi luxury e-commerce product photo. Scandinavian minimal aesthetic, soft natural light, cream and neutral tones. ';
   }
 
+  function normalizeGeminiImageSize(size) {
+    const s = String(size || '1K').trim().toUpperCase();
+    if (s === '512' || s === '1K' || s === '2K' || s === '4K') return s;
+    return '1K';
+  }
+
+  function normalizeGeminiAspectRatio(ratio) {
+    const r = String(ratio || '3:4').trim();
+    const allowed = ['1:1', '1:4', '1:8', '2:3', '3:2', '3:4', '4:1', '4:3', '4:5', '5:4', '8:1', '9:16', '16:9', '21:9'];
+    return allowed.includes(r) ? r : '3:4';
+  }
+
+  function buildGeminiImageRequest(parts, aspectRatio, imageSize) {
+    return {
+      contents: [{ parts }],
+      generationConfig: {
+        responseModalities: ['TEXT', 'IMAGE'],
+        imageConfig: {
+          aspectRatio: normalizeGeminiAspectRatio(aspectRatio),
+          imageSize: normalizeGeminiImageSize(imageSize),
+        },
+      },
+    };
+  }
+
   async function generateProductImage(prompt, referenceDataUrl, onProgress) {
     const key = geminiKey();
     if (!key) throw new Error(cloudAISetupMessage());
@@ -1621,34 +1698,18 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
     let lastErr = null;
     for (const model of models) {
-      const url =
-        'https://generativelanguage.googleapis.com/v1beta/models/' +
-        encodeURIComponent(model) +
-        ':generateContent?key=' +
-        encodeURIComponent(key);
-
-      const body = {
-        contents: [{ parts }],
-        generationConfig: {
-          responseModalities: ['IMAGE'],
-          responseFormat: {
-            image: { aspectRatio, imageSize },
-          },
-        },
-      };
+      const url = geminiModelUrl(model);
+      const body = buildGeminiImageRequest(parts, aspectRatio, imageSize);
 
       if (onProgress) onProgress();
       try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
+        const res = await fetch(url, geminiFetchOptions(key, body));
 
         if (!res.ok) {
           const err = await res.text();
           lastErr = new Error('Image model (' + model + '): ' + err.slice(0, 240));
           if (res.status === 404 || /not found|invalid model/i.test(err)) continue;
+          if (res.status === 400 && /response_format|aspect_ratio|image_size/i.test(err)) continue;
           throw lastErr;
         }
 
@@ -2459,6 +2520,12 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       return [buildImageGenerateAction(text, imgs)];
     }
 
+    if (!actions.length && sessionCtx.focusedProductId != null && wantsFocusedProductImageEdit(text)) {
+      const shortFollowUp = /^(?:the\s+)?(?:image|photo|picture|model|shot|clothes?|garment)\s*\.?$/i.test(t.trim());
+      const promptText = shortFollowUp ? sessionCtx.lastUserText || text : text;
+      return [buildImageGenerateAction(promptText, imgs)];
+    }
+
     return rewriteMisclassifiedActions(actions, text, imgs);
   }
 
@@ -2466,10 +2533,19 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     let actions = rewriteMisclassifiedActions(parseLocalCommands(text, files), text, files);
     if (actions.length) return actions;
     const imgs = getEffectiveFiles(files, text);
+    if (imgs.length && wantsMultipleDifferentProducts(text, imgs)) {
+      return buildAddProductActions(text, imgs);
+    }
     if (imgs.length && (wantsCreateOrGenerateImage(text) || refersAttachedImageEdit(text, imgs))) {
       return [buildImageGenerateAction(text, imgs)];
     }
-    if (parsed && parsed.reply && !parsed.actions) {
+    if (sessionCtx.focusedProductId != null && wantsFocusedProductImageEdit(text)) {
+      const t = normalizeUserIntentText(text).toLowerCase().trim();
+      const shortFollowUp = /^(?:the\s+)?(?:image|photo|picture|model|shot)\s*\.?$/.test(t);
+      const promptText = shortFollowUp ? sessionCtx.lastUserText || text : text;
+      return [buildImageGenerateAction(promptText, imgs)];
+    }
+    if (parsed && parsed.reply && Array.isArray(parsed.actions) && parsed.actions.length) {
       return [];
     }
     return actions;
@@ -2482,25 +2558,19 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     let lastErr = null;
 
     for (const model of chatModels()) {
-      const url =
-        'https://generativelanguage.googleapis.com/v1beta/models/' +
-        encodeURIComponent(model) +
-        ':generateContent?key=' +
-        encodeURIComponent(key);
-
+      const url = geminiModelUrl(model);
       try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const res = await fetch(
+          url,
+          geminiFetchOptions(key, {
             systemInstruction: { parts: [{ text: system }] },
             contents,
             generationConfig: {
               temperature: 0.35,
               responseMimeType: 'application/json',
             },
-          }),
-        });
+          })
+        );
 
         if (!res.ok) {
           const err = await res.text();
@@ -2689,7 +2759,19 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       }
 
       if (!actions.length) {
-        const intro = parsed && parsed.reply ? esc(parsed.reply) : '';
+        const intro = parsed && parsed.reply ? esc(parsed.reply) + '<br>' : '';
+        let hint = '';
+        if (cloudErr) {
+          hint =
+            '<br><small class="admin-ai-hint admin-ai-hint--err">' +
+            esc(formatCloudError(cloudErr)) +
+            '</small>';
+        } else if (!hasCloudAI() && sessionCtx.focusedProductId != null) {
+          hint =
+            '<br><small class="admin-ai-hint admin-ai-hint--err">' +
+            esc(cloudAISetupMessage()) +
+            '</small>';
+        }
         replyHtml =
           intro ||
           esc(
@@ -2698,6 +2780,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
               'What should I do? Examples: "add these as separate products", "add all images to this product", update price, change hero image…'
             )
           );
+        if (hint) replyHtml += hint;
         setLastBubble(replyHtml);
         persistChatSession();
         pushHistoryTurn({
@@ -2851,12 +2934,25 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     );
   }
 
+  function showKeyWarningIfNeeded() {
+    const el = $('adminAiKeyWarn');
+    if (!el) return;
+    const issue = geminiKeyIssue();
+    if (!issue && hasGemini()) {
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
+    el.textContent = cloudAISetupMessage();
+  }
+
   function init() {
     if (!$('adminAi') || $('adminAi').dataset.inited === '1') return;
     $('adminAi').dataset.inited = '1';
     clearExpiredChatSession();
     bind();
     updateFocusChip();
+    showKeyWarningIfNeeded();
     if (!restoreChatSession()) {
       showWelcomeBubble();
     }

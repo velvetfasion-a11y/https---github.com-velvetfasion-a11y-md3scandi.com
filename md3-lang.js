@@ -14,6 +14,73 @@
       'banner-collection': 'Nouvelle Collection',
       'banner-client': 'MD3 Scandi — Espace client',
       'marquee-item': 'STYLE ◆ NOUVELLE COLLECTION ◆ MODE · MAISON · LIFESTYLE ◆ ÉDITION LIMITÉE ◆',
+      'promo-bar': 'Livraison offerte en Europe dès 150€ · Retours prolongés 30 jours',
+      'nav-menu': 'Menu',
+      'nav-close': 'Fermer',
+      'nav-categories': 'Catégories',
+      'nav-lang': 'Langue',
+      'nav-shop-all': 'Toute la boutique',
+      'profile-overview': 'Aperçu',
+      'profile-liked': 'Articles aimés',
+      'profile-wishlist': 'Ma liste',
+      'profile-settings': 'Paramètres',
+      'profile-welcome': 'Bon retour',
+      'profile-stat-liked': 'Aimés',
+      'profile-stat-wishlist': 'Liste',
+      'profile-stat-orders': 'Commandes',
+      'profile-recent-liked': 'Récemment aimés',
+      'profile-view-all': 'Tout voir',
+      'profile-items': '%n articles',
+      'profile-item-one': '1 article',
+      'profile-items-zero': '0 article',
+      'profile-share-wishlist': 'Partager la liste',
+      'profile-clear-all': 'Tout effacer',
+      'profile-full-name': 'Nom complet',
+      'profile-save-changes': 'Enregistrer',
+      'profile-wishlisted': 'Dans la liste',
+      'profile-add-wishlist': '+ Liste',
+      'profile-unlike': 'Retirer',
+      'profile-empty-wishlist': 'Votre liste est vide.',
+      'profile-empty-overview': 'Vos articles récemment aimés apparaîtront ici.',
+      'profile-clear-wishlist-title': 'Vider la liste ?',
+      'profile-clear-wishlist-text': 'Retirer tous les produits de votre liste ?',
+      'profile-wishlist-share-header': 'Ma liste MD3 Scandi :',
+      'hero-collection-aria': 'Collection',
+      'journal-img-alt': 'Linge en lin européen',
+      'hero-season': 'Collection Automne · 2026',
+      'hero-kicker': 'Collection privée',
+      'hero-season-code': 'SS26',
+      'hero-tagline': 'Une sélection éditoriale de pièces intemporelles — du dressing au salon. Matières nobles, façonnées pour durer.',
+      'hero-cta-limited': 'Édition limitée',
+      'home-marquee-1': 'Matières nobles',
+      'home-marquee-2': 'Fabrication européenne',
+      'home-marquee-3': 'Éditions limitées',
+      'home-marquee-4': 'Livraison offerte dès 150€',
+      'home-marquee-5': 'Retours prolongés',
+      'home-mode-sub': 'Vestiaire essentiel',
+      'home-maison-sub': 'Habiter avec grâce',
+      'home-lifestyle-sub': 'Rituels du quotidien',
+      'home-limited-badge': 'Édition',
+      'featured-eyebrow': 'Nouvelle collection',
+      'featured-view-all': 'Voir tout',
+      'journal-eyebrow': 'Le journal',
+      'journal-title-a': 'Le lin européen,',
+      'journal-title-b': 'un geste artisan.',
+      'journal-text': 'Cultivé en Normandie, filé au Portugal, lavé en pierre pour révéler sa matière vivante. Notre édition limitée célèbre une filière courte et un savoir-faire retrouvé, pensé pour traverser les saisons.',
+      'journal-cta': "Découvrir l'édition",
+      'footer-newsletter-placeholder': 'Votre e-mail',
+      'footer-newsletter-btn': "S'inscrire",
+      'footer-col-shop': 'Boutique',
+      'footer-col-house': 'Maison',
+      'footer-col-help': 'Aide',
+      'footer-link-story': 'Notre histoire',
+      'footer-link-workshops': 'Ateliers',
+      'footer-link-journal': 'Journal',
+      'footer-link-shipping': 'Livraison',
+      'footer-link-returns': 'Retours',
+      'footer-link-sizes': 'Guide des tailles',
+      'footer-link-terms': 'CGV',
+      'footer-location': 'Paris · Stockholm',
       'nav-fashion': 'Mode',
       'nav-home': 'Maison',
       'nav-lifestyle': 'Lifestyle',
@@ -27,8 +94,8 @@
       'hero-cta-shop': 'Découvrir la collection',
       'hero-tag': 'Boutique lifestyle sélectionnée',
       'hero-eyebrow': 'Mode · Maison · Lifestyle',
-      'hero-t1': 'Ton univers,',
-      'hero-t2': 'sublimé',
+      'hero-t1': 'Ton\u00a0univers,',
+      'hero-t2': 'sublimé.',
       'hero-cta-fashion': 'Collection Mode',
       'hero-cta-home': 'Collection Maison',
       'hero-cta-lifestyle': 'Collection Lifestyle',
@@ -44,9 +111,9 @@
       'btn-mode': 'Collection Mode',
       'btn-maison': 'Collection Maison',
       'btn-cta': 'Découvrir MD3 Scandi',
-      'sec-univers-eyebrow': 'Tout voir',
-      'sec-univers-a': "L'art de ",
-      'sec-univers-b': 'vivre beau',
+      'sec-univers-eyebrow': "L'univers",
+      'sec-univers-a': 'Trois maisons, ',
+      'sec-univers-b': 'une signature.',
       'mode-title': 'Mode',
       'mode-desc': 'Des silhouettes pensées pour celles qui aiment la simplicité travaillée. Coupes nettes, matières nobles, intemporalité.',
       'maison-title': 'Maison',
@@ -77,7 +144,7 @@
       'val2-desc': "Des matières vraies, des artisans réels. Pas de toc, pas d'effet de mode. Juste du beau, bien fait.",
       'val3-title': 'Personnel',
       'val3-desc': 'Ton style, ton univers, ta maison. Nous ne dictons rien — nous proposons des pièces, à toi de composer.',
-      'footer-tag': 'Du dressing au salon',
+      'footer-tag': 'Du dressing au salon, une sélection éditoriale de pièces intemporelles, taillées pour durer.',
       'nav-login': 'Connexion',
       'nav-account': 'Mon compte',
       'nav-cart': 'Panier',
@@ -111,7 +178,7 @@
       'shop-save': 'Sauvegarder',
       'shop-login': 'Connectez-vous pour sauvegarder',
       'shop-empty-filter': 'Aucun produit dans cette catégorie pour le moment.',
-      'featured-title': 'Nouvelle Collection',
+      'featured-title': 'Les pièces à retenir.',
       'featured-empty': 'Aucun produit en vedette pour le moment.',
       'boutique-count': '%n produits',
       'boutique-count-one': '1 produit',
@@ -135,17 +202,17 @@
       'checkout-summary-title': 'Résumé',
       'checkout-place': 'Checkout',
       'checkout-payment-options': 'Options de paiement',
-      'checkout-save-details': 'Save details',
-      'checkout-save-details-note': 'Save this address, email and phone on this device.',
+      'checkout-save-details': 'Enregistrer les détails',
+      'checkout-save-details-note': 'Enregistrer cette adresse, e-mail et téléphone sur cet appareil.',
       'checkout-stripe-note': 'Stripe sera intégré ici.',
-      'checkout-email-not-configured': 'EmailJS is not configured yet.',
-      'checkout-order-sent': 'Order email sent.',
-      'checkout-order-send-failed': 'Could not send the order email.',
+      'checkout-email-not-configured': 'EmailJS n’est pas encore configuré.',
+      'checkout-order-sent': 'E-mail de commande envoyé.',
+      'checkout-order-send-failed': 'Impossible d’envoyer l’e-mail de commande.',
       'product-loading': 'Chargement…',
       'product-not-found': 'Produit introuvable.',
       'product-desc-fallback': 'Découvrez %s — une pièce sélectionnée par MD3 Scandi.',
       'label-qty': 'Quantité',
-      'product-last-item': 'You have the last item!',
+      'product-last-item': 'C’est le dernier article !',
       'btn-back': 'Retour',
       'label-featured': 'En vedette sur l’accueil',
       'label-desc': 'Description',
@@ -202,6 +269,35 @@
       'empty-saved-html': 'Aucun article sauvegardé. <a href="index.html#boutique" style="color:var(--charcoal)">Parcourir la boutique</a>',
       'admin-sidebar': 'MD3 Admin',
       'admin-products': 'Produits',
+      'admin-overview': 'Aperçu',
+      'admin-images': 'Images',
+      'admin-images-sub': 'Images du site (hors produits) — hero, univers et journal. Cliquez sur Modifier pour recadrer et repositionner.',
+      'admin-images-replace': 'Remplacer',
+      'admin-images-edit': 'Modifier',
+      'admin-images-back': '← Retour aux images',
+      'admin-images-edit-sub': 'Faites glisser pour repositionner, zoomez et recadrez — puis enregistrez.',
+      'admin-images-reset': 'Réinitialiser',
+      'admin-images-default': 'Image par défaut',
+      'admin-images-custom': 'Image personnalisée',
+      'admin-images-unavailable': 'Module d’images indisponible.',
+      'admin-images-reset-title': 'Réinitialiser l’image ?',
+      'admin-images-reset-text': 'Revenir à l’image par défaut du site ?',
+      'site-img-hero': 'Hero (page d’accueil)',
+      'site-img-fashion': 'Carte Mode',
+      'site-img-maison': 'Carte Maison',
+      'site-img-lifestyle': 'Carte Lifestyle',
+      'site-img-journal': 'Journal',
+      'admin-panel-title': 'Panneau admin',
+      'admin-panel-sub': 'Gérer la boutique et le catalogue',
+      'admin-quick-links': 'Liens rapides',
+      'admin-products-table': 'Produits (liste)',
+      'admin-status': 'Statut',
+      'admin-status-live': 'En ligne',
+      'admin-back-products': '← Retour aux produits',
+      'admin-product-images': 'Photos du produit',
+      'admin-product-details': 'Informations produit',
+      'admin-add-image': 'Ajouter une photo',
+      'admin-edit-product-sub': 'Modifiez les informations et les images du produit',
       'admin-stats': 'Statistiques',
       'admin-view-boutique': 'Voir la boutique',
       'admin-manage': 'Gestion des produits',
@@ -234,9 +330,10 @@
       'admin-ai-done-image': 'Image mise à jour pour ',
       'admin-ai-err-which-product': 'Impossible d’identifier le produit. Cliquez sur la fiche ou Modifier, ou indiquez son nom.',
       'admin-ai-err-no-key': 'Clé Gemini manquante. En local : GEMINI_API_KEY dans .env puis node scripts/sync-ai-config.mjs. En ligne : secret GEMINI_API_KEY dans GitHub Actions.',
-      'admin-ai-err-bad-key-type': 'Mauvais type de clé : utilisez une clé API depuis aistudio.google.com/apikey (commence par AIza…), pas un jeton OAuth (AQ.…).',
-      'admin-ai-err-bad-key-format': 'GEMINI_API_KEY invalide. Créez une clé sur aistudio.google.com/apikey (AIza…).',
+      'admin-ai-err-bad-key-type': 'Mauvais type de clé : utilisez une clé API depuis aistudio.google.com/apikey (AQ.… ou AIza…), pas un jeton OAuth Google (ya29.…).',
+      'admin-ai-err-bad-key-format': 'GEMINI_API_KEY invalide. Créez une clé sur aistudio.google.com/apikey (AQ.… ou AIza…).',
       'admin-ai-err-gemini-disabled': 'Clé refusée par Gemini. Créez une nouvelle clé sur aistudio.google.com/apikey.',
+      'admin-ai-err-gemini-auth': 'Gemini a refusé cette clé API (invalide ou expirée). Mettez une clé valide dans .env, exécutez node scripts/sync-ai-config.mjs, puis actualisez la page (Cmd+Shift+R).',
       'admin-ai-err-cloud': 'Erreur cloud AI : ',
       'admin-ai-focus-on': 'Produit ciblé : ',
       'admin-ai-focus-hint': 'les commandes IA s’appliquent à ce produit',
@@ -287,6 +384,13 @@
       'label-price': 'Prix (€)',
       'label-photo': 'Photos du produit (max. 3)',
       'label-stock': 'Stock (inventaire)',
+      'label-sizes': 'Tailles & stock',
+      'label-size': 'Taille',
+      'size-shoes': 'Pointures (EU)',
+      'size-clothes': 'Tailles vêtements',
+      'size-pick': 'Choisissez une taille',
+      'size-total-stock': 'Stock total : %n',
+      'cart-select-size': 'Choisissez une taille sur la fiche produit',
       'photo-hint': 'Appuyez sur une case ou glissez une photo. Jusqu’à 3 images — sélectionnez une vignette pour recadrer.',
       'photo-main': 'Principale',
       'zoom-in': 'Zoom +',
@@ -356,6 +460,73 @@
       'banner-collection': 'New Collection',
       'banner-client': 'MD3 Scandi — Client area',
       'marquee-item': 'STYLE ◆ NEW COLLECTION ◆ FASHION · HOME · LIFESTYLE ◆ LIMITED EDITION ◆',
+      'promo-bar': 'Free delivery in Europe from €150 · Extended 30-day returns',
+      'nav-menu': 'Menu',
+      'nav-close': 'Close',
+      'nav-categories': 'Categories',
+      'nav-lang': 'Language',
+      'nav-shop-all': 'Shop all',
+      'profile-overview': 'Overview',
+      'profile-liked': 'Liked Products',
+      'profile-wishlist': 'My Wishlist',
+      'profile-settings': 'Settings',
+      'profile-welcome': 'Welcome back',
+      'profile-stat-liked': 'Liked',
+      'profile-stat-wishlist': 'Wishlist',
+      'profile-stat-orders': 'Orders',
+      'profile-recent-liked': 'Recently Liked',
+      'profile-view-all': 'View All',
+      'profile-items': '%n items',
+      'profile-item-one': '1 item',
+      'profile-items-zero': '0 items',
+      'profile-share-wishlist': 'Share Wishlist',
+      'profile-clear-all': 'Clear All',
+      'profile-full-name': 'Full Name',
+      'profile-save-changes': 'Save Changes',
+      'profile-wishlisted': 'Wishlisted',
+      'profile-add-wishlist': '+ Wishlist',
+      'profile-unlike': 'Unlike',
+      'profile-empty-wishlist': 'Your wishlist is empty.',
+      'profile-empty-overview': 'Your recently liked products will appear here.',
+      'profile-clear-wishlist-title': 'Clear wishlist?',
+      'profile-clear-wishlist-text': 'Remove all products from your wishlist?',
+      'profile-wishlist-share-header': 'My MD3 Scandi Wishlist:',
+      'hero-collection-aria': 'Collection',
+      'journal-img-alt': 'European linen textiles',
+      'hero-season': 'Autumn Collection · 2026',
+      'hero-kicker': 'Private collection',
+      'hero-season-code': 'SS26',
+      'hero-tagline': 'An editorial selection of timeless pieces — from wardrobe to living room. Noble materials, made to last.',
+      'hero-cta-limited': 'Limited edition',
+      'home-marquee-1': 'Noble materials',
+      'home-marquee-2': 'European craftsmanship',
+      'home-marquee-3': 'Limited editions',
+      'home-marquee-4': 'Free delivery from €150',
+      'home-marquee-5': 'Extended returns',
+      'home-mode-sub': 'Essential wardrobe',
+      'home-maison-sub': 'Living with grace',
+      'home-lifestyle-sub': 'Daily rituals',
+      'home-limited-badge': 'Edition',
+      'featured-eyebrow': 'New collection',
+      'featured-view-all': 'View all',
+      'journal-eyebrow': 'The journal',
+      'journal-title-a': 'European linen,',
+      'journal-title-b': 'an artisan gesture.',
+      'journal-text': 'Grown in Normandy, spun in Portugal, stone-washed to reveal its living texture. Our limited edition celebrates a short supply chain and rediscovered craft, designed to last through the seasons.',
+      'journal-cta': 'Discover the edition',
+      'footer-newsletter-placeholder': 'Your email',
+      'footer-newsletter-btn': 'Subscribe',
+      'footer-col-shop': 'Shop',
+      'footer-col-house': 'House',
+      'footer-col-help': 'Help',
+      'footer-link-story': 'Our story',
+      'footer-link-workshops': 'Workshops',
+      'footer-link-journal': 'Journal',
+      'footer-link-shipping': 'Shipping',
+      'footer-link-returns': 'Returns',
+      'footer-link-sizes': 'Size guide',
+      'footer-link-terms': 'Terms',
+      'footer-location': 'Paris · Stockholm',
       'nav-fashion': 'Fashion',
       'nav-home': 'Home',
       'nav-lifestyle': 'Lifestyle',
@@ -369,8 +540,8 @@
       'hero-cta-shop': 'Discover the collection',
       'hero-tag': 'Curated lifestyle store',
       'hero-eyebrow': 'Fashion · Home · Lifestyle',
-      'hero-t1': 'Your world,',
-      'hero-t2': 'elevated',
+      'hero-t1': 'Your\u00a0world,',
+      'hero-t2': 'elevated.',
       'hero-cta-fashion': 'Fashion Collection',
       'hero-cta-home': 'Home Collection',
       'hero-cta-lifestyle': 'Lifestyle Collection',
@@ -386,9 +557,9 @@
       'btn-mode': 'Fashion Collection',
       'btn-maison': 'Home Collection',
       'btn-cta': 'Discover MD3 Scandi',
-      'sec-univers-eyebrow': 'Shop all',
-      'sec-univers-a': 'The art of ',
-      'sec-univers-b': 'living beautifully',
+      'sec-univers-eyebrow': 'The universe',
+      'sec-univers-a': 'Three houses, ',
+      'sec-univers-b': 'one signature.',
       'mode-title': 'Fashion',
       'mode-desc': 'Silhouettes for those who love refined simplicity. Clean cuts, noble materials, timeless style.',
       'maison-title': 'Home',
@@ -419,7 +590,7 @@
       'val2-desc': 'Real materials, real artisans. No fake, no fad. Just beautiful, well-made things.',
       'val3-title': 'Personal',
       'val3-desc': 'Your style, your world, your home. We dictate nothing — we offer pieces, you compose.',
-      'footer-tag': 'From wardrobe to living room',
+      'footer-tag': 'From wardrobe to living room, an editorial selection of timeless pieces, made to last.',
       'nav-login': 'Sign in',
       'nav-account': 'My account',
       'nav-cart': 'Cart',
@@ -453,7 +624,7 @@
       'shop-save': 'Save',
       'shop-login': 'Sign in to save items',
       'shop-empty-filter': 'No products in this category yet.',
-      'featured-title': 'New Collection',
+      'featured-title': 'Pieces to remember.',
       'featured-empty': 'No featured products at the moment.',
       'boutique-count': '%n products',
       'boutique-count-one': '1 product',
@@ -544,6 +715,35 @@
       'empty-saved-html': 'No saved items. <a href="index.html#boutique" style="color:var(--charcoal)">Browse the shop</a>',
       'admin-sidebar': 'MD3 Admin',
       'admin-products': 'Products',
+      'admin-overview': 'Overview',
+      'admin-images': 'Images',
+      'admin-images-sub': 'Site images (non-product) — hero, universe cards and journal. Click Edit to crop and reposition.',
+      'admin-images-replace': 'Replace',
+      'admin-images-edit': 'Edit',
+      'admin-images-back': '← Back to images',
+      'admin-images-edit-sub': 'Drag to reposition, zoom and crop — then save.',
+      'admin-images-reset': 'Reset',
+      'admin-images-default': 'Default image',
+      'admin-images-custom': 'Custom image',
+      'admin-images-unavailable': 'Images module unavailable.',
+      'admin-images-reset-title': 'Reset image?',
+      'admin-images-reset-text': 'Restore the site default image?',
+      'site-img-hero': 'Hero (homepage)',
+      'site-img-fashion': 'Fashion card',
+      'site-img-maison': 'Home card',
+      'site-img-lifestyle': 'Lifestyle card',
+      'site-img-journal': 'Journal',
+      'admin-panel-title': 'Admin panel',
+      'admin-panel-sub': 'Manage the shop and catalogue',
+      'admin-quick-links': 'Quick links',
+      'admin-products-table': 'Products (table)',
+      'admin-status': 'Status',
+      'admin-status-live': 'Live',
+      'admin-back-products': '← Back to products',
+      'admin-product-images': 'Product images',
+      'admin-product-details': 'Product details',
+      'admin-add-image': 'Add image',
+      'admin-edit-product-sub': 'Edit product details and images',
       'admin-stats': 'Statistics',
       'admin-view-boutique': 'View shop',
       'admin-manage': 'Product management',
@@ -576,9 +776,10 @@
       'admin-ai-done-image': 'Image updated for ',
       'admin-ai-err-which-product': 'Could not find which product to update. Click the product card or Edit first, or name it in your message.',
       'admin-ai-err-no-key': 'Gemini API key missing. Locally: set GEMINI_API_KEY in .env, then run node scripts/sync-ai-config.mjs. Live site: add GEMINI_API_KEY in GitHub → Settings → Secrets → Actions.',
-      'admin-ai-err-bad-key-type': 'Wrong key type: use an API key from aistudio.google.com/apikey (starts with AIza…), not an OAuth token (AQ.…).',
-      'admin-ai-err-bad-key-format': 'GEMINI_API_KEY does not look valid. Create one at aistudio.google.com/apikey (AIza…).',
+      'admin-ai-err-bad-key-type': 'Wrong key type: use an API key from aistudio.google.com/apikey (AQ.… or AIza…), not a Google sign-in OAuth token (ya29.…).',
+      'admin-ai-err-bad-key-format': 'GEMINI_API_KEY does not look valid. Create one at aistudio.google.com/apikey (AQ.… or AIza…).',
       'admin-ai-err-gemini-disabled': 'Gemini rejected this key. Create a new key at aistudio.google.com/apikey.',
+      'admin-ai-err-gemini-auth': 'Gemini rejected this API key (invalid or expired). Put a working key in .env, run node scripts/sync-ai-config.mjs, then hard-refresh (Cmd+Shift+R).',
       'admin-ai-err-cloud': 'Cloud AI error: ',
       'admin-ai-focus-on': 'Focused: ',
       'admin-ai-focus-hint': 'AI commands apply to this product',
@@ -629,6 +830,13 @@
       'label-price': 'Price (€)',
       'label-photo': 'Product photos (max. 3)',
       'label-stock': 'Stock (inventory)',
+      'label-sizes': 'Sizes & stock',
+      'label-size': 'Size',
+      'size-shoes': 'Shoe sizes (EU)',
+      'size-clothes': 'Clothing sizes',
+      'size-pick': 'Choose a size',
+      'size-total-stock': 'Total stock: %n',
+      'cart-select-size': 'Choose a size on the product page',
       'photo-hint': 'Tap a box or drag a photo in. Up to 3 images — select a thumbnail to crop.',
       'photo-main': 'Main',
       'zoom-in': 'Zoom +',
@@ -697,6 +905,73 @@
       'banner-collection': 'مجموعة جديدة',
       'banner-client': 'MD3 Scandi — منطقة العملاء',
       'marquee-item': 'STYLE ◆ مجموعة جديدة ◆ أزياء · منزل · أسلوب حياة ◆ إصدار محدود ◆',
+      'promo-bar': 'توصيل مجاني في أوروبا من 150€ · إرجاع ممتد 30 يوماً',
+      'nav-menu': 'القائمة',
+      'nav-close': 'إغلاق',
+      'nav-categories': 'الفئات',
+      'nav-lang': 'اللغة',
+      'profile-overview': 'نظرة عامة',
+      'profile-liked': 'المنتجات المفضلة',
+      'profile-wishlist': 'قائمتي',
+      'profile-settings': 'الإعدادات',
+      'profile-welcome': 'مرحباً بعودتك',
+      'profile-stat-liked': 'المفضلة',
+      'profile-stat-wishlist': 'القائمة',
+      'profile-stat-orders': 'الطلبات',
+      'profile-recent-liked': 'أُعجبت بها مؤخراً',
+      'profile-view-all': 'عرض الكل',
+      'profile-items': '%n عناصر',
+      'profile-item-one': 'عنصر واحد',
+      'profile-items-zero': '٠ عناصر',
+      'profile-share-wishlist': 'مشاركة القائمة',
+      'profile-clear-all': 'مسح الكل',
+      'profile-full-name': 'الاسم الكامل',
+      'profile-save-changes': 'حفظ التغييرات',
+      'profile-wishlisted': 'في القائمة',
+      'profile-add-wishlist': '+ القائمة',
+      'profile-unlike': 'إزالة',
+      'profile-empty-wishlist': 'قائمتك فارغة.',
+      'profile-empty-overview': 'ستظهر هنا المنتجات التي أعجبت بها مؤخراً.',
+      'profile-clear-wishlist-title': 'مسح القائمة؟',
+      'profile-clear-wishlist-text': 'إزالة جميع المنتجات من قائمتك؟',
+      'profile-wishlist-share-header': 'قائمة MD3 Scandi الخاصة بي:',
+      'hero-collection-aria': 'المجموعة',
+      'journal-img-alt': 'منسوجات الكتان الأوروبي',
+      'nav-shop-all': 'كل المتجر',
+      'hero-season': 'مجموعة الخريف · 2026',
+      'hero-kicker': 'مجموعة خاصة',
+      'hero-season-code': 'SS26',
+      'hero-tagline': 'مختارات تحريرية لقطع خالدة — من الخزانة إلى غرفة المعيشة. خامات نبيلة، مصممة لتدوم.',
+      'hero-cta-limited': 'إصدار محدود',
+      'home-marquee-1': 'خامات نبيلة',
+      'home-marquee-2': 'صناعة أوروبية',
+      'home-marquee-3': 'إصدارات محدودة',
+      'home-marquee-4': 'توصيل مجاني من 150€',
+      'home-marquee-5': 'إرجاع ممتد',
+      'home-mode-sub': 'خزانة أساسية',
+      'home-maison-sub': 'العيش بأناقة',
+      'home-lifestyle-sub': 'طقوس يومية',
+      'home-limited-badge': 'إصدار',
+      'featured-eyebrow': 'مجموعة جديدة',
+      'featured-view-all': 'عرض الكل',
+      'journal-eyebrow': 'المجلة',
+      'journal-title-a': 'الكتان الأوروبي،',
+      'journal-title-b': 'لمسة حرفية.',
+      'journal-text': 'يزرع في نورماندي، يُغزل في البرتغال، يُغسل بالحجر لإبراز ملمسه الحي. يحتفي إصدارنا المحدود بسلسلة توريد قصيرة وحرفة متجددة، مصممة لتعبر المواسم.',
+      'journal-cta': 'اكتشف الإصدار',
+      'footer-newsletter-placeholder': 'بريدك الإلكتروني',
+      'footer-newsletter-btn': 'اشترك',
+      'footer-col-shop': 'المتجر',
+      'footer-col-house': 'البيت',
+      'footer-col-help': 'المساعدة',
+      'footer-link-story': 'قصتنا',
+      'footer-link-workshops': 'الورش',
+      'footer-link-journal': 'المجلة',
+      'footer-link-shipping': 'التوصيل',
+      'footer-link-returns': 'الإرجاع',
+      'footer-link-sizes': 'دليل المقاسات',
+      'footer-link-terms': 'الشروط',
+      'footer-location': 'باريس · ستوكهولم',
       'nav-fashion': 'الأزياء',
       'nav-home': 'المنزل',
       'nav-lifestyle': 'أسلوب الحياة',
@@ -727,9 +1002,9 @@
       'btn-mode': 'مجموعة الأزياء',
       'btn-maison': 'مجموعة المنزل',
       'btn-cta': 'اكتشف MD3 Scandi',
-      'sec-univers-eyebrow': 'تسوق الكل',
-      'sec-univers-a': 'فن ',
-      'sec-univers-b': 'العيش الجميل',
+      'sec-univers-eyebrow': 'العالم',
+      'sec-univers-a': 'ثلاث بيوت، ',
+      'sec-univers-b': 'توقيع واحد.',
       'mode-title': 'الموضة',
       'mode-desc': 'خطوط مصممة لمن تحب البساطة المدروسة. قصات واضحة، خامات نبيلة، أناقة خالدة.',
       'maison-title': 'المنزل',
@@ -760,7 +1035,7 @@
       'val2-desc': 'خامات حقيقية، حرفيون حقيقيون. بلا تقليد، بلا موضة عابرة. جمالٌ مصنوع بإتقان.',
       'val3-title': 'شخصي',
       'val3-desc': 'أسلوبك، عالمك، منزلك. لا نفرض شيئاً — نعرض قطعاً، وأنتِ تنسقين.',
-      'footer-tag': 'من الخزانة إلى غرفة الجلوس',
+      'footer-tag': 'من الخزانة إلى غرفة المعيشة، مختارات تحريرية لقطع خالدة، مصممة لتدوم.',
       'nav-login': 'تسجيل الدخول',
       'nav-account': 'حسابي',
       'nav-cart': 'السلة',
@@ -794,7 +1069,7 @@
       'shop-save': 'حفظ',
       'shop-login': 'سجّلي الدخول للحفظ',
       'shop-empty-filter': 'لا توجد منتجات في هذه الفئة حالياً.',
-      'featured-title': 'مختارات',
+      'featured-title': 'قطع تستحق التذكر.',
       'featured-empty': 'لا توجد منتجات مميزة حالياً.',
       'boutique-count': '%n منتجات',
       'boutique-count-one': 'منتج واحد',
@@ -818,17 +1093,17 @@
       'checkout-summary-title': 'الملخص',
       'checkout-place': 'Checkout',
       'checkout-payment-options': 'خيارات الدفع',
-      'checkout-save-details': 'Save details',
-      'checkout-save-details-note': 'Save this address, email and phone on this device.',
+      'checkout-save-details': 'حفظ التفاصيل',
+      'checkout-save-details-note': 'احفظي هذا العنوان والبريد والهاتف على هذا الجهاز.',
       'checkout-stripe-note': 'سيتم دمج Stripe هنا.',
-      'checkout-email-not-configured': 'EmailJS is not configured yet.',
-      'checkout-order-sent': 'Order email sent.',
-      'checkout-order-send-failed': 'Could not send the order email.',
+      'checkout-email-not-configured': 'EmailJS غير مُعد بعد.',
+      'checkout-order-sent': 'تم إرسال بريد الطلب.',
+      'checkout-order-send-failed': 'تعذر إرسال بريد الطلب.',
       'product-loading': 'جاري التحميل…',
       'product-not-found': 'المنتج غير موجود.',
       'product-desc-fallback': 'اكتشفي %s — قطعة مختارة من MD3 Scandi.',
       'label-qty': 'الكمية',
-      'product-last-item': 'You have the last item!',
+      'product-last-item': 'هذا آخر قطعة!',
       'btn-back': 'رجوع',
       'label-featured': 'مميز على الصفحة الرئيسية',
       'label-desc': 'الوصف',
@@ -885,6 +1160,35 @@
       'empty-saved-html': 'لا توجد مقالات محفوظة. <a href="index.html#boutique" style="color:var(--charcoal)">تصفح المتجر</a>',
       'admin-sidebar': 'MD3 Admin',
       'admin-products': 'المنتجات',
+      'admin-overview': 'نظرة عامة',
+      'admin-images': 'الصور',
+      'admin-images-sub': 'صور الموقع (غير المنتجات) — الهيرو وبطاقات العوالم والمجلة. اضغطي تعديل للقص وإعادة التموضع.',
+      'admin-images-replace': 'استبدال',
+      'admin-images-edit': 'تعديل',
+      'admin-images-back': '← العودة إلى الصور',
+      'admin-images-edit-sub': 'اسحبي لإعادة التموضع، كبّري واقصي — ثم احفظي.',
+      'admin-images-reset': 'إعادة تعيين',
+      'admin-images-default': 'الصورة الافتراضية',
+      'admin-images-custom': 'صورة مخصصة',
+      'admin-images-unavailable': 'وحدة الصور غير متاحة.',
+      'admin-images-reset-title': 'إعادة تعيين الصورة؟',
+      'admin-images-reset-text': 'العودة إلى صورة الموقع الافتراضية؟',
+      'site-img-hero': 'الهيرو (الصفحة الرئيسية)',
+      'site-img-fashion': 'بطاقة الموضة',
+      'site-img-maison': 'بطاقة المنزل',
+      'site-img-lifestyle': 'بطاقة أسلوب الحياة',
+      'site-img-journal': 'المجلة',
+      'admin-panel-title': 'لوحة الإدارة',
+      'admin-panel-sub': 'إدارة المتجر والكتالوج',
+      'admin-quick-links': 'روابط سريعة',
+      'admin-products-table': 'المنتجات (جدول)',
+      'admin-status': 'الحالة',
+      'admin-status-live': 'مباشر',
+      'admin-back-products': '← العودة إلى المنتجات',
+      'admin-product-images': 'صور المنتج',
+      'admin-product-details': 'تفاصيل المنتج',
+      'admin-add-image': 'إضافة صورة',
+      'admin-edit-product-sub': 'عدّلي معلومات وصور المنتج',
       'admin-stats': 'الإحصائيات',
       'admin-view-boutique': 'عرض المتجر',
       'admin-manage': 'إدارة المنتجات',
@@ -917,9 +1221,10 @@
       'admin-ai-done-image': 'تم تحديث الصورة لـ ',
       'admin-ai-err-which-product': 'تعذّر تحديد المنتج. انقري على البطاقة أو تعديل، أو اذكري اسمه.',
       'admin-ai-err-no-key': 'مفتاح Gemini مفقود. محلياً: GEMINI_API_KEY في .env ثم node scripts/sync-ai-config.mjs. على الموقع: أضيفي السر في GitHub Actions.',
-      'admin-ai-err-bad-key-type': 'نوع مفتاح خاطئ: استخدمي مفتاح API من aistudio.google.com/apikey (AIza…) وليس رمز OAuth (AQ.…).',
-      'admin-ai-err-bad-key-format': 'GEMINI_API_KEY غير صالح. أنشئي مفتاحاً على aistudio.google.com/apikey.',
+      'admin-ai-err-bad-key-type': 'نوع مفتاح خاطئ: استخدمي مفتاح API من aistudio.google.com/apikey (AQ.… أو AIza…) وليس رمز OAuth لتسجيل الدخول (ya29.…).',
+      'admin-ai-err-bad-key-format': 'GEMINI_API_KEY غير صالح. أنشئي مفتاحاً على aistudio.google.com/apikey (AQ.… أو AIza…).',
       'admin-ai-err-gemini-disabled': 'Gemini رفض هذا المفتاح. أنشئي مفتاحاً جديداً على aistudio.google.com/apikey.',
+      'admin-ai-err-gemini-auth': 'رفض Gemini مفتاح API (غير صالح أو منتهٍ). ضعي مفتاحاً يعمل في .env، ثم node scripts/sync-ai-config.mjs، ثم حدّثي الصفحة (Cmd+Shift+R).',
       'admin-ai-err-cloud': 'خطأ السحابة: ',
       'admin-ai-focus-on': 'المنتج المحدد: ',
       'admin-ai-focus-hint': 'أوامر الذكاء الاصطناعي تطبّق على هذا المنتج',
@@ -927,6 +1232,13 @@
       'admin-ai-identifying': 'تحديد المنتج من الصورة…',
       'admin-ai-image-slot': 'صورة',
       'admin-ai-hint-local': 'نصيحة: ضعي GEMINI_API_KEY في .env ثم شغّلي node scripts/sync-ai-config.mjs',
+      'admin-ai-done-featured': 'تم تحديث المنتجات المميزة.',
+      'admin-ai-err-name': 'اسم المنتج مفقود.',
+      'admin-ai-err-missing': 'المنتج غير موجود: ',
+      'admin-ai-err-size': 'الصورة كبيرة جداً (الحد 12 ميغابايت).',
+      'admin-ai-err': 'خطأ: ',
+      'admin-ai-no-action': 'لم يُتعرف على أي إجراء. صفي ما تريدين: صورة الهيرو، تعديل منتج، منتج جديد، السعر…',
+      'admin-ai-clarify': 'ماذا أفعل؟ مثال: «أضيفي هذه الصور كمنتجات منفصلة»، «أضيفي كل الصور لهذا المنتج»، غيّري السعر، صورة الهيرو…',
       'admin-nav-section': 'التنقل',
       'admin-shop-section': 'المتجر',
       'stat-stock-value': 'قيمة المخزون',
@@ -963,6 +1275,13 @@
       'label-price': 'السعر (€)',
       'label-photo': 'صور المنتج (3 كحد أقصى)',
       'label-stock': 'المخزون',
+      'label-sizes': 'المقاسات والمخزون',
+      'label-size': 'المقاس',
+      'size-shoes': 'مقاسات الأحذية (EU)',
+      'size-clothes': 'مقاسات الملابس',
+      'size-pick': 'اختر مقاساً',
+      'size-total-stock': 'إجمالي المخزون: %n',
+      'cart-select-size': 'اختر المقاس في صفحة المنتج',
       'photo-hint': 'اضغطي على مربع أو اسحبي صورة. حتى 3 صور — اختاري صورة مصغّرة للقص.',
       'photo-main': 'الرئيسية',
       'zoom-in': 'تكبير +',
@@ -1019,6 +1338,46 @@
       'settings-title': 'إعدادات الحساب',
       'btn-settings': 'الإعدادات',
       'settings-danger-title': 'منطقة حساسة',
+    },
+  };
+
+  /** Canonical French product name → localized name/desc (admin-created products fall back to stored copy). */
+  const PRODUCT_I18N = {
+    'Robe Lin Ivoire': {
+      en: { name: 'Ivory Linen Dress', desc: 'Washed linen dress with a fluid, timeless cut.' },
+      ar: { name: 'فستان كتان عاجي', desc: 'فستان من الكتان المغسول بقصة سلسة وخالدة.' },
+    },
+    'Sac Tote Naturel': {
+      en: { name: 'Natural Tote Bag', desc: 'Everyday tote in natural fibers.' },
+      ar: { name: 'حقيبة توت طبيعية', desc: 'حقيبة يومية من ألياف طبيعية.' },
+    },
+    'Sneakers Blanches': {
+      en: { name: 'White Sneakers', desc: 'Clean white sneakers for every day.' },
+      ar: { name: 'حذاء رياضي أبيض', desc: 'حذاء رياضي أبيض أنيق لكل يوم.' },
+    },
+    'Canapé Stockholm': {
+      en: { name: 'Stockholm Sofa', desc: 'Scandinavian sofa in natural fabric, clean lines.' },
+      ar: { name: 'أريكة ستوكهولم', desc: 'أريكة اسكندنافية بقماش طبيعي وخطوط نقية.' },
+    },
+    'Lampe Bouleau': {
+      en: { name: 'Birch Lamp', desc: 'Soft birch wood lamp for warm interiors.' },
+      ar: { name: 'مصباح البتولا', desc: 'مصباح من خشب البتولا لإضاءة دافئة.' },
+    },
+    'Vase Grès Gris': {
+      en: { name: 'Grey Stoneware Vase', desc: 'Hand-finished grey stoneware vase.' },
+      ar: { name: 'مزهرية حجرية رمادية', desc: 'مزهرية من الخزف الحجري الرمادي.' },
+    },
+    'Carafe Nordique': {
+      en: { name: 'Nordic Carafe', desc: 'Blown-glass carafe with a minimal design.' },
+      ar: { name: 'إبريق نوردي', desc: 'إبريق من الزجاج المنفوخ بتصميم بسيط.' },
+    },
+    'Bougie Hygge': {
+      en: { name: 'Hygge Candle', desc: 'Soft scented candle for calm evenings.' },
+      ar: { name: 'شمعة هيغّه', desc: 'شمعة عطرة لأجواء هادئة.' },
+    },
+    'Set Lin Naturel': {
+      en: { name: 'Natural Linen Set', desc: 'Limited edition — European linen home textiles.' },
+      ar: { name: 'طقم كتان طبيعي', desc: 'إصدار محدود — منسوجات منزلية من الكتان الأوروبي.' },
     },
   };
 
@@ -1175,6 +1534,43 @@
     return key ? t(key) : sub;
   }
 
+  function productLocaleEntry(p) {
+    if (!p) return null;
+    const lang = currentLang;
+    if (lang === 'fr') return null;
+    if (p.i18n && p.i18n[lang]) return p.i18n[lang];
+    const byName = PRODUCT_I18N[p.name];
+    if (byName && byName[lang]) return byName[lang];
+    return null;
+  }
+
+  function productName(p) {
+    if (!p) return '';
+    const lang = currentLang;
+    if (lang === 'en' && p.nameEn) return p.nameEn;
+    if (lang === 'ar' && p.nameAr) return p.nameAr;
+    const entry = productLocaleEntry(p);
+    if (entry && entry.name) return entry.name;
+    return p.name || '';
+  }
+
+  function productDesc(p) {
+    if (!p) return '';
+    const lang = currentLang;
+    if (lang === 'en' && p.descEn) return p.descEn;
+    if (lang === 'ar' && p.descAr) return p.descAr;
+    const entry = productLocaleEntry(p);
+    if (entry && entry.desc) return entry.desc;
+    return typeof p.desc === 'string' ? p.desc : '';
+  }
+
+  function formatItemCount(n) {
+    const count = Number(n) || 0;
+    if (count === 0) return t('profile-items-zero');
+    if (count === 1) return t('profile-item-one');
+    return t('profile-items').replace('%n', String(count));
+  }
+
   function applyMeta(dict, lang) {
     const titleKey = document.body && document.body.dataset.metaTitle;
     const descKey = document.body && document.body.dataset.metaDesc;
@@ -1234,7 +1630,7 @@
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     if (document.body) {
-      document.body.className = lang === 'ar' ? 'lang-ar' : '';
+      document.body.classList.toggle('lang-ar', lang === 'ar');
     }
 
     document.querySelectorAll('[data-i18n]').forEach((el) => {
@@ -1258,6 +1654,11 @@
         el.setAttribute('aria-label', dict[key]);
         el.setAttribute('title', dict[key]);
       }
+    });
+
+    document.querySelectorAll('[data-i18n-alt]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-alt');
+      if (dict[key] !== undefined) el.setAttribute('alt', dict[key]);
     });
 
     const banner = document.querySelector('.banner[data-i18n], .banner [data-i18n="banner-client"]');
@@ -1298,20 +1699,41 @@
     applyLang(currentLang, { persist: false, silent: true });
   }
 
-  function init(opts) {
-    if (opts && typeof opts.onChange === 'function') {
-      onChangeCb = opts.onChange;
-    }
-    currentLang = readSavedLang();
-    document.querySelectorAll('.lang-btn').forEach((btn) => {
-      if (btn.dataset.langBound === '1') return;
-      btn.dataset.langBound = '1';
-      btn.addEventListener('click', () => {
-        if (btn.dataset.lang && T[btn.dataset.lang]) applyLang(btn.dataset.lang);
-      });
-    });
-    applyLang(currentLang, { persist: false });
+  let clickDelegationReady = false;
+  let storageListenerReady = false;
+  let initialized = false;
 
+  /** Always-on click handling so FR/EN/AR works even if a page forgets init() or remounts the header. */
+  function ensureClickDelegation() {
+    if (clickDelegationReady) return;
+    clickDelegationReady = true;
+    document.addEventListener(
+      'click',
+      function (e) {
+        const btn = e.target && e.target.closest ? e.target.closest('.lang-btn') : null;
+        if (!btn) return;
+        const lang = btn.getAttribute('data-lang') || btn.dataset.lang;
+        if (!lang || !T[lang]) return;
+        e.preventDefault();
+        e.stopPropagation();
+        applyLang(lang);
+      },
+      true
+    );
+  }
+
+  function bindLangButtons(root) {
+    ensureClickDelegation();
+    const scope = root && root.querySelectorAll ? root : document;
+    scope.querySelectorAll('.lang-btn').forEach((btn) => {
+      btn.setAttribute('type', 'button');
+      btn.classList.toggle('active', btn.dataset.lang === currentLang);
+    });
+  }
+
+  function ensureStorageListener() {
+    if (storageListenerReady) return;
+    storageListenerReady = true;
     window.addEventListener('storage', (e) => {
       if (e.key === LANG_STORAGE_KEY && e.newValue && T[e.newValue]) {
         applyLang(e.newValue);
@@ -1320,6 +1742,18 @@
         applyLang(currentLang, { persist: false, silent: true });
       }
     });
+  }
+
+  function init(opts) {
+    ensureClickDelegation();
+    ensureStorageListener();
+    if (opts && typeof opts.onChange === 'function') {
+      onChangeCb = opts.onChange;
+    }
+    currentLang = readSavedLang();
+    bindLangButtons(document);
+    applyLang(currentLang, { persist: false, silent: true });
+    initialized = true;
   }
 
   function initLangNav() {
@@ -1347,6 +1781,10 @@
     t,
     translateCategory,
     translateSub,
+    productName,
+    productDesc,
+    formatItemCount,
+    PRODUCT_I18N,
     applyLang,
     applySelectOptions,
     applySubSelectOptions,
@@ -1354,8 +1792,26 @@
     init,
     initLangNav,
     applyNavLang,
+    bindLangButtons,
+    ensureClickDelegation,
     CAT_MAP,
     SUB_MAP,
     OPT_VALUES,
   };
+
+  // Install click handling immediately; apply saved language as soon as DOM is ready.
+  ensureClickDelegation();
+  ensureStorageListener();
+  function autoBoot() {
+    currentLang = readSavedLang();
+    bindLangButtons(document);
+    if (!initialized) {
+      applyLang(currentLang, { persist: false, silent: true });
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', autoBoot);
+  } else {
+    autoBoot();
+  }
 })(typeof window !== 'undefined' ? window : globalThis);

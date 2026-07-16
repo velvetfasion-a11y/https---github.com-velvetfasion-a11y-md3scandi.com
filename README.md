@@ -59,7 +59,7 @@ Deploy runs `scripts/sync-config.mjs` automatically.
 
 ## Admin AI (Gemini)
 
-1. Set `GEMINI_API_KEY` in `.env` from [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (must start with **AIza**)
+1. Set `GEMINI_API_KEY` in `.env` from [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (**AQ.** or **AIza** prefix)
 2. `node scripts/sync-config.mjs`
 3. Optional: `node scripts/test-gemini.mjs`
 

@@ -1,0 +1,289 @@
+/* MD3 Scandi — desktop vs iPhone layout tokens & utilities */
+
+:root {
+  --md3-bp-desktop: 768px;
+  --md3-page-pad-mobile: 1.25rem;
+  --md3-page-pad-desktop: 2.5rem;
+  --md3-header-h-mobile: 3.75rem;
+  --md3-header-h-desktop: 5rem;
+}
+
+/* Visibility helpers */
+.only-desktop { display: none !important; }
+.only-mobile { display: revert !important; }
+
+@media (min-width: 768px) {
+  .only-desktop { display: revert !important; }
+  .only-mobile { display: none !important; }
+}
+
+/* Safe areas (iPhone notch / home bar) */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .promo-bar {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .site-header .header-inner {
+    padding-left: max(1.25rem, env(safe-area-inset-left));
+    padding-right: max(1.25rem, env(safe-area-inset-right));
+  }
+
+  @media (min-width: 768px) {
+    .site-header .header-inner {
+      padding-left: max(2.5rem, env(safe-area-inset-left));
+      padding-right: max(2.5rem, env(safe-area-inset-right));
+    }
+  }
+}
+
+/* ── MOBILE (iPhone) ── */
+html[data-viewport='mobile'] .promo-bar,
+html.is-mobile .promo-bar {
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+html[data-viewport='mobile'] .site-header .header-inner,
+html.is-mobile .site-header .header-inner {
+  height: var(--md3-header-h-mobile);
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem;
+}
+
+html[data-viewport='mobile'] .header-left,
+html.is-mobile .header-left {
+  justify-self: start;
+}
+
+html[data-viewport='mobile'] .site-header .logo,
+html.is-mobile .site-header .logo {
+  font-size: 1.05rem;
+  padding: 0 0.25rem;
+  letter-spacing: 0.18em;
+}
+
+html[data-viewport='mobile'] .header-util,
+html.is-mobile .header-util {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+html[data-viewport='mobile'] .header-icons,
+html.is-mobile .header-icons {
+  gap: 0.65rem;
+}
+
+html[data-viewport='mobile'] .lang.lang-compact button,
+html.is-mobile .lang.lang-compact button {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+html[data-viewport='mobile'] #md3-hero.home-hero,
+html.is-mobile #md3-hero.home-hero,
+html[data-viewport='mobile'] #md3-hero.home-hero--cinema,
+html.is-mobile #md3-hero.home-hero--cinema {
+  aspect-ratio: auto;
+  min-height: 100svh;
+  min-height: 100vh;
+  max-height: none;
+}
+
+html[data-viewport='mobile'] .home-hero-heading,
+html.is-mobile .home-hero-heading {
+  top: calc(var(--md3-chrome-h, 96px) + 0.5rem);
+  left: var(--md3-page-pad-mobile, 1.25rem);
+  right: var(--md3-page-pad-mobile, 1.25rem);
+  max-width: none;
+}
+
+html[data-viewport='mobile'] .home-hero-foot,
+html.is-mobile .home-hero-foot {
+  left: var(--md3-page-pad-mobile, 1.25rem);
+  right: var(--md3-page-pad-mobile, 1.25rem);
+  bottom: max(6%, calc(env(safe-area-inset-bottom) + 1.25rem));
+  max-width: none;
+}
+
+html[data-viewport='mobile'] .home-hero-line1,
+html.is-mobile .home-hero-line1 {
+  font-size: clamp(1.85rem, 10vw, 2.85rem);
+  letter-spacing: -0.035em;
+}
+
+html[data-viewport='mobile'] .home-hero-line2,
+html.is-mobile .home-hero-line2 {
+  font-size: clamp(1.4rem, 7.5vw, 2.2rem);
+  margin-top: -0.1em;
+}
+
+html[data-viewport='mobile'] .home-hero-tagline,
+html.is-mobile .home-hero-tagline {
+  font-size: 0.84rem;
+  margin-bottom: 1.5rem;
+}
+
+html[data-viewport='mobile'] .home-hero-ctas,
+html.is-mobile .home-hero-ctas {
+  flex-direction: column;
+  width: 100%;
+}
+
+html[data-viewport='mobile'] .home-btn,
+html.is-mobile .home-btn {
+  width: 100%;
+  padding: 0.9rem 1.5rem;
+}
+
+html[data-viewport='mobile'] .home-marquee-group,
+html.is-mobile .home-marquee-group {
+  gap: 2.5rem;
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  padding: 1rem 1.25rem;
+}
+
+html[data-viewport='mobile'] .home-univers,
+html.is-mobile .home-univers {
+  padding: 2.25rem var(--md3-page-pad-mobile) 3.5rem;
+}
+
+html[data-viewport='mobile'] .home-univers-grid,
+html.is-mobile .home-univers-grid {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  gap: 0.75rem;
+  margin: 0 calc(var(--md3-page-pad-mobile) * -1);
+  padding: 0 var(--md3-page-pad-mobile) 0.5rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+html[data-viewport='mobile'] .home-univers-grid::-webkit-scrollbar,
+html.is-mobile .home-univers-grid::-webkit-scrollbar {
+  display: none;
+}
+
+html[data-viewport='mobile'] .home-univers-card,
+html.is-mobile .home-univers-card {
+  flex: 0 0 min(78vw, 300px);
+  scroll-snap-align: center;
+}
+
+html[data-viewport='mobile'] .home-section-head,
+html.is-mobile .home-section-head {
+  margin-bottom: 1.75rem;
+}
+
+html[data-viewport='mobile'] .home-featured,
+html.is-mobile .home-featured {
+  padding: 4rem var(--md3-page-pad-mobile);
+}
+
+html[data-viewport='mobile'] .home-featured .product-grid,
+html.is-mobile .home-featured .product-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem 0.75rem;
+}
+
+html[data-viewport='mobile'] .home-journal,
+html.is-mobile .home-journal {
+  padding: 4rem var(--md3-page-pad-mobile);
+}
+
+html[data-viewport='mobile'] .site-footer,
+html.is-mobile .site-footer {
+  margin-top: 4rem;
+}
+
+html[data-viewport='mobile'] .site-footer-inner,
+html.is-mobile .site-footer-inner {
+  padding: 3.5rem var(--md3-page-pad-mobile);
+  padding-bottom: max(3.5rem, calc(env(safe-area-inset-bottom) + 2rem));
+}
+
+html[data-viewport='mobile'] .site-footer-grid,
+html.is-mobile .site-footer-grid {
+  gap: 2.5rem;
+}
+
+html[data-viewport='mobile'] .boutique-page .sgrid,
+html.is-mobile .boutique-page .sgrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 0.75rem;
+  padding: 0 1rem 2rem;
+}
+
+html[data-viewport='mobile'] .product-page-wrap,
+html.is-mobile .product-page-wrap {
+  grid-template-columns: 1fr;
+  padding: 1.25rem var(--md3-page-pad-mobile) 2.5rem;
+}
+
+html[data-viewport='mobile'] .md3-shop-toast,
+html.is-mobile .md3-shop-toast {
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  max-width: calc(100vw - 2rem);
+  white-space: normal;
+  text-align: center;
+}
+
+/* ── DESKTOP (computer) ── */
+@media (min-width: 768px) {
+  html[data-viewport='desktop'] .home-univers-grid,
+  html.is-desktop .home-univers-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+  }
+
+  html[data-viewport='desktop'] .home-univers-card,
+  html.is-desktop .home-univers-card {
+    flex: unset;
+  }
+
+  html[data-viewport='desktop'] .home-featured .product-grid,
+  html.is-desktop .home-featured .product-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2rem 1.5rem;
+  }
+
+  html[data-viewport='desktop'] .boutique-page .sgrid,
+  html.is-desktop .boutique-page .sgrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.5rem;
+    padding: 0 2.5rem 3rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  html[data-viewport='desktop'] .boutique-page .sgrid,
+  html.is-desktop .boutique-page .sgrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-viewport='mobile'] .boutique-hero,
+  html.is-mobile .boutique-hero {
+    padding: 2rem var(--md3-page-pad-mobile) 1.25rem;
+  }
+
+  html[data-viewport='mobile'] .boutique-hero h1,
+  html.is-mobile .boutique-hero h1 {
+    font-size: clamp(1.75rem, 8vw, 2.25rem);
+  }
+}

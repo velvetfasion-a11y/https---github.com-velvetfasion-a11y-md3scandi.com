@@ -2,36 +2,70 @@
 (function (global) {
   const KEY = 'md3_site_assets';
 
-  /** Editable image slots the AI and admin can target */
+  /** Non-product homepage images. `admin: true` = shown in Admin → Images. */
   const IMAGE_SLOTS = {
     hero: {
-      label: 'Homepage hero / header background',
+      label: 'Homepage hero',
+      labelKey: 'site-img-hero',
       aliases: ['header', 'hero', 'start', 'top banner', 'huvudbild'],
+      defaultSrc: 'images/NyZx3.jpg?v=1',
+      aspectRatio: 1376 / 752,
+      maxWidth: 3840,
+      admin: true,
     },
     fashion: {
-      label: 'Mode / Fashion collection card',
+      label: 'Mode / Fashion card',
+      labelKey: 'site-img-fashion',
       aliases: ['fashion', 'mode', 'fashion card'],
-      selector: '.collection-card--fashion',
+      selector: '.home-univers-card--mode img',
+      defaultSrc: 'images/cat-mode.jpg',
+      aspectRatio: 3 / 4,
+      maxWidth: 2400,
+      admin: true,
     },
     maison: {
-      label: 'Maison / Home collection card',
+      label: 'Maison / Home card',
+      labelKey: 'site-img-maison',
       aliases: ['maison', 'home card', 'maison card'],
-      selector: '.collection-card--maison',
+      selector: '.home-univers-card--maison img',
+      defaultSrc: 'images/cat-maison.jpg',
+      aspectRatio: 3 / 4,
+      maxWidth: 2400,
+      admin: true,
     },
     lifestyle: {
-      label: 'Lifestyle collection card',
+      label: 'Lifestyle card',
+      labelKey: 'site-img-lifestyle',
       aliases: ['lifestyle', 'lifestyle card'],
-      selector: '.collection-card--lifestyle',
+      selector: '.home-univers-card--lifestyle img',
+      defaultSrc: 'images/cat-lifestyle.jpg',
+      aspectRatio: 3 / 4,
+      maxWidth: 2400,
+      admin: true,
+    },
+    journal: {
+      label: 'Journal section',
+      labelKey: 'site-img-journal',
+      aliases: ['journal', 'story', 'linen', 'limited story'],
+      selector: '.home-journal-visual img',
+      defaultSrc: 'images/journal-linen.jpg',
+      aspectRatio: 4 / 3,
+      maxWidth: 2400,
+      admin: true,
     },
     limited: {
-      label: 'Édition limitée collection card',
+      label: 'Édition limitée (legacy)',
+      labelKey: 'site-img-limited',
       aliases: ['limited', 'edition', 'édition limitée', 'limited card'],
-      selector: '.collection-card--limited',
+      selector: '.home-univers-card--lifestyle img',
+      admin: false,
     },
     manifesto: {
-      label: 'Manifesto section background',
+      label: 'Manifesto section (legacy)',
+      labelKey: 'site-img-manifesto',
       aliases: ['manifesto', 'quote section'],
-      selector: '#manifesto',
+      selector: '#homeJournal',
+      admin: false,
     },
   };
 
@@ -71,7 +105,17 @@
     return getImages()[slot] || null;
   }
 
+  function getDefaultSrc(slot) {
+    const meta = IMAGE_SLOTS[slot];
+    return (meta && meta.defaultSrc) || '';
+  }
+
+  function getDisplayUrl(slot) {
+    return getImage(slot) || getDefaultSrc(slot) || '';
+  }
+
   function setImage(slot, url) {
+    if (!IMAGE_SLOTS[slot]) return null;
     const d = load();
     d.images = d.images || {};
     d.images[slot] = url;
@@ -83,10 +127,20 @@
     return url;
   }
 
+  function clearImage(slot) {
+    if (!IMAGE_SLOTS[slot]) return;
+    const d = load();
+    d.images = d.images || {};
+    delete d.images[slot];
+    if (slot === 'hero') delete d.hero;
+    if (slot === 'fashion') delete d.fashion;
+    d.updatedAt = Date.now();
+    save(d);
+    applyToDocument();
+  }
+
   function resolveSlot(name) {
-    const q = String(name || '')
-      .trim()
-      .toLowerCase();
+    const q = String(name || '').trim().toLowerCase();
     if (!q) return null;
     if (IMAGE_SLOTS[q]) return q;
     for (const [id, meta] of Object.entries(IMAGE_SLOTS)) {
@@ -111,83 +165,86 @@
     return setImage('fashion', url);
   }
 
-  function applyCardBackground(el, url) {
-    if (!el || !url) return;
-    const safe = String(url).replace(/'/g, "\\'");
-    el.style.backgroundImage = "url('" + safe + "')";
-    el.style.backgroundPosition = 'center 32%';
-    el.style.backgroundSize = 'cover';
-    el.style.backgroundRepeat = 'no-repeat';
-    el.classList.add('collection-card--has-bg');
-  }
-
   function applyToDocument(doc) {
     const root = doc || (typeof document !== 'undefined' ? document : null);
     if (!root) return;
     const images = getImages();
 
-    if (images.hero) {
-      const img = root.querySelector('#md3-hero .hero-bg-img, .hero-bg-img');
-      if (img) {
-        img.src = images.hero;
-        const pic = img.closest('picture');
+    const heroImg = root.querySelector('#md3-hero .hero-bg-img, .hero-bg-img');
+    if (heroImg) {
+      const url = images.hero || IMAGE_SLOTS.hero.defaultSrc;
+      if (url) {
+        heroImg.src = url;
+        const pic = heroImg.closest('picture');
         if (pic) pic.querySelectorAll('source').forEach((s) => s.remove());
       }
     }
 
     Object.entries(IMAGE_SLOTS).forEach(([slot, meta]) => {
-      const url = images[slot];
-      if (!url || slot === 'hero') return;
-      const el = meta.selector ? root.querySelector(meta.selector) : null;
+      if (slot === 'hero' || !meta.selector) return;
+      const url = images[slot] || meta.defaultSrc;
+      if (!url) return;
+      const el = root.querySelector(meta.selector);
       if (!el) return;
-      if (slot === 'manifesto') {
+      if (el.tagName === 'IMG') {
+        el.src = url;
+      } else if (images[slot]) {
         const safe = String(url).replace(/'/g, "\\'");
-        el.style.backgroundImage = "linear-gradient(rgba(248,245,240,0.92), rgba(248,245,240,0.92)), url('" + safe + "')";
+        el.style.backgroundImage = "url('" + safe + "')";
         el.style.backgroundSize = 'cover';
         el.style.backgroundPosition = 'center';
-      } else {
-        applyCardBackground(el, url);
       }
     });
   }
 
-  function getCatalog() {
-    return Object.entries(IMAGE_SLOTS).map(([id, meta]) => ({
-      slot: id,
-      label: meta.label,
-      aliases: meta.aliases,
-      current: !!getImage(id),
-    }));
+  function getCatalog(opts) {
+    const adminOnly = !!(opts && opts.adminOnly);
+    return Object.entries(IMAGE_SLOTS)
+      .filter(([, meta]) => (adminOnly ? meta.admin === true : true))
+      .map(([id, meta]) => ({
+        slot: id,
+        label: meta.label,
+        labelKey: meta.labelKey,
+        aliases: meta.aliases,
+        defaultSrc: meta.defaultSrc || '',
+        aspectRatio: meta.aspectRatio || NaN,
+        maxWidth: meta.maxWidth || 2400,
+        current: !!getImage(id),
+        url: getDisplayUrl(id),
+        custom: !!getImage(id),
+      }));
   }
 
   async function init() {
-    if (global.MD3Firebase && global.MD3Firebase.isConfigured && global.MD3Firebase.isConfigured()) {
-      try {
-        await global.MD3Firebase.init();
-        if (global.MD3Firebase.isEnabled && global.MD3Firebase.isEnabled()) {
-          const remote = await global.MD3Firebase.loadSiteAssets();
-          if (remote && (remote.hero || remote.fashion || remote.images)) {
-            const local = load();
-            const merged = {
-              ...local,
-              ...remote,
-              images: { ...(local.images || {}), ...(remote.images || {}) },
-              updatedAt: remote.updatedAt || Date.now(),
-            };
-            if (remote.hero) merged.images.hero = remote.hero;
-            if (remote.fashion) merged.images.fashion = remote.fashion;
-            localStorage.setItem(KEY, JSON.stringify(merged));
-          }
-        }
-      } catch (e) {
-        console.error('MD3SiteAssets init', e);
-      }
-    }
     applyToDocument();
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', (e) => {
         if (e.key === KEY) applyToDocument();
       });
+      window.addEventListener('md3-site-assets-updated', () => applyToDocument());
+    }
+    if (!global.MD3Firebase || !global.MD3Firebase.isConfigured || !global.MD3Firebase.isConfigured()) {
+      return;
+    }
+    try {
+      await global.MD3Firebase.init();
+      if (!global.MD3Firebase.isEnabled || !global.MD3Firebase.isEnabled()) return;
+      const remote = await global.MD3Firebase.loadSiteAssets();
+      if (remote && (remote.hero || remote.fashion || remote.images)) {
+        const local = load();
+        const merged = {
+          ...local,
+          ...remote,
+          images: { ...(local.images || {}), ...(remote.images || {}) },
+          updatedAt: remote.updatedAt || Date.now(),
+        };
+        if (remote.hero) merged.images.hero = remote.hero;
+        if (remote.fashion) merged.images.fashion = remote.fashion;
+        localStorage.setItem(KEY, JSON.stringify(merged));
+        applyToDocument();
+      }
+    } catch (e) {
+      console.error('MD3SiteAssets init', e);
     }
   }
 
@@ -198,7 +255,10 @@
     save,
     getImages,
     getImage,
+    getDefaultSrc,
+    getDisplayUrl,
     setImage,
+    clearImage,
     resolveSlot,
     getHero,
     getFashion,

@@ -78,14 +78,17 @@
       delete out.images;
       delete out.image;
     }
+    if (global.MD3Sizes && global.MD3Sizes.syncProductStockFromSizes) {
+      global.MD3Sizes.syncProductStockFromSizes(out);
+    }
     return out;
   }
 
   function defaultProducts() {
     return [
-      { id: 1, name: 'Robe Lin Ivoire', category: 'Mode', sub: 'Vêtements', price: 149, emoji: '👗', stock: 8, featured: true, desc: 'Robe en lin lavé, coupe fluide et intemporelle.' },
+      { id: 1, name: 'Robe Lin Ivoire', category: 'Mode', sub: 'Vêtements', price: 149, emoji: '👗', sizeType: 'clothes', sizeStock: { XS: 1, S: 2, M: 3, L: 2, XL: 0, XXL: 0 }, stock: 8, featured: true, desc: 'Robe en lin lavé, coupe fluide et intemporelle.' },
       { id: 2, name: 'Sac Tote Naturel', category: 'Mode', sub: 'Sacs', price: 89, emoji: '👜', stock: 5, featured: false, desc: '' },
-      { id: 3, name: 'Sneakers Blanches', category: 'Mode', sub: 'Chaussures', price: 195, emoji: '👟', stock: 0, featured: false, desc: '' },
+      { id: 3, name: 'Sneakers Blanches', category: 'Mode', sub: 'Chaussures', price: 195, emoji: '👟', sizeType: 'shoes', sizeStock: { 36: 0, 37: 1, 38: 2, 39: 2, 40: 1, 41: 0, 42: 0, 43: 0, 44: 0, 45: 0 }, stock: 6, featured: false, desc: '' },
       { id: 4, name: 'Canapé Stockholm', category: 'Maison', sub: 'Canapés', price: 1290, emoji: '🛋️', stock: 3, featured: true, desc: 'Canapé scandinave en tissu naturel, lignes épurées.' },
       { id: 5, name: 'Lampe Bouleau', category: 'Maison', sub: 'Lampes', price: 245, emoji: '💡', stock: 12, featured: false, desc: '' },
       { id: 6, name: 'Vase Grès Gris', category: 'Maison', sub: 'Déco', price: 68, emoji: '🏺', stock: 0, featured: false, desc: '' },
@@ -538,25 +541,44 @@
   }
 
   /** Drop unknown products and clamp qty to stock. Returns true if cart changed. */
+  function parseCartEntryKey(key) {
+    if (global.MD3Sizes && global.MD3Sizes.parseCartLineKey) {
+      return global.MD3Sizes.parseCartLineKey(key);
+    }
+    return { productId: key, size: null };
+  }
+
+  function cartEntryMaxQty(p, size) {
+    if (!p) return 0;
+    const SZ = global.MD3Sizes;
+    if (SZ && SZ.productNeedsSize(p)) {
+      if (!size) return 0;
+      return SZ.getSizeStock(p, size);
+    }
+    return Math.max(0, parseInt(p.stock, 10) || 0);
+  }
+
   function pruneOwnerCart(owner, persist) {
     ensureCaches();
     const cart = cartsCache[owner];
     if (!cart || typeof cart !== 'object') return false;
     let changed = false;
-    Object.keys(cart).forEach((id) => {
-      const p = findProduct(id);
-      const qty = Number(cart[id]);
+    Object.keys(cart).forEach((key) => {
+      const { productId, size } = parseCartEntryKey(key);
+      const p = findProduct(productId);
+      const qty = Number(cart[key]);
       if (!p || !Number.isFinite(qty) || qty <= 0) {
-        delete cart[id];
+        delete cart[key];
         changed = true;
         return;
       }
-      const capped = Math.min(Math.floor(qty), p.stock);
+      const maxStock = cartEntryMaxQty(p, size);
+      const capped = Math.min(Math.floor(qty), maxStock);
       if (capped <= 0) {
-        delete cart[id];
+        delete cart[key];
         changed = true;
       } else if (capped !== qty) {
-        cart[id] = capped;
+        cart[key] = capped;
         changed = true;
       }
     });
@@ -573,12 +595,13 @@
     if (!guest || !Object.keys(guest).length) return;
 
     const userCart = { ...(cartsCache[email] || {}) };
-    Object.entries(guest).forEach(([id, qty]) => {
-      const p = findProduct(id);
-      if (!p || p.stock === 0) return;
-      const key = String(id);
+    Object.entries(guest).forEach(([key, qty]) => {
+      const { productId, size } = parseCartEntryKey(key);
+      const p = findProduct(productId);
+      const maxStock = cartEntryMaxQty(p, size);
+      if (!p || maxStock === 0) return;
       const next = (userCart[key] || 0) + Math.max(0, Number(qty) || 0);
-      if (next > 0) userCart[key] = Math.min(next, p.stock);
+      if (next > 0) userCart[key] = Math.min(next, maxStock);
     });
 
     delete cartsCache[GUEST_CART_KEY];
@@ -677,48 +700,64 @@
     return (cart[String(productId)] || 0) > 0;
   }
 
-  async function addToCart(productId) {
+  function cartLineKey(productId, size) {
+    if (global.MD3Sizes && global.MD3Sizes.cartLineKey) {
+      return global.MD3Sizes.cartLineKey(productId, size);
+    }
+    return String(productId);
+  }
+
+  async function addToCart(productId, size) {
     const p = findProduct(productId);
     if (!p) return { ok: false, reason: 'missing' };
-    if (p.stock === 0) return { ok: false, reason: 'out' };
+    const SZ = global.MD3Sizes;
+    const needsSize = SZ && SZ.productNeedsSize(p);
+    if (needsSize && !size) return { ok: false, reason: 'size' };
+    const maxQty = cartEntryMaxQty(p, needsSize ? size : null);
+    if (maxQty === 0) return { ok: false, reason: 'out' };
     const cart = getCart();
-    const key = String(productId);
+    const key = cartLineKey(productId, needsSize ? size : null);
     const next = (cart[key] || 0) + 1;
-    if (next > p.stock) return { ok: false, reason: 'max' };
+    if (next > maxQty) return { ok: false, reason: 'max' };
     cart[key] = next;
     await setCart(cart);
     return { ok: true, count: getCartCount() };
   }
 
-  async function setCartQty(productId, qty) {
+  async function setCartQty(lineKey, qty) {
     const cart = getCart();
-    const key = String(productId);
+    const key = String(lineKey);
     if (qty <= 0) {
       delete cart[key];
       await setCart(cart);
       return { ok: true, count: getCartCount() };
     }
+    const { productId, size } = parseCartEntryKey(key);
     const p = findProduct(productId);
     if (!p) return { ok: false, reason: 'missing' };
-    if (p.stock === 0) return { ok: false, reason: 'out' };
-    cart[key] = Math.min(qty, p.stock);
+    const maxQty = cartEntryMaxQty(p, size);
+    if (maxQty === 0) return { ok: false, reason: 'out' };
+    cart[key] = Math.min(qty, maxQty);
     await setCart(cart);
     return { ok: true, count: getCartCount() };
   }
 
-  async function removeFromCart(productId) {
-    return setCartQty(productId, 0);
+  async function removeFromCart(lineKey) {
+    return setCartQty(lineKey, 0);
   }
 
   function getCartLines() {
     const cart = getCart();
     return Object.entries(cart)
-      .map(([id, qty]) => {
-        const p = findProduct(id);
+      .map(([key, qty]) => {
+        const { productId, size } = parseCartEntryKey(key);
+        const p = findProduct(productId);
         if (!p) return null;
-        return { product: p, qty: Number(qty) || 0 };
+        const q = Number(qty) || 0;
+        if (q <= 0) return null;
+        return { key, product: p, qty: q, size: size || null };
       })
-      .filter((line) => line && line.qty > 0);
+      .filter(Boolean);
   }
 
   function isCloudEnabled() {

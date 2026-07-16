@@ -9,8 +9,8 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="md3-header.css?v=5" />
-<link rel="stylesheet" href="md3-admin.css?v=8" />
+<link rel="stylesheet" href="md3-header.css?v=15" />
+<link rel="stylesheet" href="md3-admin.css?v=15" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" crossorigin="anonymous" />
 <style>
   :root {
@@ -1055,44 +1055,44 @@
         <p id="profileEmail">—</p>
       </div>
       <nav class="profile-sidebar-nav">
-        <button type="button" class="profile-sidebar-link active" data-section="overview" onclick="profileSection('overview')">Overview</button>
-        <button type="button" class="profile-sidebar-link" data-section="liked" onclick="profileSection('liked')">Liked Products</button>
-        <button type="button" class="profile-sidebar-link" data-section="wishlist" onclick="profileSection('wishlist')">My Wishlist</button>
-        <button type="button" class="profile-sidebar-link" data-section="settings" onclick="profileSection('settings')">Settings</button>
+        <button type="button" class="profile-sidebar-link active" data-section="overview" onclick="profileSection('overview')" data-i18n="profile-overview">Aperçu</button>
+        <button type="button" class="profile-sidebar-link" data-section="liked" onclick="profileSection('liked')" data-i18n="profile-liked">Articles aimés</button>
+        <button type="button" class="profile-sidebar-link" data-section="wishlist" onclick="profileSection('wishlist')" data-i18n="profile-wishlist">Ma liste</button>
+        <button type="button" class="profile-sidebar-link" data-section="settings" onclick="profileSection('settings')" data-i18n="profile-settings">Paramètres</button>
         <button type="button" class="profile-sidebar-link logout" onclick="doLogout()" data-i18n="nav-logout">Déconnexion</button>
       </nav>
     </aside>
     <div class="profile-main">
       <section class="profile-panel active" id="profile-panel-overview">
         <div class="profile-panel-header">
-          <h2>Welcome back</h2>
+          <h2 data-i18n="profile-welcome">Bon retour</h2>
         </div>
         <div class="profile-stats">
-          <div><strong id="statLiked">0</strong><span>Liked</span></div>
-          <div><strong id="statWishlist">0</strong><span>Wishlist</span></div>
-          <div><strong id="statOrders">0</strong><span>Orders</span></div>
+          <div><strong id="statLiked">0</strong><span data-i18n="profile-stat-liked">Aimés</span></div>
+          <div><strong id="statWishlist">0</strong><span data-i18n="profile-stat-wishlist">Liste</span></div>
+          <div><strong id="statOrders">0</strong><span data-i18n="profile-stat-orders">Commandes</span></div>
         </div>
         <div class="profile-panel-header slim">
-          <h3>Recently Liked</h3>
-          <button type="button" onclick="profileSection('liked')">View All</button>
+          <h3 data-i18n="profile-recent-liked">Récemment aimés</h3>
+          <button type="button" onclick="profileSection('liked')" data-i18n="profile-view-all">Tout voir</button>
         </div>
         <div id="overviewGrid" class="liked-grid"></div>
       </section>
       <section class="profile-panel" id="profile-panel-liked">
         <div class="profile-panel-header">
-          <h2>Liked Products</h2>
-          <span id="likedCount">0 items</span>
+          <h2 data-i18n="profile-liked">Articles aimés</h2>
+          <span id="likedCount">0 article</span>
         </div>
         <div id="likedGrid" class="liked-grid"></div>
       </section>
       <section class="profile-panel" id="profile-panel-wishlist">
         <div class="profile-panel-header">
-          <h2>My Wishlist</h2>
-          <span id="wishlistCount">0 items</span>
+          <h2 data-i18n="profile-wishlist">Ma liste</h2>
+          <span id="wishlistCount">0 article</span>
         </div>
         <div class="wishlist-actions">
-          <button type="button" class="btn-outline-profile" onclick="copyWishlist()">Share Wishlist</button>
-          <button type="button" class="btn-outline-profile" onclick="clearWishlist()">Clear All</button>
+          <button type="button" class="btn-outline-profile" onclick="copyWishlist()" data-i18n="profile-share-wishlist">Partager la liste</button>
+          <button type="button" class="btn-outline-profile" onclick="clearWishlist()" data-i18n="profile-clear-all">Tout effacer</button>
         </div>
         <div id="wishlistGrid" class="liked-grid"></div>
       </section>
@@ -1102,14 +1102,14 @@
         </div>
         <div class="settings-panel inline-settings">
           <div class="field">
-            <label>Full Name</label>
+            <label data-i18n="profile-full-name">Nom complet</label>
             <input type="text" id="settingsName">
           </div>
           <div class="field">
-            <label>Email</label>
+            <label data-i18n="label-email">Adresse email</label>
             <input type="email" id="settingsEmail">
           </div>
-          <button class="btn-primary" style="width:auto;padding:0.75rem 2rem;" onclick="saveProfileSettings()">Save Changes</button>
+          <button class="btn-primary" style="width:auto;padding:0.75rem 2rem;" onclick="saveProfileSettings()" data-i18n="profile-save-changes">Enregistrer</button>
           <div class="danger-zone profile-danger">
             <h3 data-i18n="settings-danger-title">Zone sensible</h3>
             <p data-i18n="profile-delete-text">Cette action est irréversible. Tous vos articles sauvegardés seront perdus.</p>
@@ -1123,20 +1123,21 @@
 
 <div class="page" id="page-admin">
   <header class="admin-nav">
-    <a href="index.html" class="admin-logo">M<em>D</em>3 <em>Scandi</em></a>
+    <a href="index.html" class="admin-logo logo">MD3<em>scandi</em></a>
     <div class="admin-nav-right">
       <span class="admin-email" id="adminUserEmail"></span>
-      <a class="admin-store-link-inline" href="index.html#boutique" target="_blank" rel="noopener" data-i18n="admin-view-boutique">Voir la boutique ↗</a>
+      <a class="admin-store-link-inline" href="index.html#boutique" target="_blank" rel="noopener" data-i18n="admin-view-boutique">Voir la boutique</a>
       <button type="button" class="admin-logout" onclick="doLogout()" data-i18n="nav-logout">Déconnexion</button>
     </div>
   </header>
-  <main class="admin-main admin-main-wide">
+  <main class="admin-main">
     <div class="admin-ai" id="adminAi">
       <div class="admin-ai-head">
         <span data-i18n="admin-ai-title">AI-assistent</span>
         <button type="button" class="admin-ai-toggle" id="adminAiToggle" aria-label="Collapse">−</button>
       </div>
       <div class="admin-ai-focus" id="adminAiFocus" hidden></div>
+      <div class="admin-ai-key-warn" id="adminAiKeyWarn" hidden></div>
       <div class="admin-ai-messages" id="adminAiMessages"></div>
       <div class="admin-ai-attachments" id="adminAiAttachments" hidden></div>
       <div class="admin-ai-compose">
@@ -1146,89 +1147,118 @@
         <button type="button" class="admin-ai-send" id="adminAiSendBtn" aria-label="Send">↑</button>
       </div>
     </div>
-    <nav class="admin-tabs" aria-label="Admin">
-      <button type="button" class="admin-tab active" data-tab="products" onclick="adminTab('products')" data-i18n="admin-products">Produits</button>
-      <button type="button" class="admin-tab" data-tab="stats" onclick="adminTab('stats')" data-i18n="admin-stats">Statistiques</button>
+    <nav class="admin-tabs" id="adminTabsNav" aria-label="Admin">
+      <button type="button" class="admin-tab active" data-tab="overview" onclick="adminTab('overview')" data-i18n="admin-overview">Översikt</button>
+      <button type="button" class="admin-tab" data-tab="products" onclick="adminTab('products')" data-i18n="admin-products">Produkter</button>
+      <button type="button" class="admin-tab" data-tab="images" onclick="adminTab('images')" data-i18n="admin-images">Images</button>
     </nav>
     <div id="adminContent"></div>
+    <div id="adminSiteImageEditor" hidden>
+      <button type="button" class="admin-back" onclick="closeSiteImageEditor()" data-i18n="admin-images-back">← Back to images</button>
+      <h1 id="siteImageEditTitle">Edit image</h1>
+      <p class="admin-sub" data-i18n="admin-images-edit-sub">Drag to reposition, zoom and crop — then save.</p>
+      <div class="admin-form-card admin-image-card">
+        <div class="admin-crop-section" id="siteCropSection">
+          <div class="admin-crop-wrap admin-site-crop-wrap">
+            <img id="siteCropImage" alt="" />
+          </div>
+          <div class="admin-crop-toolbar" id="siteCropToolbar">
+            <button type="button" onclick="siteCropZoom(0.1)" data-i18n="zoom-in">Zoom +</button>
+            <button type="button" onclick="siteCropZoom(-0.1)" data-i18n="zoom-out">Zoom −</button>
+            <button type="button" onclick="siteCropRotate()" data-i18n="rotate">Rotate</button>
+            <button type="button" onclick="siteCropReset()" data-i18n="reset">Reset</button>
+            <label class="admin-btn-outline admin-btn-sm admin-site-image-upload">
+              <span data-i18n="admin-images-replace">Replace</span>
+              <input type="file" id="siteImageFileInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden onchange="onSiteImageFilePick(this)" />
+            </label>
+          </div>
+        </div>
+        <div class="admin-form-actions">
+          <button type="button" class="admin-btn" onclick="saveSiteImageEdit()" data-i18n="btn-save">Save</button>
+          <button type="button" class="admin-btn-outline" onclick="closeSiteImageEditor()" data-i18n="btn-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div id="adminProductEditor" hidden>
+      <button type="button" class="admin-back" onclick="closeAdminProductEdit()" data-i18n="admin-back-products">← Tillbaka till produkter</button>
+      <h1 id="adminEditTitle" data-i18n="modal-edit">Modifier le produit</h1>
+      <p class="admin-sub" id="adminEditSub" data-i18n="admin-edit-product-sub">Fyll i uppgifterna och ladda upp bilder</p>
+      <input type="hidden" id="editId">
+      <form class="admin-form" id="adminProductForm" onsubmit="event.preventDefault();saveProduct();">
+        <div class="admin-form-card admin-image-card" id="imageDropZone">
+          <h2 data-i18n="admin-product-images">Produktbilder</h2>
+          <p class="admin-image-help" data-i18n="photo-hint">Tap a box or drag a photo in. Up to 3 images — select a thumbnail to crop.</p>
+          <div class="admin-image-grid" id="productPhotoSlots"></div>
+          <input type="file" id="prodImageInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
+          <div class="admin-crop-section" id="cropSection" style="display:none">
+            <div class="admin-crop-wrap">
+              <img id="cropImage" alt="" />
+            </div>
+            <div class="admin-crop-toolbar" id="cropToolbar" style="display:none">
+              <button type="button" onclick="cropZoom(0.1)" data-i18n="zoom-in">Zoom +</button>
+              <button type="button" onclick="cropZoom(-0.1)" data-i18n="zoom-out">Zoom −</button>
+              <button type="button" onclick="cropRotate()" data-i18n="rotate">Pivoter</button>
+              <button type="button" onclick="cropReset()" data-i18n="reset">Réinitialiser</button>
+              <button type="button" class="btn-remove-img" onclick="removeProductImage()" data-i18n="remove-image">Supprimer l'image</button>
+            </div>
+          </div>
+        </div>
+        <div class="admin-form-card">
+          <h2 data-i18n="admin-product-details">Produktuppgifter</h2>
+          <div class="admin-form-grid">
+            <div class="admin-field full">
+              <label for="prodName" data-i18n="label-prod-name">Nom du produit</label>
+              <input type="text" id="prodName" placeholder="ex. Robe Lin Ivoire">
+            </div>
+            <div class="admin-field">
+              <label for="prodCat" data-i18n="label-category">Catégorie</label>
+              <select id="prodCat" data-i18n-options onchange="onProdCatChange()">
+                <option value="Mode">Mode</option>
+                <option value="Maison">Maison</option>
+                <option value="Lifestyle">Lifestyle</option>
+                <option value="Édition limitée">Édition limitée</option>
+              </select>
+            </div>
+            <div class="admin-field">
+              <label for="prodSub" data-i18n="label-subcat">Sous-catégorie</label>
+              <div class="admin-sub-field">
+                <select id="prodSub" data-i18n-sub-options onchange="onProdSubChange()"></select>
+                <button type="button" class="admin-sub-add" id="prodSubAddBtn" onclick="promptAddSubcategory()" aria-label="+">+</button>
+              </div>
+            </div>
+            <div class="admin-field full">
+              <label for="prodDesc" data-i18n="label-desc">Description</label>
+              <textarea id="prodDesc" rows="4" placeholder=""></textarea>
+            </div>
+            <div class="admin-field">
+              <label for="prodPrice" data-i18n="label-price">Prix (€)</label>
+              <input type="number" id="prodPrice" placeholder="89" min="0" step="0.01">
+            </div>
+            <div class="admin-field" id="adminStockField">
+              <label for="prodStock" data-i18n="label-stock">Stock (inventaire)</label>
+              <input type="number" id="prodStock" placeholder="1" min="0" value="1">
+            </div>
+            <div class="admin-field full" id="adminSizesWrap" hidden>
+              <label data-i18n="label-sizes">Tailles & stock</label>
+              <div id="adminSizeGrid" class="admin-size-grid"></div>
+              <p class="admin-sub admin-size-total" id="adminSizeTotalNote"></p>
+            </div>
+            <div class="admin-field full">
+              <label class="admin-checkbox">
+                <input type="checkbox" id="prodFeatured">
+                <span data-i18n="label-featured">En vedette sur l'accueil</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="admin-form-actions">
+          <button type="submit" class="admin-btn" data-i18n="btn-save">Sauvegarder</button>
+          <button type="button" class="admin-btn-outline" onclick="closeAdminProductEdit()" data-i18n="btn-cancel">Annuler</button>
+          <button type="button" class="admin-btn-danger" onclick="deleteProductFromEditor()" data-i18n="btn-supprimer">Supprimer</button>
+        </div>
+      </form>
+    </div>
   </main>
-</div>
-
-<div class="modal-overlay" id="productModal">
-  <div class="modal modal-product">
-    <button class="modal-close" onclick="closeModal('productModal')">✕</button>
-    <h2 id="modalTitle" data-i18n="modal-add">Ajouter un produit</h2>
-    <input type="hidden" id="editId">
-    <input type="file" id="prodImageInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
-
-    <div class="field image-upload-zone">
-      <label data-i18n="label-photo">Photos du produit (max. 3)</label>
-      <div class="product-photo-slots" id="productPhotoSlots"></div>
-      <p class="image-upload-hint" data-i18n="photo-hint">Tap a box or drag a photo in. Up to 3 images — select a thumbnail to crop.</p>
-      <div class="crop-section" id="cropSection">
-        <div class="crop-wrap">
-          <img id="cropImage" alt="Aperçu recadrage" />
-        </div>
-        <div class="crop-toolbar" id="cropToolbar">
-          <button type="button" onclick="cropZoom(0.1)" data-i18n="zoom-in">Zoom +</button>
-          <button type="button" onclick="cropZoom(-0.1)" data-i18n="zoom-out">Zoom −</button>
-          <button type="button" onclick="cropRotate()" data-i18n="rotate">Pivoter</button>
-          <button type="button" onclick="cropReset()" data-i18n="reset">Réinitialiser</button>
-          <button type="button" class="btn-remove-img" onclick="removeProductImage()" data-i18n="remove-image">Supprimer l'image</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="field">
-      <label data-i18n="label-prod-name">Nom du produit</label>
-      <input type="text" id="prodName" placeholder="ex. Robe Lin Ivoire">
-    </div>
-
-    <div class="field-row-taxonomy">
-      <div class="field field-taxonomy">
-        <label data-i18n="label-category">Catégorie</label>
-        <select id="prodCat" class="field-select" data-i18n-options onchange="onProdCatChange()">
-          <option value="Mode">Mode</option>
-          <option value="Maison">Maison</option>
-          <option value="Lifestyle">Lifestyle</option>
-          <option value="Édition limitée">Édition limitée</option>
-        </select>
-      </div>
-      <div class="field field-taxonomy">
-        <label data-i18n="label-subcat">Sous-catégorie</label>
-        <div class="admin-sub-field">
-          <select id="prodSub" class="field-select" data-i18n-sub-options></select>
-          <button type="button" class="admin-sub-add" id="prodSubAddBtn" onclick="promptAddSubcategory()" aria-label="+">+</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="field">
-      <label data-i18n="label-desc">Description</label>
-      <textarea id="prodDesc" class="field-textarea" rows="3" placeholder=""></textarea>
-    </div>
-    <div class="field">
-      <label data-i18n="label-price">Prix (€)</label>
-      <input type="number" id="prodPrice" placeholder="89" min="0" step="0.01">
-    </div>
-    <div class="field field-featured">
-      <input type="checkbox" id="prodFeatured">
-      <label for="prodFeatured" data-i18n="label-featured">En vedette sur l'accueil</label>
-    </div>
-    <div class="field">
-      <label data-i18n="label-stock">Stock (inventaire)</label>
-      <input type="number" id="prodStock" placeholder="1" min="0" value="1">
-    </div>
-    <div class="modal-actions modal-actions-product">
-      <div id="productModalDelete" hidden>
-        <button type="button" class="btn-delete-subtle" onclick="deleteProductFromModal()"><span data-i18n="btn-supprimer">Supprimer</span></button>
-      </div>
-      <div class="modal-footer-right">
-        <button type="button" class="btn-cancel" onclick="closeModal('productModal')"><span data-i18n="btn-cancel">Annuler</span></button>
-        <button type="button" class="btn-primary" style="width:auto;padding:0.65rem 1.75rem;" onclick="saveProduct()"><span data-i18n="btn-save">Sauvegarder</span></button>
-      </div>
-    </div>
-  </div>
 </div>
 
 <div class="modal-overlay" id="settingsModal">
@@ -1268,14 +1298,15 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="md3-firebase.js?v=4"></script>
-<script src="md3-store.js?v=6"></script>
+<script src="md3-sizes.js?v=1"></script>
+<script src="md3-store.js?v=7"></script>
 <script src="md3-auth.js?v=3"></script>
 <script src="md3-nav-icons.js"></script>
-<script src="md3-header.js?v=3"></script>
-<script src="ai-config.js" onerror="window.MD3_AI_CONFIG=window.MD3_AI_CONFIG||{}"></script><!-- generated from .env via scripts/sync-ai-config.mjs -->
-<script src="md3-site-assets.js?v=2"></script>
-<script src="md3-admin-ai.js?v=15"></script>
-<script src="md3-lang.js?v=18"></script>
+<script src="md3-header.js?v=15"></script>
+<script src="ai-config.js?v=2" onerror="window.MD3_AI_CONFIG=window.MD3_AI_CONFIG||{}"></script><!-- generated from .env via scripts/sync-ai-config.mjs -->
+<script src="md3-site-assets.js?v=6"></script>
+<script src="md3-admin-ai.js?v=21"></script>
+<script src="md3-lang.js?v=28"></script>
 <script src="md3-taxonomy.js?v=2"></script>
 <script src="md3-currency.js?v=4"></script>
 <script src="email-config.js?v=3"></script>
@@ -1285,7 +1316,8 @@ const S = MD3Store;
 const L = (k) => MD3Lang.t(k);
 let adminFilter = 'Tous';
 let adminSearch = '';
-let adminTabActive = 'products';
+let adminTabActive = 'overview';
+let adminEditingId = null;
 const MAX_PRODUCT_IMAGES = 3;
 const PRODUCT_IMAGE_MAX_BYTES = 20 * 1024 * 1024;
 const PRODUCT_IMAGE_EXPORT = { width: 1600, height: 2133, quality: 0.95 };
@@ -1338,65 +1370,90 @@ function productImageLabel(index) {
 }
 
 function renderProductPhotoSlots() {
-  const slots = document.getElementById('productPhotoSlots');
-  if (!slots) return;
-  slots.innerHTML = Array.from({ length: MAX_PRODUCT_IMAGES }, (_, i) => {
+  const grid = document.getElementById('productPhotoSlots');
+  if (!grid) return;
+  let html = '';
+  for (let i = 0; i < productImages.length; i++) {
     const img = productImages[i];
+    if (!img) continue;
     const active = i === activeProductImageIndex ? ' active' : '';
-    const has = img ? ' has-image' : '';
-    const label = img ? productImageLabel(i) : '+';
-    return `<button type="button" class="product-photo-slot${active}${has}" data-index="${i}" aria-label="${esc(label)}">
-      ${img ? `<img src="${esc(img)}" alt="" />` : ''}
-      <span>${esc(label)}</span>
+    html += `<button type="button" class="admin-image-thumb${active}" data-index="${i}">
+      <img src="${esc(img)}" alt="" />
+      ${i === 0 ? `<span class="admin-image-primary">${esc(L('photo-main'))}</span>` : ''}
+      <span class="admin-image-remove" data-remove="${i}" role="button" aria-label="×">&times;</span>
     </button>`;
-  }).join('');
-  initProductPhotoSlotEvents();
+  }
+  if (productImages.filter(Boolean).length < MAX_PRODUCT_IMAGES) {
+    html += `<button type="button" class="admin-image-add" data-add="1">
+      <span style="font-size:1.5rem">+</span>
+      ${esc(L('admin-add-image'))}
+    </button>`;
+  }
+  grid.innerHTML = html;
+  bindProductImageGridEvents();
 }
 
-function initProductPhotoSlotEvents() {
-  const slots = document.getElementById('productPhotoSlots');
+function bindProductImageGridEvents() {
+  const grid = document.getElementById('productPhotoSlots');
   const input = document.getElementById('prodImageInput');
-  if (!slots || slots.dataset.bound === '1') return;
-  slots.dataset.bound = '1';
+  const dropZone = document.getElementById('imageDropZone');
+  if (!grid) return;
 
-  slots.addEventListener('click', (e) => {
-    const btn = e.target.closest('.product-photo-slot');
-    if (!btn) return;
-    const index = parseInt(btn.dataset.index, 10);
-    if (Number.isNaN(index)) return;
-    if (!productImages[index]) {
+  grid.querySelectorAll('.admin-image-thumb[data-index]').forEach((btn) => {
+    btn.onclick = (e) => {
+      if (e.target.closest('[data-remove]')) return;
+      const index = parseInt(btn.dataset.index, 10);
+      if (Number.isNaN(index)) return;
+      selectProductImageSlot(index);
+    };
+  });
+
+  grid.querySelectorAll('[data-remove]').forEach((btn) => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const index = parseInt(btn.dataset.remove, 10);
+      if (Number.isNaN(index)) return;
       activeProductImageIndex = index;
+      removeProductImage();
+    };
+  });
+
+  const addBtn = grid.querySelector('[data-add]');
+  if (addBtn) {
+    addBtn.onclick = () => {
+      activeProductImageIndex = productImages.filter(Boolean).length;
       openProductImagePicker();
-      return;
-    }
-    selectProductImageSlot(index);
-  });
-
-  slots.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    const btn = e.target.closest('.product-photo-slot');
-    slots.querySelectorAll('.product-photo-slot.drag-over').forEach((el) => el.classList.remove('drag-over'));
-    if (btn) btn.classList.add('drag-over');
-  });
-
-  slots.addEventListener('dragleave', (e) => {
-    const btn = e.target.closest('.product-photo-slot');
-    if (btn && !btn.contains(e.relatedTarget)) btn.classList.remove('drag-over');
-  });
-
-  slots.addEventListener('drop', (e) => {
-    e.preventDefault();
-    slots.querySelectorAll('.product-photo-slot').forEach((el) => el.classList.remove('drag-over'));
-    const btn = e.target.closest('.product-photo-slot');
-    if (btn) activeProductImageIndex = parseInt(btn.dataset.index, 10) || 0;
-    const file = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file) processProductImageFile(file);
-  });
+    };
+  }
 
   if (input && !input.dataset.bound) {
     input.dataset.bound = '1';
     input.addEventListener('change', onProductImagePick);
   }
+
+  if (dropZone && !dropZone.dataset.bound) {
+    dropZone.dataset.bound = '1';
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('admin-image-card--drag');
+    });
+    dropZone.addEventListener('dragleave', (e) => {
+      if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('admin-image-card--drag');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('admin-image-card--drag');
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) {
+        activeProductImageIndex = productImages.filter(Boolean).length;
+        processProductImageFile(file);
+      }
+    });
+  }
+}
+
+function initProductPhotoSlotEvents() {
+  bindProductImageGridEvents();
 }
 
 function openProductImagePicker() {
@@ -1417,9 +1474,13 @@ function processProductImageFile(file) {
   const reader = new FileReader();
   reader.onload = function () {
     saveActiveProductImageCrop();
-    activeProductImageIndex = Math.max(0, Math.min(MAX_PRODUCT_IMAGES - 1, activeProductImageIndex));
+    if (activeProductImageIndex >= productImages.length) {
+      productImages.push(reader.result);
+      activeProductImageIndex = productImages.length - 1;
+    } else {
+      productImages[activeProductImageIndex] = reader.result;
+    }
     loadImageIntoCropper(reader.result);
-    productImages[activeProductImageIndex] = reader.result;
     renderProductPhotoSlots();
   };
   reader.readAsDataURL(file);
@@ -1523,8 +1584,9 @@ function showPage(name) {
   }
   if (name === 'profile') renderProfile();
   if (name === 'admin') {
+    bindAdminPageNav();
     updateAdminNav();
-    renderAdminProducts();
+    adminTab(adminTabActive);
     if (window.MD3AdminAI) window.MD3AdminAI.init();
   }
   updateNav();
@@ -1548,12 +1610,15 @@ function refreshCompteView() {
   if (typeof MD3Currency !== 'undefined') MD3Currency.refreshCurrency();
   MD3Lang.refreshUI();
 
-  const modal = document.getElementById('productModal');
-  if (modal?.classList.contains('open')) {
-    const editId = document.getElementById('editId').value;
-    document.getElementById('modalTitle').textContent = editId ? L('modal-edit') : L('modal-add');
-    initProductTaxonomyUI();
-    MD3Lang.applySelectOptions(MD3Lang.getLang());
+  if (adminEditingId != null) {
+    const p = findAdminProduct(adminEditingId);
+    if (p) {
+      const titleEl = document.getElementById('adminEditTitle');
+      if (titleEl) titleEl.textContent = p.name;
+      initProductTaxonomyUI(document.getElementById('prodSub')?.value);
+      renderAdminSizeFields(p);
+      MD3Lang.applySelectOptions(MD3Lang.getLang());
+    }
   }
 
   updateNav();
@@ -1562,7 +1627,7 @@ function refreshCompteView() {
   if (active.id === 'page-profile') renderProfile();
   else if (active.id === 'page-admin') {
     updateAdminNav();
-    adminTab(adminTabActive);
+    if (adminEditingId == null) adminTab(adminTabActive);
   }
 }
 
@@ -1867,8 +1932,9 @@ function renderProfile() {
   document.getElementById('statLiked').textContent = data.liked.length;
   document.getElementById('statWishlist').textContent = data.wishlist.length;
   document.getElementById('statOrders').textContent = data.orders || 0;
-  document.getElementById('likedCount').textContent = data.liked.length + (data.liked.length === 1 ? ' item' : ' items');
-  document.getElementById('wishlistCount').textContent = data.wishlist.length + (data.wishlist.length === 1 ? ' item' : ' items');
+  const itemCount = (n) => (MD3Lang.formatItemCount ? MD3Lang.formatItemCount(n) : String(n));
+  document.getElementById('likedCount').textContent = itemCount(data.liked.length);
+  document.getElementById('wishlistCount').textContent = itemCount(data.wishlist.length);
 
   const products = S.getProducts();
   const likedProducts = products.filter(p => data.liked.includes(p.id));
@@ -1884,9 +1950,9 @@ function renderProfileGrid(gridId, products, context) {
   if (!products.length) {
     const msg =
       context === 'wishlist'
-        ? 'Your wishlist is empty.'
+        ? L('profile-empty-wishlist')
         : context === 'overview'
-          ? 'Your recently liked products will appear here.'
+          ? L('profile-empty-overview')
           : L('empty-saved-html');
     grid.innerHTML = `<div class="empty-liked" style="grid-column:1/-1">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
@@ -1900,7 +1966,8 @@ function renderProfileGrid(gridId, products, context) {
     const user = S.getCurrentUser();
     const profile = S.getUsers()[user.email] || {};
     const wishlisted = (profile.wishlist || []).includes(p.id);
-    const wishlistLabel = wishlisted ? 'Wishlisted' : '+ Wishlist';
+    const wishlistLabel = wishlisted ? L('profile-wishlisted') : L('profile-add-wishlist');
+    const displayName = MD3Lang.productName ? MD3Lang.productName(p) : p.name;
     return `
     <div class="liked-card">
       <div class="liked-card-img" onclick="location.href='${S.productHref(p.id)}'">
@@ -1913,14 +1980,14 @@ function renderProfileGrid(gridId, products, context) {
       </div>
       <div class="liked-card-body">
         <div class="liked-card-cat">${esc(MD3Lang.translateCategory(p.category))} · ${esc(MD3Lang.translateSub(p.sub))}</div>
-        <div class="liked-card-name">${esc(p.name)}</div>
+        <div class="liked-card-name">${esc(displayName)}</div>
         <div class="liked-card-price">${MD3Currency.formatPrice(p.price)}</div>
       </div>
       <div class="liked-card-actions">
         <button type="button" class="profile-card-btn" onclick="toggleWishlistFromProfile(${p.id})">${wishlistLabel}</button>
         ${context === 'wishlist'
-          ? `<button type="button" class="profile-card-btn danger" onclick="toggleWishlistFromProfile(${p.id})">Remove</button>`
-          : `<button type="button" class="profile-card-btn danger" onclick="confirmUnlikeProduct(${p.id})">Unlike</button>`}
+          ? `<button type="button" class="profile-card-btn danger" onclick="toggleWishlistFromProfile(${p.id})">${L('btn-remove')}</button>`
+          : `<button type="button" class="profile-card-btn danger" onclick="confirmUnlikeProduct(${p.id})">${L('profile-unlike')}</button>`}
         <button type="button" class="btn-cart-add ${inCart ? 'in-cart' : ''}" title="${L('cart-add')}"
           onclick="addToCartFromProfile(${p.id})" aria-label="${L('cart-add')}" ${out ? 'disabled' : ''}>${MD3NavIcons.cartSmall.replace('nav-icon-svg', 'product-cart-svg')}</button>
       </div>
@@ -1946,7 +2013,7 @@ function productImagesFor(p) {
 function confirmUnlikeProduct(id) {
   const p = S.getProducts().find(x => x.id === id);
   const text = p
-    ? L('confirm-unlike-named').replace('%s', p.name)
+    ? L('confirm-unlike-named').replace('%s', MD3Lang.productName ? MD3Lang.productName(p) : p.name)
     : L('confirm-unlike-text');
   openConfirm(L('confirm-unlike-title'), text, '♥', () => unlikeProduct(id));
 }
@@ -1988,7 +2055,7 @@ async function toggleWishlistFromProfile(id) {
 function clearWishlist() {
   const user = S.getCurrentUser();
   if (!user || user.isAdmin) return;
-  openConfirm('Clear wishlist?', 'Remove all products from your wishlist?', '✦', async () => {
+  openConfirm(L('profile-clear-wishlist-title'), L('profile-clear-wishlist-text'), '✦', async () => {
     const users = S.getUsers();
     if (!users[user.email]) return;
     users[user.email].wishlist = [];
@@ -2003,8 +2070,8 @@ function copyWishlist() {
   const profile = S.getUsers()[user.email] || {};
   const products = S.getProducts().filter(p => (profile.wishlist || []).includes(p.id));
   if (!products.length) return;
-  const text = products.map(p => `${p.name} — ${MD3Currency.formatPrice(p.price)}`).join('\n');
-  navigator.clipboard?.writeText('My MD3 Scandi Wishlist:\n\n' + text + '\n\n' + location.origin).catch(() => {});
+  const text = products.map(p => `${MD3Lang.productName ? MD3Lang.productName(p) : p.name} — ${MD3Currency.formatPrice(p.price)}`).join('\n');
+  navigator.clipboard?.writeText(L('profile-wishlist-share-header') + '\n\n' + text + '\n\n' + location.origin).catch(() => {});
 }
 
 async function saveProfileSettings() {
@@ -2062,18 +2129,372 @@ function confirmDeleteAccount() {
   });
 }
 
+function findAdminProduct(id) {
+  return S.getProducts().find((x) => x.id == id);
+}
+
+function adminGoProducts() {
+  adminTab('products');
+  const content = document.getElementById('adminContent');
+  if (content) content.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function adminTab(tab) {
+  if (adminEditingId != null) closeAdminProductEdit(false);
+  if (siteImageEditSlot != null) {
+    siteImageEditSlot = null;
+    siteImageEditSrc = '';
+    setSiteImageEditorVisible(false);
+  }
   adminTabActive = tab;
   document.querySelectorAll('.admin-tabs [data-tab]').forEach(el => {
     el.classList.toggle('active', el.dataset.tab === tab);
   });
-  if (tab === 'products') renderAdminProducts();
-  else renderAdminStats();
+  const tabsNav = document.getElementById('adminTabsNav');
+  if (tabsNav) tabsNav.hidden = false;
+  if (tab === 'overview') renderAdminOverview();
+  else if (tab === 'images') renderAdminSiteImages();
+  else paintAdminProductsList();
+}
+
+function bindAdminPageNav() {
+  const page = document.getElementById('page-admin');
+  if (!page || page.dataset.navBound === '1') return;
+  page.dataset.navBound = '1';
+  page.addEventListener('click', (e) => {
+    const productsNav = e.target.closest('[data-admin-go="products"]');
+    if (productsNav) {
+      e.preventDefault();
+      adminGoProducts();
+      return;
+    }
+    const imagesNav = e.target.closest('[data-admin-go="images"]');
+    if (imagesNav) {
+      e.preventDefault();
+      adminTab('images');
+      const content = document.getElementById('adminContent');
+      if (content) content.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    const tabBtn = e.target.closest('.admin-tabs [data-tab]');
+    if (tabBtn) {
+      e.preventDefault();
+      adminTab(tabBtn.dataset.tab);
+    }
+  });
+}
+
+function setAdminEditorVisible(show) {
+  const editor = document.getElementById('adminProductEditor');
+  const siteEditor = document.getElementById('adminSiteImageEditor');
+  const content = document.getElementById('adminContent');
+  const tabsNav = document.getElementById('adminTabsNav');
+  if (editor) editor.hidden = !show;
+  if (show && siteEditor) {
+    destroySiteCropper();
+    siteEditor.hidden = true;
+  }
+  if (content) content.hidden = show || (siteEditor && !siteEditor.hidden);
+  if (tabsNav) tabsNav.hidden = show || (siteEditor && !siteEditor.hidden);
+}
+
+function setSiteImageEditorVisible(show) {
+  const siteEditor = document.getElementById('adminSiteImageEditor');
+  const productEditor = document.getElementById('adminProductEditor');
+  const content = document.getElementById('adminContent');
+  const tabsNav = document.getElementById('adminTabsNav');
+  if (show && productEditor && !productEditor.hidden) {
+    closeAdminProductEdit(false);
+  }
+  if (siteEditor) siteEditor.hidden = !show;
+  if (!show) destroySiteCropper();
+  if (content) content.hidden = show || (productEditor && !productEditor.hidden);
+  if (tabsNav) tabsNav.hidden = show || (productEditor && !productEditor.hidden);
+}
+
+function closeAdminProductEdit(refreshList) {
+  destroyProductCropper();
+  adminEditingId = null;
+  setAdminEditorVisible(false);
+  if (refreshList !== false) {
+    if (adminTabActive === 'overview') renderAdminOverview();
+    else if (adminTabActive === 'images') renderAdminSiteImages();
+    else paintAdminProductsList();
+  }
+}
+
+function renderAdminOverview() {
+  setAdminEditorVisible(false);
+  const products = S.getProducts();
+  const total = products.length;
+  const inStock = products.filter(p => p.stock > 0).length;
+  const featured = products.filter(p => p.featured).length;
+  document.getElementById('adminContent').innerHTML = `
+    <h1>${L('admin-panel-title')}</h1>
+    <p class="admin-sub">${L('admin-panel-sub')}</p>
+    <div class="admin-grid">
+      <button type="button" class="admin-stat admin-stat-link" data-admin-go="products">
+        <div class="admin-stat-label">${L('stat-products')}</div>
+        <div class="admin-stat-value">${total}</div>
+      </button>
+      <div class="admin-stat">
+        <div class="admin-stat-label">${L('stock-in')}</div>
+        <div class="admin-stat-value">${inStock}</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-label">${L('admin-status')}</div>
+        <div class="admin-stat-value" style="font-size:1.2rem">${L('admin-status-live')}</div>
+      </div>
+    </div>
+    <div class="admin-panel">
+      <h2>${L('admin-quick-links')}</h2>
+      <ul class="admin-list">
+        <li><button type="button" class="admin-list-btn" data-admin-go="products">${L('admin-products-table')} <span aria-hidden="true">→</span></button></li>
+        <li><button type="button" class="admin-list-btn" data-admin-go="images">${L('admin-images')} <span aria-hidden="true">→</span></button></li>
+        <li><a href="index.html#boutique" target="_blank" rel="noopener">${L('admin-view-boutique')} <span>→</span></a></li>
+      </ul>
+    </div>`;
+}
+
+function compressSiteImage(dataUrl, maxW) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      if (!w || !h) {
+        resolve(dataUrl);
+        return;
+      }
+      const scale = Math.min(1, maxW / w);
+      const cw = Math.max(1, Math.round(w * scale));
+      const ch = Math.max(1, Math.round(h * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = cw;
+      canvas.height = ch;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, cw, ch);
+      try {
+        resolve(canvas.toDataURL('image/jpeg', 0.88));
+      } catch (_) {
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+let siteCropper = null;
+let siteImageEditSlot = null;
+let siteImageEditSrc = '';
+
+function destroySiteCropper() {
+  if (siteCropper) {
+    siteCropper.destroy();
+    siteCropper = null;
+  }
+}
+
+function siteImageAspect(slot) {
+  const meta = window.MD3SiteAssets && MD3SiteAssets.IMAGE_SLOTS
+    ? MD3SiteAssets.IMAGE_SLOTS[slot]
+    : null;
+  if (meta && meta.aspectRatio) return meta.aspectRatio;
+  if (slot === 'hero') return 1376 / 752;
+  if (slot === 'journal') return 4 / 3;
+  return 3 / 4;
+}
+
+function siteImageMaxWidth(slot) {
+  const meta = window.MD3SiteAssets && MD3SiteAssets.IMAGE_SLOTS
+    ? MD3SiteAssets.IMAGE_SLOTS[slot]
+    : null;
+  return (meta && meta.maxWidth) || (slot === 'hero' ? 3840 : 2400);
+}
+
+function siteImageLabel(slot) {
+  const meta = window.MD3SiteAssets && MD3SiteAssets.IMAGE_SLOTS
+    ? MD3SiteAssets.IMAGE_SLOTS[slot]
+    : null;
+  if (meta && meta.labelKey) {
+    const t = L(meta.labelKey);
+    if (t && t !== meta.labelKey) return t;
+  }
+  return (meta && meta.label) || slot;
+}
+
+function renderAdminSiteImages() {
+  setSiteImageEditorVisible(false);
+  setAdminEditorVisible(false);
+  const host = document.getElementById('adminContent');
+  if (!host) return;
+  const A = window.MD3SiteAssets;
+  if (!A || !A.getCatalog) {
+    host.innerHTML = `<h1>${L('admin-images')}</h1><p class="admin-sub">${L('admin-images-unavailable')}</p>`;
+    return;
+  }
+  const catalog = A.getCatalog({ adminOnly: true });
+  host.innerHTML = `
+    <h1>${L('admin-images')}</h1>
+    <p class="admin-sub">${L('admin-images-sub')}</p>
+    <div class="admin-site-images">
+      ${catalog.map((item) => {
+        const label = item.labelKey && L(item.labelKey) !== item.labelKey ? L(item.labelKey) : item.label;
+        const status = item.custom ? L('admin-images-custom') : L('admin-images-default');
+        const preview = esc(item.url || '');
+        return `
+        <article class="admin-site-image-card" data-slot="${esc(item.slot)}">
+          <button type="button" class="admin-site-image-preview" onclick="openSiteImageEditor('${esc(item.slot)}')">
+            ${preview ? `<img src="${preview}" alt="${esc(label)}" />` : '<div class="admin-site-image-empty">—</div>'}
+          </button>
+          <div class="admin-site-image-body">
+            <h2>${esc(label)}</h2>
+            <p class="admin-site-image-status">${esc(status)}</p>
+            <div class="admin-site-image-actions">
+              <button type="button" class="admin-btn admin-btn-sm" onclick="openSiteImageEditor('${esc(item.slot)}')">${L('admin-images-edit')}</button>
+              <label class="admin-btn-outline admin-btn-sm admin-site-image-upload">
+                ${L('admin-images-replace')}
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onchange="replaceSiteImage('${esc(item.slot)}', this)" />
+              </label>
+              <button type="button" class="admin-btn-outline admin-btn-sm" ${item.custom ? '' : 'disabled'} onclick="resetSiteImage('${esc(item.slot)}')">${L('admin-images-reset')}</button>
+            </div>
+          </div>
+        </article>`;
+      }).join('')}
+    </div>`;
+}
+
+function loadSiteImageIntoCropper(src) {
+  const img = document.getElementById('siteCropImage');
+  if (!img || !src) return;
+  destroySiteCropper();
+  img.onload = function () {
+    destroySiteCropper();
+    if (typeof Cropper === 'undefined') return;
+    siteCropper = new Cropper(img, {
+      aspectRatio: siteImageAspect(siteImageEditSlot),
+      viewMode: 1,
+      dragMode: 'move',
+      autoCropArea: 1,
+      responsive: true,
+      background: false,
+      guides: true,
+      center: true,
+      highlight: false,
+      movable: true,
+      zoomable: true,
+      rotatable: true,
+      scalable: true,
+      cropBoxMovable: true,
+      cropBoxResizable: true,
+    });
+  };
+  img.src = src;
+}
+
+function openSiteImageEditor(slot, initialSrc) {
+  if (!window.MD3SiteAssets) return;
+  siteImageEditSlot = slot;
+  siteImageEditSrc = initialSrc || MD3SiteAssets.getDisplayUrl(slot) || '';
+  const title = document.getElementById('siteImageEditTitle');
+  if (title) title.textContent = L('admin-images-edit') + ' — ' + siteImageLabel(slot);
+  setSiteImageEditorVisible(true);
+  loadSiteImageIntoCropper(siteImageEditSrc);
+}
+
+function closeSiteImageEditor() {
+  siteImageEditSlot = null;
+  siteImageEditSrc = '';
+  setSiteImageEditorVisible(false);
+  if (adminTabActive === 'images') renderAdminSiteImages();
+}
+
+function siteCropZoom(ratio) {
+  if (siteCropper) siteCropper.zoom(ratio);
+}
+
+function siteCropRotate() {
+  if (siteCropper) siteCropper.rotate(90);
+}
+
+function siteCropReset() {
+  if (siteCropper) siteCropper.reset();
+}
+
+async function onSiteImageFilePick(input) {
+  const file = input && input.files && input.files[0];
+  if (!file || !siteImageEditSlot) return;
+  try {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    siteImageEditSrc = String(dataUrl);
+    loadSiteImageIntoCropper(siteImageEditSrc);
+  } catch (e) {
+    console.error('onSiteImageFilePick', e);
+    alert(L('err-save-image'));
+  } finally {
+    if (input) input.value = '';
+  }
+}
+
+async function replaceSiteImage(slot, input) {
+  const file = input && input.files && input.files[0];
+  if (!file || !window.MD3SiteAssets) return;
+  try {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    openSiteImageEditor(slot, String(dataUrl));
+  } catch (e) {
+    console.error('replaceSiteImage', e);
+    alert(L('err-save-image'));
+  } finally {
+    if (input) input.value = '';
+  }
+}
+
+async function saveSiteImageEdit() {
+  if (!siteImageEditSlot || !window.MD3SiteAssets) return;
+  try {
+    let dataUrl = siteImageEditSrc;
+    if (siteCropper) {
+      const canvas = siteCropper.getCroppedCanvas({
+        maxWidth: siteImageMaxWidth(siteImageEditSlot),
+        maxHeight: siteImageMaxWidth(siteImageEditSlot),
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high',
+      });
+      if (canvas) dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    }
+    if (!dataUrl) return;
+    const compressed = await compressSiteImage(String(dataUrl), siteImageMaxWidth(siteImageEditSlot));
+    MD3SiteAssets.setImage(siteImageEditSlot, compressed);
+    closeSiteImageEditor();
+  } catch (e) {
+    console.error('saveSiteImageEdit', e);
+    alert(L('err-save-image'));
+  }
+}
+
+function resetSiteImage(slot) {
+  if (!window.MD3SiteAssets || !MD3SiteAssets.clearImage) return;
+  openConfirm(L('admin-images-reset-title'), L('admin-images-reset-text'), '✦', () => {
+    MD3SiteAssets.clearImage(slot);
+    renderAdminSiteImages();
+  });
 }
 
 function setAdminSearch(val) {
   adminSearch = (val || '').trim().toLowerCase();
-  renderAdminProducts();
+  paintAdminProductsList();
 }
 
 function adminProductMatchesSearch(p, q) {
@@ -2085,127 +2506,93 @@ function adminProductMatchesSearch(p, q) {
   return hay.includes(q);
 }
 
-function renderAdminProducts() {
-  const products = S.getProducts().sort((a, b) => Number(b.id) - Number(a.id));
+function paintAdminProductsList() {
+  setAdminEditorVisible(false);
+  const host = document.getElementById('adminContent');
+  if (!host) return;
+  let products = [];
+  try {
+    products = S.getProducts().sort((a, b) => Number(b.id) - Number(a.id));
+  } catch (e) {
+    console.error('paintAdminProductsList', e);
+    host.innerHTML = `<h1>${L('admin-manage')}</h1><p class="admin-sub">${esc(L('admin-no-results'))}</p>`;
+    return;
+  }
   const cats = ['Tous', ...new Set(products.map(p => p.category))];
   const filteredByCat = adminFilter === 'Tous' ? products : products.filter(p => p.category === adminFilter);
   const filtered = filteredByCat.filter(p => adminProductMatchesSearch(p, adminSearch));
   if (window.MD3AdminAI && window.MD3AdminAI.setAdminListContext) {
     MD3AdminAI.setAdminListContext({ visibleIds: filtered.map((p) => p.id) });
   }
-  const total = products.length;
-  const outOfStock = products.filter(p => p.stock === 0).length;
-  const featured = products.filter(p => p.featured).length;
-  const stockValue = products.reduce((a, p) => a + p.price * p.stock, 0);
   const fmtPrice = (n) =>
     typeof MD3Currency !== 'undefined' && MD3Currency.formatPriceInSiteLang
       ? MD3Currency.formatPriceInSiteLang(n)
       : `${n} €`;
-
   const catBtnLabel = (c) => c === 'Tous' ? L('shop-all') : MD3Lang.translateCategory(c);
-  const stockBadge = (p) => p.stock === 0 ? L('stock-out-lbl') : L('stock-in');
   const searchVal = esc(adminSearch);
+  const focusId = window.MD3AdminAI && MD3AdminAI.getFocusedProductId ? MD3AdminAI.getFocusedProductId() : null;
 
-  document.getElementById('adminContent').innerHTML = `
-    <div class="admin-page-head">
-      <div>
-        <h1>${L('admin-manage')}</h1>
-        <p class="admin-sub">${total} ${L('stat-products-word')}</p>
-      </div>
-      <button class="admin-btn-outline" type="button" onclick="renderAdminProducts()">${L('admin-refresh')}</button>
-    </div>
+  host.innerHTML = `
+    <h1>${L('admin-manage')}</h1>
+    <p class="admin-sub">${filtered.length} / ${products.length} ${L('stat-products-word')}</p>
     <div class="admin-toolbar">
       <div class="admin-search-wrap">
         <input type="search" class="admin-search" placeholder="${esc(L('admin-search-placeholder'))}" value="${searchVal}" oninput="setAdminSearch(this.value)" />
       </div>
       <div class="admin-toolbar-meta">
         <span class="admin-count"><strong>${filtered.length}</strong> ${L('stat-products-word')}</span>
-        <button class="admin-btn" type="button" onclick="openAddProduct()">${L('admin-add-product-short')}</button>
+        <button class="admin-btn-outline admin-btn-sm" type="button" onclick="refreshAdminProducts()">${L('admin-refresh')}</button>
       </div>
-    </div>
-    <div class="admin-grid">
-      <div class="admin-stat"><div class="admin-stat-label">${L('stat-products')}</div><div class="admin-stat-value">${total}</div></div>
-      <div class="admin-stat"><div class="admin-stat-label">${L('stock-in')}</div><div class="admin-stat-value">${total - outOfStock}</div></div>
-      <div class="admin-stat"><div class="admin-stat-label">${L('stat-featured')}</div><div class="admin-stat-value">${featured}</div></div>
-      <div class="admin-stat"><div class="admin-stat-label">${L('stat-stock-value')}</div><div class="admin-stat-value">${fmtPrice(stockValue)}</div></div>
     </div>
     <div class="category-filter">
       ${cats.map(c => `<button type="button" class="filter-btn ${c === adminFilter ? 'active' : ''}" onclick="setAdminFilter('${esc(c).replace(/'/g, "\\'")}')">${esc(catBtnLabel(c))}</button>`).join('')}
     </div>
-    <div class="adm-pgrid">
-      ${filtered.length ? filtered.map(p => {
-        const aiFocus = window.MD3AdminAI && MD3AdminAI.getFocusedProductId && MD3AdminAI.getFocusedProductId() === p.id;
-        return `
-        <article class="adm-pc${p.featured ? ' feat' : ''}${aiFocus ? ' adm-pc--ai-focus' : ''}" onmousedown="adminFocusProduct(${p.id})">
-          <div class="adm-cim" onclick="openEditProduct(${p.id})">
-            ${productImagesFor(p)[0] ? `<img src="${esc(productImagesFor(p)[0])}" alt="" class="product-thumb" />` : `<span>${esc(p.emoji || '✦')}</span>`}
-            <div class="adm-cov"><button type="button" class="adm-eib" onclick="event.stopPropagation();openEditProduct(${p.id})">${L('admin-edit-image')}</button></div>
-            ${p.featured ? `<span class="adm-fbadge">★ ${L('stat-featured')}</span>` : ''}
-            <span class="adm-sbadge ${p.stock ? 'in' : 'out'}">${esc(stockBadge(p))}</span>
-          </div>
-          <div class="adm-cb">
-            <div class="adm-fr">
-              <span class="adm-flbl">★ ${L('label-featured')}</span>
-              <label class="adm-tog"><input type="checkbox" ${p.featured ? 'checked' : ''} onchange="toggleFeatured(${p.id}, this.checked)" /><span class="adm-tsl"></span></label>
-            </div>
-            <div class="adm-name">${esc(p.name)}</div>
-            <div class="adm-meta">${esc(MD3Lang.translateCategory(p.category))} · ${esc(MD3Lang.translateSub(p.sub))}</div>
-            <div class="adm-price">${fmtPrice(p.price)}</div>
-            <div class="adm-sr">
-              <span class="adm-slb">${L('label-stock')}</span>
-              <div class="adm-qc">
-                <button type="button" class="adm-qbt" onclick="changeStock(${p.id}, -1)" ${p.stock <= 0 ? 'disabled' : ''} aria-label="${esc(L('stock-decrease'))}">−</button>
-                <span class="adm-qnm" id="adm-q-${p.id}">${p.stock}</span>
-                <button type="button" class="adm-qbt" onclick="changeStock(${p.id}, 1)" aria-label="${esc(L('stock-increase'))}">+</button>
-              </div>
-            </div>
-            <div class="adm-cf">
-              <button type="button" class="adm-btn-del" onclick="confirmDeleteProduct(${p.id})">${L('btn-supprimer')}</button>
-              <button type="button" class="adm-btn-edit" onclick="openEditProduct(${p.id})">${L('btn-modify')}</button>
-            </div>
-          </div>
-        </article>`;
-      }).join('') : `<div class="admin-panel"><p class="admin-sub">${L('admin-no-results')}</p></div>`}
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>${L('th-product')}</th>
+            <th>${L('th-category')}</th>
+            <th>${L('th-price')}</th>
+            <th>${L('th-stock')}</th>
+            <th>${L('th-status')}</th>
+            <th>${L('th-actions')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.length ? filtered.map(p => {
+            const thumb = productImagesFor(p)[0];
+            const aiFocus = focusId === p.id;
+            const status = p.stock === 0
+              ? `<span class="admin-badge admin-badge--out">${L('stock-out-lbl')}</span>`
+              : `<span class="admin-badge admin-badge--in">${L('stock-in')}</span>`;
+            const feat = p.featured ? ` <span class="admin-badge admin-badge--feat" title="${esc(L('stat-featured'))}">★</span>` : '';
+            const thumbHtml = thumb
+              ? `<img class="admin-table-thumb" src="${esc(thumb)}" alt="" />`
+              : `<span class="admin-table-thumb-placeholder">${esc(p.emoji || '✦')}</span>`;
+            return `<tr class="${aiFocus ? 'admin-row--focus' : ''}" onclick="adminFocusProduct(${p.id});openEditProduct(${p.id})">
+              <td>
+                <div class="admin-table-product">
+                  ${thumbHtml}
+                  <div>
+                    <div class="admin-table-name">${esc(p.name)}</div>
+                    <div class="admin-table-meta">${esc(MD3Lang.translateSub(p.sub))}</div>
+                  </div>
+                </div>
+              </td>
+              <td>${esc(MD3Lang.translateCategory(p.category))}</td>
+              <td>${fmtPrice(p.price)}</td>
+              <td>${p.stock}</td>
+              <td><div class="admin-status-cell">${status}${feat}</div></td>
+              <td><button type="button" class="admin-btn-outline admin-btn-sm" onclick="event.stopPropagation();openEditProduct(${p.id})">${L('btn-modify')}</button></td>
+            </tr>`;
+          }).join('') : `<tr><td colspan="6"><p class="admin-sub" style="padding:1.25rem 0">${L('admin-no-results')}</p></td></tr>`}
+        </tbody>
+      </table>
     </div>`;
 }
 
-function renderAdminStats() {
-  const products = S.getProducts();
-  const cats = {};
-  products.forEach(p => { cats[p.category] = (cats[p.category] || 0) + 1; });
-  const outOfStock = products.filter(p => p.stock === 0);
-  document.getElementById('adminContent').innerHTML = `
-    <div class="admin-page-head">
-      <div>
-        <h1>${L('stats-title')}</h1>
-        <p class="admin-sub">${products.length} ${L('stat-products-word')}</p>
-      </div>
-      <button class="admin-btn-outline" type="button" onclick="renderAdminStats()">${L('admin-refresh')}</button>
-    </div>
-    <div class="admin-grid">
-      ${Object.entries(cats).map(([cat, count]) => `
-        <div class="admin-stat">
-          <div class="admin-stat-label">${esc(MD3Lang.translateCategory(cat))}</div>
-          <div class="admin-stat-value">${count}</div>
-        </div>`).join('')}
-    </div>
-    <div class="admin-panel" style="margin-top:1.5rem">
-      <h2>${L('stats-out-title')}</h2>
-      ${outOfStock.length === 0
-        ? `<p class="admin-sub">${L('stats-none')}</p>`
-        : `<ul class="admin-list">${outOfStock.map(p => `
-            <li class="admin-list-item">
-              ${S.productThumbInner(p)}
-              <div class="admin-list-item-info">
-                <div class="admin-list-item-name">${esc(p.name)}</div>
-                <div class="admin-list-item-meta">${esc(MD3Lang.translateCategory(p.category))}</div>
-              </div>
-              <button class="btn-sm btn-edit" type="button" onclick="adminTab('products');setAdminFilter('${esc(p.category).replace(/'/g, "\\'")}')">${L('btn-view')}</button>
-            </li>`).join('')}</ul>`}
-    </div>`;
-}
-
-function setAdminFilter(cat) { adminFilter = cat; renderAdminProducts(); }
+function setAdminFilter(cat) { adminFilter = cat; paintAdminProductsList(); }
 
 async function toggleFeatured(id, checked) {
   const products = S.getProducts();
@@ -2217,7 +2604,7 @@ async function toggleFeatured(id, checked) {
   } catch (e) {
     console.error('toggleFeatured', e);
   }
-  renderAdminProducts();
+  paintAdminProductsList();
 }
 
 async function changeStock(id, delta) {
@@ -2246,7 +2633,7 @@ async function changeStock(id, delta) {
     await S.saveProducts(products, { onlyIds: [id] });
   } catch (e) {
     console.error('changeStock', e);
-    renderAdminProducts();
+    paintAdminProductsList();
   }
 }
 
@@ -2260,13 +2647,48 @@ async function updateStock(id, val) {
     } catch (e) {
       console.error('updateStock', e);
     }
-    renderAdminProducts();
+    paintAdminProductsList();
   }
 }
 
-function setProductModalDeleteVisible(show) {
-  const zone = document.getElementById('productModalDelete');
-  if (zone) zone.hidden = !show;
+function setProductModalDeleteVisible() {}
+
+function openEditProduct(id) {
+  const p = findAdminProduct(id);
+  if (!p) return;
+  adminEditingId = id;
+  if (window.MD3AdminAI && window.MD3AdminAI.setFocusedProduct) {
+    window.MD3AdminAI.setFocusedProduct(id, p.name);
+  }
+  const titleEl = document.getElementById('adminEditTitle');
+  if (titleEl) titleEl.textContent = p.name;
+  const subEl = document.getElementById('adminEditSub');
+  if (subEl) subEl.textContent = L('admin-edit-product-sub');
+  document.getElementById('editId').value = id;
+  document.getElementById('prodName').value = p.name;
+  document.getElementById('prodCat').value = p.category;
+  initProductTaxonomyUI(p.sub);
+  document.getElementById('prodPrice').value = p.price;
+  document.getElementById('prodStock').value = p.stock;
+  renderAdminSizeFields(p);
+  const descEl = document.getElementById('prodDesc');
+  if (descEl) descEl.value = p.desc || '';
+  const featEl = document.getElementById('prodFeatured');
+  if (featEl) featEl.checked = !!p.featured;
+  resetProductImageUI();
+  productImages = productImagesFor(p).slice();
+  activeProductImageIndex = 0;
+  renderProductPhotoSlots();
+  if (productImages[0]) loadImageIntoCropper(productImages[0]);
+  setAdminEditorVisible(true);
+  MD3Lang.applySelectOptions(MD3Lang.getLang());
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteProductFromEditor() {
+  const editId = parseInt(document.getElementById('editId').value, 10);
+  if (!editId) return;
+  confirmDeleteProduct(editId);
 }
 
 function initProductTaxonomyUI(selectedSub) {
@@ -2297,125 +2719,135 @@ function onProdCatChange() {
   if (catSel && subSel && typeof MD3Taxonomy !== 'undefined') {
     MD3Taxonomy.onCategoryChange(catSel, subSel);
   }
+  renderAdminSizeFields();
 }
 
-function openAddProduct() {
-  document.getElementById('modalTitle').textContent = L('modal-add');
-  document.getElementById('editId').value = '';
-  ['prodName','prodPrice','prodDesc'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  const stockEl = document.getElementById('prodStock');
-  if (stockEl) stockEl.value = '1';
-  const feat = document.getElementById('prodFeatured');
-  if (feat) feat.checked = false;
-  document.getElementById('prodCat').value = 'Mode';
-  initProductTaxonomyUI();
-  resetProductImageUI();
-  setProductModalDeleteVisible(false);
-  document.getElementById('productModal').classList.add('open');
-  MD3Lang.applySelectOptions(MD3Lang.getLang());
+function onProdSubChange() {
+  renderAdminSizeFields();
+}
+
+function readSizeStockFromEditor() {
+  const stock = {};
+  document.querySelectorAll('#adminSizeGrid input[data-size]').forEach((inp) => {
+    stock[inp.dataset.size] = Math.max(0, parseInt(inp.value, 10) || 0);
+  });
+  return stock;
+}
+
+function updateAdminSizeTotalNote() {
+  const note = document.getElementById('adminSizeTotalNote');
+  if (!note) return;
+  let total = 0;
+  document.querySelectorAll('#adminSizeGrid input[data-size]').forEach((inp) => {
+    total += Math.max(0, parseInt(inp.value, 10) || 0);
+  });
+  note.textContent = L('size-total-stock').replace('%n', String(total));
+  const stockInput = document.getElementById('prodStock');
+  if (stockInput) stockInput.value = String(total);
+}
+
+function renderAdminSizeFields(product) {
+  const SZ = window.MD3Sizes;
+  const wrap = document.getElementById('adminSizesWrap');
+  const stockField = document.getElementById('adminStockField');
+  if (!SZ || !wrap) return;
+  const sub = document.getElementById('prodSub')?.value || product?.sub || '';
+  const category = document.getElementById('prodCat')?.value || product?.category || 'Mode';
+  const draft = {
+    sub,
+    category,
+    sizeType: product?.sizeType,
+    sizeStock: product?.sizeStock || readSizeStockFromEditor(),
+  };
+  const type = SZ.getProductSizeType(draft);
+  if (type === 'none') {
+    wrap.hidden = true;
+    if (stockField) stockField.hidden = false;
+    return;
+  }
+  wrap.hidden = false;
+  if (stockField) stockField.hidden = true;
+  const options = SZ.sizeOptionsForType(type);
+  const stock = draft.sizeStock || {};
+  const grid = document.getElementById('adminSizeGrid');
+  if (!grid) return;
+  grid.innerHTML = options.map((s) => {
+    const val = Math.max(0, parseInt(stock[s], 10) || 0);
+    return `<label class="admin-size-cell">
+      <span class="admin-size-label">${esc(s)}</span>
+      <input type="number" min="0" step="1" data-size="${esc(s)}" value="${val}" oninput="updateAdminSizeTotalNote()" />
+    </label>`;
+  }).join('');
+  updateAdminSizeTotalNote();
 }
 
 function adminFocusProduct(id) {
-  const p = S.getProducts().find((x) => x.id === id);
+  const p = findAdminProduct(id);
   if (p && window.MD3AdminAI && window.MD3AdminAI.setFocusedProduct) {
     window.MD3AdminAI.setFocusedProduct(id, p.name);
   }
 }
 
-function openEditProduct(id) {
-  const p = S.getProducts().find(x => x.id === id);
-  if (!p) return;
-  if (window.MD3AdminAI && window.MD3AdminAI.setFocusedProduct) {
-    window.MD3AdminAI.setFocusedProduct(id, p.name);
-  }
-  document.getElementById('modalTitle').textContent = L('modal-edit');
-  document.getElementById('editId').value = id;
-  document.getElementById('prodName').value = p.name;
-  document.getElementById('prodCat').value = p.category;
-  initProductTaxonomyUI(p.sub);
-  document.getElementById('prodPrice').value = p.price;
-  document.getElementById('prodStock').value = p.stock;
-  const descEl = document.getElementById('prodDesc');
-  if (descEl) descEl.value = p.desc || '';
-  const featEl = document.getElementById('prodFeatured');
-  if (featEl) featEl.checked = !!p.featured;
-  resetProductImageUI();
-  productImages = productImagesFor(p);
-  activeProductImageIndex = 0;
-  renderProductPhotoSlots();
-  if (productImages[0]) {
-    loadImageIntoCropper(productImages[0]);
-  }
-  setProductModalDeleteVisible(true);
-  document.getElementById('productModal').classList.add('open');
-  MD3Lang.applySelectOptions(MD3Lang.getLang());
-}
-
-function deleteProductFromModal() {
-  const editId = parseInt(document.getElementById('editId').value, 10);
-  if (!editId) return;
-  confirmDeleteProduct(editId);
-}
-
 async function saveProduct() {
   const editId = document.getElementById('editId').value;
+  if (!editId) return;
   const name = document.getElementById('prodName').value.trim();
   const category = document.getElementById('prodCat').value;
   const sub = document.getElementById('prodSub').value.trim();
   const price = parseFloat(document.getElementById('prodPrice').value) || 0;
-  const stockRaw = parseInt(document.getElementById('prodStock').value, 10);
-  const stock = editId
-    ? Math.max(0, stockRaw || 0)
-    : Math.max(1, stockRaw || 1);
+  let stock = Math.max(0, parseInt(document.getElementById('prodStock').value, 10) || 0);
+  let sizeStock = null;
+  let sizeType = 'none';
+  if (window.MD3Sizes) {
+    const draft = { sub, category };
+    if (MD3Sizes.getProductSizeType(draft) !== 'none') {
+      sizeStock = readSizeStockFromEditor();
+      const synced = MD3Sizes.syncProductStockFromSizes({ sub, category, sizeStock });
+      stock = synced.stock;
+      sizeType = synced.sizeType;
+      sizeStock = synced.sizeStock;
+    }
+  }
   const desc = (document.getElementById('prodDesc') && document.getElementById('prodDesc').value.trim()) || '';
   const featured = !!(document.getElementById('prodFeatured') && document.getElementById('prodFeatured').checked);
   const images = getProductImagesFromEditor();
   if (!name) { alert(L('err-prod-name')); return; }
   if (!sub) { alert(L('err-prod-sub')); return; }
   const products = S.getProducts();
-  const saveBtn = document.querySelector('#productModal .btn-primary');
+  const saveBtn = document.querySelector('#adminProductForm .admin-btn[type="submit"]');
   if (saveBtn) saveBtn.disabled = true;
   try {
-    let saveOpts = {};
-    if (editId) {
-      const id = parseInt(editId, 10);
-      const idx = products.findIndex(p => p.id === id);
-      if (idx !== -1) {
-        const prev = products[idx];
-        const next = {
-          ...prev,
-          name, category, sub, price, stock, desc, featured,
-          emoji: prev.emoji || '✦',
-        };
-        if (images.length) {
-          next.images = images;
-          next.image = images[0];
-        } else {
-          delete next.images;
-          delete next.image;
-        }
-        products[idx] = next;
-        saveOpts = { onlyIds: [id] };
-      }
-    } else {
-      const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
-      const item = { id: newId, name, category, sub, price, stock, desc, featured, emoji: '✦' };
-      if (images.length) {
-        item.images = images;
-        item.image = images[0];
-      }
-      products.push(item);
-      saveOpts = { onlyIds: [newId] };
+    const id = parseInt(editId, 10);
+    const idx = products.findIndex(p => p.id === id);
+    if (idx === -1) return;
+    const prev = products[idx];
+    const next = {
+      ...prev,
+      name, category, sub, price, stock, desc, featured,
+      emoji: prev.emoji || '✦',
+      sizeType,
+    };
+    if (sizeStock) next.sizeStock = sizeStock;
+    else {
+      delete next.sizeStock;
+      next.sizeType = 'none';
     }
-    const savePromise = S.saveProducts(products, saveOpts);
+    if (images.length) {
+      next.images = images;
+      next.image = images[0];
+    } else {
+      delete next.images;
+      delete next.image;
+    }
+    products[idx] = next;
+    const savePromise = S.saveProducts(products, { onlyIds: [id] });
     destroyProductCropper();
-    closeModal('productModal');
-    renderAdminProducts();
+    closeAdminProductEdit();
     await savePromise;
   } catch (err) {
     console.error(err);
     alert(err && err.message ? err.message : String(err));
-    renderAdminProducts();
+    paintAdminProductsList();
   }
   if (saveBtn) saveBtn.disabled = false;
 }
@@ -2433,13 +2865,11 @@ function confirmDeleteProduct(id) {
       if (u.wishlist) u.wishlist = u.wishlist.filter(i => i !== id);
     });
     await S.saveUsers(users);
-    closeModal('productModal');
-    renderAdminProducts();
+    closeAdminProductEdit();
   });
 }
 
 function closeModal(id) {
-  if (id === 'productModal') destroyProductCropper();
   document.getElementById(id).classList.remove('open');
 }
 
@@ -2484,9 +2914,44 @@ async function routeCompte() {
   }
 }
 
+function refreshAdminUi() {
+  if (!document.getElementById('page-admin')?.classList.contains('active')) return;
+  if (adminEditingId != null) return;
+  adminTab(adminTabActive);
+}
+
+function refreshAdminProducts() {
+  if (adminEditingId == null && adminTabActive === 'products') paintAdminProductsList();
+}
+
+window.adminTab = adminTab;
+window.adminGoProducts = adminGoProducts;
+window.openEditProduct = openEditProduct;
+window.setAdminSearch = setAdminSearch;
+window.setAdminFilter = setAdminFilter;
+window.adminFocusProduct = adminFocusProduct;
+window.closeAdminProductEdit = closeAdminProductEdit;
+window.updateAdminSizeTotalNote = updateAdminSizeTotalNote;
+window.refreshAdminProducts = refreshAdminProducts;
+window.renderAdminProducts = refreshAdminProducts;
+window.replaceSiteImage = replaceSiteImage;
+window.resetSiteImage = resetSiteImage;
+window.renderAdminSiteImages = renderAdminSiteImages;
+window.openSiteImageEditor = openSiteImageEditor;
+window.closeSiteImageEditor = closeSiteImageEditor;
+window.saveSiteImageEdit = saveSiteImageEdit;
+window.onSiteImageFilePick = onSiteImageFilePick;
+window.siteCropZoom = siteCropZoom;
+window.siteCropRotate = siteCropRotate;
+window.siteCropReset = siteCropReset;
+
 (function init() {
+  bindAdminPageNav();
   initProductPhotoSlotEvents();
   MD3Lang.init({ onChange: refreshCompteView });
+  if (window.MD3SiteAssets && MD3SiteAssets.init) {
+    MD3SiteAssets.init().catch(function (e) { console.error('MD3SiteAssets.init', e); });
+  }
   MD3Store.init().then(function () {
     routeCompte().catch((e) => console.error('routeCompte', e));
   }).catch(function (e) {
@@ -2505,7 +2970,7 @@ window.addEventListener('md3-products-updated', function () {
   clearTimeout(productsUiTimer);
   productsUiTimer = setTimeout(function () {
     if (document.getElementById('page-admin')?.classList.contains('active')) {
-      renderAdminProducts();
+      refreshAdminUi();
     }
     if (document.getElementById('page-profile')?.classList.contains('active')) {
       renderProfile();

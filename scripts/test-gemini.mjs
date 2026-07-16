@@ -31,26 +31,28 @@ if (!key) {
   process.exit(1);
 }
 
-if (/^AQ\.|^ya29\./i.test(key)) {
-  console.error('FAIL: GEMINI_API_KEY looks like an OAuth token (' + key.slice(0, 8) + '…).');
-  console.error('Create an API key at https://aistudio.google.com/apikey — it must start with AIza');
+if (/^ya29\./i.test(key)) {
+  console.error('FAIL: GEMINI_API_KEY looks like a Google sign-in OAuth token (ya29.…), not a Gemini API key.');
+  console.error('Create an API key at https://aistudio.google.com/apikey (AQ.… or AIza…)');
   process.exit(1);
 }
 
-if (!/^AIza[\w-]{20,}/i.test(key)) {
-  console.warn('WARN: Key does not match the usual AIza… format. Testing anyway…');
+if (!/^AQ\.[\w-]{20,}/i.test(key) && !/^AIza[\w-]{20,}/i.test(key)) {
+  console.warn('WARN: Key does not match the usual AQ.… or AIza… format. Testing anyway…');
 }
 
-const model = 'gemini-2.5-flash';
+const model = process.env.GEMINI_MODEL || env.GEMINI_MODEL || 'gemini-3-flash-preview';
 const url =
   'https://generativelanguage.googleapis.com/v1beta/models/' +
   encodeURIComponent(model) +
-  ':generateContent?key=' +
-  encodeURIComponent(key);
+  ':generateContent';
 
 const res = await fetch(url, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    'x-goog-api-key': key,
+  },
   body: JSON.stringify({
     contents: [{ parts: [{ text: 'Reply with exactly: OK' }] }],
   }),
@@ -61,10 +63,13 @@ if (!res.ok) {
   console.error('FAIL: HTTP', res.status);
   console.error(body.slice(0, 600));
   if (res.status === 401) {
-    console.error('\nGet a new key at https://aistudio.google.com/apikey');
+    console.error('\nRegenerate your key at https://aistudio.google.com/apikey');
+    if (/ACCESS_TOKEN_TYPE_UNSUPPORTED/i.test(body)) {
+      console.error('(AQ. keys must use the x-goog-api-key header — this script already does.)');
+    }
   }
   if (res.status === 403) {
-    console.error('\nEnable "Generative Language API" for your Google Cloud project, or use an AI Studio key.');
+    console.error('\nEnable "Generative Language API" for your Google Cloud project, or create a new AI Studio key.');
   }
   process.exit(1);
 }

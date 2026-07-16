@@ -17,8 +17,8 @@ const env = loadEnv(root);
 const config = {
   provider: env.AI_PROVIDER || 'gemini',
   geminiApiKey: env.GEMINI_API_KEY || '',
-  geminiModel: env.GEMINI_MODEL || 'gemini-2.5-pro',
-  geminiImageModel: env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image-preview',
+  geminiModel: env.GEMINI_MODEL || 'gemini-3-flash-preview',
+  geminiImageModel: env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image',
   geminiImageSize: env.GEMINI_IMAGE_SIZE || '2K',
   geminiImageAspect: env.GEMINI_IMAGE_ASPECT || '3:4',
   openaiApiKey: env.OPENAI_API_KEY || '',
@@ -47,9 +47,9 @@ if (!config.geminiApiKey && !config.openaiApiKey) {
     process.exit(1);
   }
   console.warn('Warning: ' + msg);
-} else if (/^AQ\.|^ya29\./i.test(config.geminiApiKey)) {
+} else if (/^ya29\./i.test(config.geminiApiKey)) {
   console.error(
-    'ERROR: GEMINI_API_KEY looks like an OAuth token, not a Gemini API key. Use https://aistudio.google.com/apikey (AIza…).'
+    'ERROR: GEMINI_API_KEY looks like a Google sign-in OAuth token (ya29.…), not a Gemini API key. Use https://aistudio.google.com/apikey (AQ.… or AIza…).'
   );
   process.exit(isCIRun ? 1 : 0);
 }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script src="md3-lang-boot.js"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>MD3 Scandi — Panier</title>
 <meta name="description" content="Votre panier MD3 Scandi." />
 <link rel="canonical" href="https://md3scandi.com/cart.html" />
@@ -11,7 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="md3-header.css?v=5" />
+<link rel="stylesheet" href="md3-header.css?v=15" />
+<link rel="stylesheet" href="md3-responsive.css?v=1" />
 <style>
   :root {
     --cream: #f5f0e8;
@@ -239,6 +240,7 @@
 </style>
 </head>
 <body data-meta-title="meta-title-cart" data-meta-desc="meta-desc-cart">
+<script src="md3-viewport.js"></script>
 
 <div id="md3-site-header"></div>
 
@@ -272,11 +274,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script src="md3-firebase.js?v=3"></script>
-<script src="md3-store.js?v=5"></script>
+<script src="md3-sizes.js?v=1"></script>
+<script src="md3-store.js?v=7"></script>
 <script src="md3-auth.js?v=3"></script>
 <script src="md3-nav-icons.js"></script>
-<script src="md3-header.js?v=3"></script>
-<script src="md3-lang.js?v=5"></script>
+<script src="md3-header.js?v=15"></script>
+<script src="md3-lang.js?v=26"></script>
 <script src="md3-currency.js?v=4"></script>
 <script>
 (function () {
@@ -310,23 +313,26 @@
       return;
     }
     let total = 0;
-    el.innerHTML = `<div class="cart-list">${lines.map(({ product: p, qty }) => {
+    el.innerHTML = `<div class="cart-list">${lines.map(({ key, product: p, qty, size }) => {
       total += p.price * qty;
       const cat = MD3Lang.translateCategory(p.category);
       const sub = MD3Lang.translateSub(p.sub);
-      return `<article class="cart-item" data-id="${p.id}">
+      const sizeLine = size ? `<p class="cart-item-size">${esc(t('label-size'))}: ${esc(size)}</p>` : '';
+      const lineKey = esc(key);
+      return `<article class="cart-item" data-key="${lineKey}">
         <div class="cart-item-visual">${S.productVisualInner(p)}</div>
         <div>
           <div class="cart-item-meta">${esc(cat)} · ${esc(sub)}</div>
-          <h2 class="cart-item-name">${esc(p.name)}</h2>
+          <h2 class="cart-item-name">${esc(MD3Lang.productName ? MD3Lang.productName(p) : p.name)}</h2>
+          ${sizeLine}
           <p class="cart-item-price">${MD3Currency.formatPrice(p.price)}</p>
         </div>
         <div class="cart-item-actions">
           <div class="qty-row">
             <span>${t('cart-qty')}</span>
-            <button type="button" class="qty-btn" onclick="changeQty(${p.id}, -1)" aria-label="-">−</button>
-            <span class="qty-val" id="qty-${p.id}">${qty}</span>
-            <button type="button" class="qty-btn" onclick="changeQty(${p.id}, 1)" aria-label="+">+</button>
+            <button type="button" class="qty-btn" onclick="changeQty(${JSON.stringify(key)}, -1)" aria-label="-">−</button>
+            <span class="qty-val">${qty}</span>
+            <button type="button" class="qty-btn" onclick="changeQty(${JSON.stringify(key)}, 1)" aria-label="+">+</button>
           </div>
         </div>
       </article>`;
@@ -356,36 +362,38 @@
 
   document.getElementById('confirmCancelBtn').addEventListener('click', closeConfirmModal);
 
-  window.confirmRemoveFromCart = function (id) {
-    const p = S.getProducts().find((x) => x.id === id);
+  window.confirmRemoveFromCart = function (lineKey) {
+    const lines = S.getCartLines();
+    const line = lines.find((l) => l.key === lineKey);
+    const p = line ? line.product : null;
     const text = p
-      ? t('confirm-cart-remove-named').replace('%s', p.name)
+      ? t('confirm-cart-remove-named').replace('%s', MD3Lang.productName ? MD3Lang.productName(p) : p.name)
       : t('confirm-cart-remove-text');
     openConfirmModal(t('confirm-cart-remove-title'), text, '🛒', () => {
-      removeLine(id).catch(function (e) {
+      removeLine(lineKey).catch(function (e) {
         console.error('removeFromCart', e);
       });
     });
   };
 
-  window.changeQty = async function (id, delta) {
+  window.changeQty = async function (lineKey, delta) {
     const lines = S.getCartLines();
-    const line = lines.find((l) => l.product.id === id);
+    const line = lines.find((l) => l.key === lineKey);
     if (!line) return;
     const next = line.qty + delta;
     if (next <= 0) {
-      confirmRemoveFromCart(id);
+      confirmRemoveFromCart(lineKey);
       return;
     }
-    const res = await S.setCartQty(id, next);
+    const res = await S.setCartQty(lineKey, next);
     if (!res.ok && delta > 0) alert(t('cart-max-stock'));
     renderCart();
     updateCartBadge();
   };
 
-  async function removeLine(id) {
+  async function removeLine(lineKey) {
     try {
-      await S.removeFromCart(id);
+      await S.removeFromCart(lineKey);
     } catch (e) {
       console.error('removeFromCart', e);
     }

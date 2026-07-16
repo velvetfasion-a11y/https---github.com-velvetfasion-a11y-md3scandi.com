@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <script src="md3-lang-boot.js"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>MD3 Scandi — Checkout</title>
 <meta name="description" content="Checkout MD3 Scandi." />
 <link rel="canonical" href="https://md3scandi.com/checkout.html" />
@@ -11,7 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="md3-header.css?v=5" />
+<link rel="stylesheet" href="md3-header.css?v=15" />
+<link rel="stylesheet" href="md3-responsive.css?v=1" />
 <style>
   :root {
     --cream: #f5f0e8;
@@ -315,6 +316,7 @@
 </style>
 </head>
 <body data-meta-title="meta-title-cart" data-meta-desc="meta-desc-cart">
+<script src="md3-viewport.js"></script>
 <div id="md3-site-header"></div>
 
 <main>
@@ -335,11 +337,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script src="md3-firebase.js?v=3"></script>
-<script src="md3-store.js?v=5"></script>
+<script src="md3-sizes.js?v=1"></script>
+<script src="md3-store.js?v=7"></script>
 <script src="md3-auth.js?v=3"></script>
 <script src="md3-nav-icons.js"></script>
-<script src="md3-header.js?v=3"></script>
-<script src="md3-lang.js?v=8"></script>
+<script src="md3-header.js?v=15"></script>
+<script src="md3-lang.js?v=26"></script>
 <script src="md3-currency.js?v=4"></script>
 <script src="email-config.js?v=3"></script>
 <script src="md3-email.js?v=4"></script>
@@ -372,10 +375,11 @@
     }
 
     let total = 0;
-    const summary = lines.map(({ product: p, qty }) => {
+    const summary = lines.map(({ product: p, qty, size }) => {
       total += p.price * qty;
+      const sizeLine = size ? ` · ${esc(t('label-size'))}: ${esc(size)}` : '';
       return `<div class="summary-line">
-        <div>${esc(p.name)}<br><small>${qty} x ${MD3Currency.formatPrice(p.price)}</small></div>
+        <div>${esc(MD3Lang.productName ? MD3Lang.productName(p) : p.name)}${sizeLine}<br><small>${qty} x ${MD3Currency.formatPrice(p.price)}</small></div>
         <strong>${MD3Currency.formatPrice(p.price * qty)}</strong>
       </div>`;
     }).join('');
@@ -658,8 +662,8 @@
         S.normalizeProductImages && S.normalizeProductImages(p)[0]
           ? S.normalizeProductImages(p)[0]
           : p.image || '';
-      params['item' + n + '_name'] = p.name || '';
-      params['item' + n + '_category'] = [p.category, p.sub].filter(Boolean).join(' · ');
+      params['item' + n + '_name'] = (MD3Lang.productName ? MD3Lang.productName(p) : p.name) || '';
+      params['item' + n + '_category'] = [MD3Lang.translateCategory(p.category), MD3Lang.translateSub(p.sub)].filter(Boolean).join(' · ');
       params['item' + n + '_image'] = image;
       params['item' + n + '_qty'] = qty || 0;
       params['item' + n + '_price'] = MD3Currency.formatPrice(p.price);
