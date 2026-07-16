@@ -100,11 +100,12 @@ html.is-mobile #md3-hero.home-hero--cinema {
 
 html[data-viewport='mobile'] .home-hero-heading,
 html.is-mobile .home-hero-heading {
-  top: calc(var(--md3-chrome-h, 96px) + 0.5rem);
-  left: 1.15rem;
+  top: auto;
+  left: auto;
   right: auto;
-  max-width: min(88%, 20rem);
+  max-width: none;
   text-align: left;
+  margin-bottom: 0.65rem;
 }
 
 html[data-viewport='mobile'] .home-hero-line2,
@@ -118,7 +119,7 @@ html[data-viewport='mobile'] .home-hero-foot,
 html.is-mobile .home-hero-foot {
   left: 1.15rem;
   right: 1.15rem;
-  bottom: max(18%, calc(env(safe-area-inset-bottom, 0px) + 5.5rem));
+  bottom: max(14%, calc(env(safe-area-inset-bottom, 0px) + 4.5rem));
   max-width: none;
   width: auto;
   box-sizing: border-box;
