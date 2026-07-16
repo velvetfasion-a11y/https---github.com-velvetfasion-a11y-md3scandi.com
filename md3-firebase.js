@@ -176,13 +176,76 @@
     return raw;
   }
 
+  function restFieldValue(v) {
+    if (v == null) return undefined;
+    if (Object.prototype.hasOwnProperty.call(v, 'stringValue')) return v.stringValue;
+    if (Object.prototype.hasOwnProperty.call(v, 'integerValue')) return Number(v.integerValue);
+    if (Object.prototype.hasOwnProperty.call(v, 'doubleValue')) return Number(v.doubleValue);
+    if (Object.prototype.hasOwnProperty.call(v, 'booleanValue')) return !!v.booleanValue;
+    if (Object.prototype.hasOwnProperty.call(v, 'nullValue')) return null;
+    if (v.arrayValue && Array.isArray(v.arrayValue.values)) {
+      return v.arrayValue.values.map(restFieldValue);
+    }
+    if (v.mapValue && v.mapValue.fields) {
+      const out = {};
+      Object.keys(v.mapValue.fields).forEach((k) => {
+        out[k] = restFieldValue(v.mapValue.fields[k]);
+      });
+      return out;
+    }
+    return undefined;
+  }
+
+  function productFromRestDoc(doc) {
+    if (!doc || !doc.fields) return null;
+    const raw = {};
+    Object.keys(doc.fields).forEach((k) => {
+      raw[k] = restFieldValue(doc.fields[k]);
+    });
+    if (raw.id == null && doc.name) {
+      const parts = String(doc.name).split('/');
+      raw.id = Number(parts[parts.length - 1]);
+    }
+    return normalizeProduct(raw);
+  }
+
+  /** Public REST read — works even when the compat SDK is blocked/slow on some domains. */
+  async function loadProductsViaRest() {
+    const c = config();
+    if (!c || !c.projectId || !c.apiKey) return null;
+    const url =
+      'https://firestore.googleapis.com/v1/projects/' +
+      encodeURIComponent(c.projectId) +
+      '/databases/(default)/documents/products?pageSize=200&key=' +
+      encodeURIComponent(c.apiKey);
+    try {
+      const res = await fetch(url, { credentials: 'omit' });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const list = (data.documents || []).map(productFromRestDoc).filter(Boolean);
+      list.sort((a, b) => a.id - b.id);
+      return list.length ? list : null;
+    } catch (e) {
+      console.error('loadProductsViaRest', e);
+      return null;
+    }
+  }
+
   async function loadProducts() {
-    if (!db) return null;
-    const snap = await productsCol().get();
-    if (snap.empty) return null;
-    const list = snap.docs.map((d) => normalizeProduct(d.data())).filter(Boolean);
-    list.sort((a, b) => a.id - b.id);
-    return list;
+    let list = null;
+    if (db) {
+      try {
+        const snap = await productsCol().get();
+        if (!snap.empty) {
+          list = snap.docs.map((d) => normalizeProduct(d.data())).filter(Boolean);
+          list.sort((a, b) => a.id - b.id);
+        }
+      } catch (e) {
+        console.error('loadProducts sdk', e);
+      }
+    }
+    if (list && list.length) return list;
+    return loadProductsViaRest();
   }
 
   async function saveProducts(products, options) {
@@ -411,6 +474,7 @@
     init,
     getAuth,
     loadProducts,
+    loadProductsViaRest,
     saveProducts,
     watchProducts,
     loadUsersMap,

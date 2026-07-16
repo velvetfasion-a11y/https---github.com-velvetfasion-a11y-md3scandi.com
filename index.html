@@ -213,9 +213,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="md3-firebase.js?v=3"></script>
+<script src="md3-firebase.js?v=4"></script>
 <script src="md3-sizes.js?v=1"></script>
-<script src="md3-store.js?v=16"></script>
+<script src="md3-store.js?v=17"></script>
 <script src="md3-site-assets.js?v=7"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js?v=19"></script>
@@ -391,6 +391,9 @@
           if (window.MD3SiteAssets) MD3SiteAssets.init();
         } catch (e) {}
         bootShop();
+        // Second pass after cloud catalog settles (featured stars from Firebase)
+        setTimeout(scheduleFeaturedRender, 400);
+        setTimeout(scheduleFeaturedRender, 1500);
       })
       .catch(function (e) {
         console.error('MD3Store.init', e);

@@ -238,9 +238,14 @@
     return v === true || v === 1 || v === '1' || v === 'true' || v === 'yes';
   }
 
-  function markProductsPendingCloud(list) {
+  function markProductsPendingCloud(list, opts) {
     try {
-      localStorage.setItem(PENDING_PRODUCTS_KEY, JSON.stringify(list || productsCache || []));
+      const payload = {
+        products: list || productsCache || [],
+        onlyIds: opts && opts.onlyIds ? opts.onlyIds.map(String) : null,
+        savedAt: Date.now(),
+      };
+      localStorage.setItem(PENDING_PRODUCTS_KEY, JSON.stringify(payload));
     } catch (_) {}
   }
 
@@ -254,8 +259,18 @@
     try {
       const raw = localStorage.getItem(PENDING_PRODUCTS_KEY);
       if (!raw) return null;
-      const list = JSON.parse(raw);
-      return Array.isArray(list) ? list.map(normalizeProductFields) : null;
+      const parsed = JSON.parse(raw);
+      // Legacy: bare product array
+      if (Array.isArray(parsed)) {
+        return { products: parsed.map(normalizeProductFields), onlyIds: null };
+      }
+      if (parsed && Array.isArray(parsed.products)) {
+        return {
+          products: parsed.products.map(normalizeProductFields),
+          onlyIds: Array.isArray(parsed.onlyIds) ? parsed.onlyIds.map(String) : null,
+        };
+      }
+      return null;
     } catch (_) {
       return null;
     }
@@ -267,13 +282,56 @@
     return global.MD3Firebase.init();
   }
 
+  /**
+   * Flush queued product writes safely:
+   * - never full-replace the cloud catalog (that wiped featured stars)
+   * - preserve remote featured:true when a stale pending copy has featured:false
+   * - only write the pending ids (or intersection), never delete remote-only products
+   */
   async function flushPendingProductsCloud() {
     const pending = readProductsPendingCloud();
-    if (!pending) return false;
+    if (!pending || !pending.products || !pending.products.length) return false;
     const ok = await ensureCloudReady();
     if (!ok || !global.MD3Firebase.isEnabled()) return false;
-    await global.MD3Firebase.saveProducts(pending);
+
+    let remote = [];
+    try {
+      remote = (await global.MD3Firebase.loadProducts()) || [];
+    } catch (_) {
+      remote = [];
+    }
+    const remoteById = new Map(remote.map((p) => [String(p.id), p]));
+
+    const idsToWrite = pending.onlyIds
+      ? pending.onlyIds
+      : pending.products.map((p) => String(p.id));
+
+    const toSave = [];
+    idsToWrite.forEach((id) => {
+      const local = pending.products.find((p) => String(p.id) === String(id));
+      if (!local) return;
+      const cloud = remoteById.get(String(id));
+      if (cloud && isProductFeatured(cloud) && !isProductFeatured(local)) {
+        toSave.push({ ...local, featured: true });
+      } else {
+        toSave.push(local);
+      }
+    });
+
+    if (!toSave.length) {
+      clearProductsPendingCloud();
+      return false;
+    }
+
+    // Merge into full list for local cache coherence, but only write changed ids
+    const byId = new Map(remote.map((p) => [String(p.id), p]));
+    toSave.forEach((p) => byId.set(String(p.id), normalizeProductFields(p)));
+    const merged = Array.from(byId.values()).sort((a, b) => a.id - b.id);
+    await global.MD3Firebase.saveProducts(merged, {
+      onlyIds: toSave.map((p) => p.id),
+    });
     clearProductsPendingCloud();
+    setProductsCache(merged);
     return true;
   }
 
@@ -283,7 +341,7 @@
     setProductsCache(list);
     const ok = await ensureCloudReady();
     if (!ok || !global.MD3Firebase.isEnabled()) {
-      markProductsPendingCloud(list);
+      markProductsPendingCloud(list, opts);
       return;
     }
     try {
@@ -299,7 +357,7 @@
         setProductsCache(merged);
       }
     } catch (e) {
-      markProductsPendingCloud(list);
+      markProductsPendingCloud(list, opts);
       console.error('saveProducts cloud queued for retry', e);
     }
   }
@@ -824,34 +882,49 @@
   async function syncCloud() {
     if (!global.MD3Firebase || !global.MD3Firebase.isConfigured()) return;
     const ok = await global.MD3Firebase.init();
-    if (!ok) return;
-
     const FB = global.MD3Firebase;
 
     try {
-      await flushPendingProductsCloud();
-      const remoteProducts = await FB.loadProducts();
+      if (ok) {
+        await flushPendingProductsCloud();
+      }
+
+      let remoteProducts = null;
+      try {
+        remoteProducts = await FB.loadProducts();
+      } catch (e) {
+        console.error('syncCloud loadProducts', e);
+      }
+      // SDK may be unavailable on some hosts — REST still returns the catalog
+      if ((!remoteProducts || !remoteProducts.length) && FB.loadProductsViaRest) {
+        remoteProducts = await FB.loadProductsViaRest();
+      }
+
       if (remoteProducts && remoteProducts.length) {
-        // Merge: keep any local-only products not yet in Firebase
         const remoteIds = new Set(remoteProducts.map((p) => String(p.id)));
-        const localOnly = productsCache.filter((p) => !remoteIds.has(String(p.id)));
+        const localOnly = (productsCache || []).filter((p) => !remoteIds.has(String(p.id)));
         if (localOnly.length) {
           const merged = [...remoteProducts, ...localOnly];
           merged.sort((a, b) => a.id - b.id);
           setProductsCache(merged);
-          FB.saveProducts(merged, { onlyIds: localOnly.map((p) => p.id) }).catch((e) =>
-            console.error('syncCloud push local-only products', e)
-          );
+          if (ok) {
+            FB.saveProducts(merged, { onlyIds: localOnly.map((p) => p.id) }).catch((e) =>
+              console.error('syncCloud push local-only products', e)
+            );
+          }
         } else {
           setProductsCache(remoteProducts);
         }
-      } else if (productsCache.length) {
+        // Always refresh homepage featured strip after cloud catalog lands
+        notifyProductsUpdated();
+      } else if (ok && productsCache && productsCache.length) {
         await FB.saveProducts(productsCache);
       }
 
+      if (!ok) return;
+
       FB.watchProducts((list) => {
         if (!list || !list.length) return;
-        // Same merge: never drop local-only products via a watcher update
         const remoteIds = new Set(list.map((p) => String(p.id)));
         const localOnly = productsCache
           ? productsCache.filter((p) => !remoteIds.has(String(p.id)))
