@@ -26,16 +26,6 @@ const config = {
 
 if (config.measurementId === '') delete config.measurementId;
 
-const body = `/**
- * AUTO-GENERATED — do not edit. All values belong in .env only.
- * Run: node scripts/sync-firebase-config.mjs
- */
-window.MD3_FIREBASE_CONFIG = ${JSON.stringify(config, null, 2)};
-`;
-
-fs.writeFileSync(outPath, body, 'utf8');
-console.log('Wrote', path.relative(root, outPath));
-
 const required = [
   ['FIREBASE_API_KEY', config.apiKey],
   ['FIREBASE_AUTH_DOMAIN', config.authDomain],
@@ -46,11 +36,44 @@ const required = [
 ];
 const missing = required.filter(([, v]) => !v || String(v).includes('YOUR_')).map(([k]) => k);
 
-if (missing.length) {
-  const msg = 'Missing in .env: ' + missing.join(', ');
-  // Never block GitHub Pages deploy — storefront still works with local defaults.
-  console.warn('Warning: ' + msg);
-  if (isCI()) {
-    console.warn('Add Firebase secrets in GitHub → Settings → Secrets → Actions for cloud product sync.');
+function existingConfigLooksValid() {
+  if (!fs.existsSync(outPath)) return false;
+  try {
+    const body = fs.readFileSync(outPath, 'utf8');
+    return (
+      /"apiKey"\s*:\s*"[^"]+"/m.test(body) &&
+      !/"apiKey"\s*:\s*""/m.test(body) &&
+      !body.includes('YOUR_')
+    );
+  } catch (_) {
+    return false;
   }
 }
+
+if (missing.length) {
+  const msg = 'Missing Firebase env: ' + missing.join(', ');
+  if (existingConfigLooksValid()) {
+    console.warn('Warning: ' + msg);
+    console.warn('Keeping existing firebase-config.js (do not overwrite with empty values).');
+    process.exit(0);
+  }
+  console.error('Error: ' + msg);
+  if (isCI()) {
+    console.error(
+      'Add FIREBASE_* secrets in GitHub → Settings → Secrets → Actions, or commit a valid firebase-config.js.'
+    );
+  } else {
+    console.error('Set FIREBASE_* in .env and re-run this script.');
+  }
+  process.exit(1);
+}
+
+const body = `/**
+ * AUTO-GENERATED — do not edit. All values belong in .env only.
+ * Run: node scripts/sync-firebase-config.mjs
+ */
+window.MD3_FIREBASE_CONFIG = ${JSON.stringify(config, null, 2)};
+`;
+
+fs.writeFileSync(outPath, body, 'utf8');
+console.log('Wrote', path.relative(root, outPath));

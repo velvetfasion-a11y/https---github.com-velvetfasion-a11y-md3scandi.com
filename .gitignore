@@ -1,7 +1,7 @@
 # EmailJS private template keys (optional — public key can be committed)
 email-config.js
 recaptcha-config.js
-firebase-config.js
+# firebase-config.js is committed (public web API keys) so GitHub Pages / custom domain can sync products
 firebase-config.example.js
 ai-config.js
 ai-config.example.js
