@@ -1075,6 +1075,13 @@ html.is-mobile #md3-hero .hero-bg-img {
   transform: translateY(24px);
 }
 
+/* Featured carousel must never be invisible — photos are the section */
+.js-reveal .home-featured.reveal,
+.js-reveal #boutique.reveal {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
 .js-reveal .reveal.in-view {
   opacity: 1;
   transform: translateY(0);
