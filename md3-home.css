@@ -98,6 +98,13 @@ body.home-page {
   }
 }
 
+html[data-viewport='desktop'] #md3-hero .hero-bg-img,
+html.is-desktop #md3-hero .hero-bg-img {
+  object-position: 68% 35%;
+  transform: scale(1.32) translate3d(0, 11%, 0);
+  transform-origin: 70% 0%;
+}
+
 html[data-viewport='mobile'] #md3-hero .hero-bg-img,
 html.is-mobile #md3-hero .hero-bg-img {
   /* Model sits ~68–72% from left in NyZx3 — bias crop onto her face/torso */
