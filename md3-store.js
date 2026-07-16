@@ -340,29 +340,57 @@
     return false;
   }
 
+  const DEMO_FEATURED_NAMES = {
+    1: ['robe lin ivoire', 'ivory linen dress'],
+    4: ['canapé stockholm', 'canape stockholm', 'stockholm sofa'],
+    7: ['carafe nordique', 'nordic carafe'],
+    9: ['set lin naturel', 'natural linen set'],
+  };
+
+  function isDemoCatalogProduct(p) {
+    if (!p) return false;
+    const id = Number(p.id);
+    const names = DEMO_FEATURED_NAMES[id];
+    if (!names) return false;
+    const name = String(p.name || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    return names.some((n) => n.normalize('NFD').replace(/[\u0300-\u036f]/g, '') === name);
+  }
+
   /**
-   * One-time: drop the old auto-seeded ★ on default demo products (1/4/7/9)
-   * when those were the only starred items — so the carousel stops showing them
-   * until the admin stars products on purpose.
+   * Firebase still had the old demo products (Dress/Sofa/Carafe) marked featured.
+   * Clear those once after cloud sync and write back so the homepage only shows
+   * products the admin explicitly stars.
    */
-  function clearLegacyAutoFeatured() {
-    const FLAG = 'md3_no_autoseed_featured_v1';
+  async function clearLegacyAutoFeatured() {
+    const FLAG = 'md3_no_autoseed_featured_v3';
     try {
-      if (typeof localStorage === 'undefined' || localStorage.getItem(FLAG)) return;
+      if (typeof localStorage === 'undefined') return false;
+      if (localStorage.getItem(FLAG)) return false;
       ensureCaches();
-      const legacyIds = new Set([1, 4, 7, 9]);
-      const starred = (productsCache || []).filter(isProductFeatured);
-      const onlyLegacy =
-        starred.length > 0 && starred.every((p) => legacyIds.has(Number(p.id)));
-      if (onlyLegacy) {
-        productsCache = productsCache.map((p) =>
-          legacyIds.has(Number(p.id)) ? { ...p, featured: false } : p
-        );
-        localStorage.setItem(PRODUCTS_KEY, JSON.stringify(productsCache));
-        notifyProductsUpdated();
-      }
+      const changedIds = [];
+      const next = (productsCache || []).map((p) => {
+        if (isProductFeatured(p) && isDemoCatalogProduct(p)) {
+          changedIds.push(p.id);
+          return { ...p, featured: false };
+        }
+        return p;
+      });
       localStorage.setItem(FLAG, '1');
-    } catch (_) {}
+      if (!changedIds.length) return false;
+      setProductsCache(next);
+      try {
+        await saveProducts(next, { onlyIds: changedIds });
+      } catch (e) {
+        console.error('clearLegacyAutoFeatured persist', e);
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   function getFeaturedProducts() {
@@ -894,17 +922,19 @@
 
   async function init() {
     ensureCaches();
-    clearLegacyAutoFeatured();
     syncHomeFeaturedFlags();
     pruneAllCartsLocal();
     try {
       await syncCloud();
+      // After Firebase load — strip old demo ★ and persist so sync can't bring them back
+      await clearLegacyAutoFeatured();
       syncHomeFeaturedFlags();
       if (global.MD3Auth && global.MD3Auth.initSessionSync) {
         await global.MD3Auth.initSessionSync();
       }
     } catch (e) {
       console.error('MD3Store cloud sync', e);
+      await clearLegacyAutoFeatured();
     }
     readyResolve();
   }

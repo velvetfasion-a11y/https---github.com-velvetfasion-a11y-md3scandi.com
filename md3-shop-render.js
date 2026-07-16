@@ -348,7 +348,7 @@
       const featuredOk =
         global.MD3Store && global.MD3Store.isProductFeatured
           ? global.MD3Store.isProductFeatured(p)
-          : p && p.featured !== false;
+          : !!(p && p.featured);
       if (!featuredOk) return;
       seen.add(id);
       list.push(p);
