@@ -88,15 +88,15 @@
 
   function defaultProducts() {
     return [
-      { id: 1, name: 'Robe Lin Ivoire', category: 'Mode', sub: 'Vêtements', price: 149, emoji: '👗', image: 'images/cat-mode.jpg', sizeType: 'clothes', sizeStock: { XS: 1, S: 2, M: 3, L: 2, XL: 0, XXL: 0 }, stock: 8, featured: true, desc: 'Robe en lin lavé, coupe fluide et intemporelle.' },
+      { id: 1, name: 'Robe Lin Ivoire', category: 'Mode', sub: 'Vêtements', price: 149, emoji: '👗', image: 'images/cat-mode.jpg', sizeType: 'clothes', sizeStock: { XS: 1, S: 2, M: 3, L: 2, XL: 0, XXL: 0 }, stock: 8, featured: false, desc: 'Robe en lin lavé, coupe fluide et intemporelle.' },
       { id: 2, name: 'Sac Tote Naturel', category: 'Mode', sub: 'Sacs', price: 89, emoji: '👜', stock: 5, featured: false, desc: '' },
       { id: 3, name: 'Sneakers Blanches', category: 'Mode', sub: 'Chaussures', price: 195, emoji: '👟', sizeType: 'shoes', sizeStock: { 36: 0, 37: 1, 38: 2, 39: 2, 40: 1, 41: 0, 42: 0, 43: 0, 44: 0, 45: 0 }, stock: 6, featured: false, desc: '' },
-      { id: 4, name: 'Canapé Stockholm', category: 'Maison', sub: 'Canapés', price: 1290, emoji: '🛋️', image: 'images/cat-maison.jpg', stock: 3, featured: true, desc: 'Canapé scandinave en tissu naturel, lignes épurées.' },
+      { id: 4, name: 'Canapé Stockholm', category: 'Maison', sub: 'Canapés', price: 1290, emoji: '🛋️', image: 'images/cat-maison.jpg', stock: 3, featured: false, desc: 'Canapé scandinave en tissu naturel, lignes épurées.' },
       { id: 5, name: 'Lampe Bouleau', category: 'Maison', sub: 'Lampes', price: 245, emoji: '💡', stock: 12, featured: false, desc: '' },
       { id: 6, name: 'Vase Grès Gris', category: 'Maison', sub: 'Déco', price: 68, emoji: '🏺', stock: 0, featured: false, desc: '' },
-      { id: 7, name: 'Carafe Nordique', category: 'Lifestyle', sub: 'Vaisselle', price: 55, emoji: '🫙', image: 'images/cat-lifestyle.jpg', stock: 20, featured: true, desc: 'Carafe en verre soufflé, design minimal.' },
+      { id: 7, name: 'Carafe Nordique', category: 'Lifestyle', sub: 'Vaisselle', price: 55, emoji: '🫙', image: 'images/cat-lifestyle.jpg', stock: 20, featured: false, desc: 'Carafe en verre soufflé, design minimal.' },
       { id: 8, name: 'Bougie Hygge', category: 'Lifestyle', sub: 'Déco', price: 32, emoji: '🕯️', stock: 2, featured: false, desc: '' },
-      { id: 9, name: 'Set Lin Naturel', category: 'Édition limitée', sub: 'Textile', price: 320, emoji: '✨', image: 'images/journal-linen.jpg', stock: 1, featured: true, desc: 'Édition limitée — linge de maison en lin européen.' },
+      { id: 9, name: 'Set Lin Naturel', category: 'Édition limitée', sub: 'Textile', price: 320, emoji: '✨', image: 'images/journal-linen.jpg', stock: 1, featured: false, desc: 'Édition limitée — linge de maison en lin européen.' },
     ].map(normalizeProductFields);
   }
 
@@ -320,59 +320,49 @@
     return `<span class="product-emoji-fallback">${(p && p.emoji) || '✦'}</span>`;
   }
 
-  /** Default featured IDs when seeding an empty catalog (admin stars override this). */
-  const HOME_FEATURED_IDS = [1, 4, 7, 9];
+  /** @deprecated No longer auto-seeds — homepage only shows admin-starred products. */
+  const HOME_FEATURED_IDS = [];
 
   function productIdNum(id) {
     const n = Number(id);
     return Number.isFinite(n) ? n : null;
   }
 
-  /** Homepage “Pieces to remember” — only products starred in admin (`featured`). */
+  /** Homepage carousel — only products starred in admin (`featured: true`). */
   function getHomeFeaturedProducts() {
     return getProducts().filter(isProductFeatured);
   }
 
   /**
-   * Seed featured flags from HOME_FEATURED_IDS only when nothing is starred yet.
-   * Never overwrite admin-chosen featured products.
+   * Do not auto-star products. Featured flags come only from admin.
    */
   function syncHomeFeaturedFlags() {
-    const products = getProducts();
-    if (!products.length) return false;
-    if (products.some(isProductFeatured)) return false;
+    return false;
+  }
 
-    const featuredSet = new Set(HOME_FEATURED_IDS.map(productIdNum).filter((n) => n != null));
-    const hasDefaultIds = products.some((p) => {
-      const id = productIdNum(p.id);
-      return id != null && featuredSet.has(id);
-    });
-    const seedIds = hasDefaultIds
-      ? featuredSet
-      : new Set(
-          products
-            .slice(0, 4)
-            .map((p) => productIdNum(p.id))
-            .filter((n) => n != null)
-        );
-
-    let changed = false;
-    const next = products.map((p) => {
-      const id = productIdNum(p.id);
-      const want = id != null && seedIds.has(id);
-      if (!!p.featured !== want) {
-        changed = true;
-        return { ...p, featured: want };
-      }
-      return p;
-    });
-    if (!changed) return false;
-    productsCache = next;
+  /**
+   * One-time: drop the old auto-seeded ★ on default demo products (1/4/7/9)
+   * when those were the only starred items — so the carousel stops showing them
+   * until the admin stars products on purpose.
+   */
+  function clearLegacyAutoFeatured() {
+    const FLAG = 'md3_no_autoseed_featured_v1';
     try {
-      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(next));
+      if (typeof localStorage === 'undefined' || localStorage.getItem(FLAG)) return;
+      ensureCaches();
+      const legacyIds = new Set([1, 4, 7, 9]);
+      const starred = (productsCache || []).filter(isProductFeatured);
+      const onlyLegacy =
+        starred.length > 0 && starred.every((p) => legacyIds.has(Number(p.id)));
+      if (onlyLegacy) {
+        productsCache = productsCache.map((p) =>
+          legacyIds.has(Number(p.id)) ? { ...p, featured: false } : p
+        );
+        localStorage.setItem(PRODUCTS_KEY, JSON.stringify(productsCache));
+        notifyProductsUpdated();
+      }
+      localStorage.setItem(FLAG, '1');
     } catch (_) {}
-    notifyProductsUpdated();
-    return true;
   }
 
   function getFeaturedProducts() {
@@ -904,6 +894,7 @@
 
   async function init() {
     ensureCaches();
+    clearLegacyAutoFeatured();
     syncHomeFeaturedFlags();
     pruneAllCartsLocal();
     try {
