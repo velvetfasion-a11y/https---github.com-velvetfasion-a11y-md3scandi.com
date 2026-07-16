@@ -220,18 +220,57 @@
   }
 
   /**
-   * Continuous infinite marquee — two identical groups, CSS translateX(-50%).
+   * 3-up featured carousel: center one product for 2s, then step to the next.
+   * Duplicated group → seamless infinite loop.
    */
-  function stopFeaturedAutoplay() {}
+  let featuredAutoplayTimer = null;
+  let featuredTransitionTimer = null;
+  let featuredIndex = 0;
+  let featuredScrollLock = false;
+
+  function stopFeaturedAutoplay() {
+    if (featuredAutoplayTimer) {
+      clearInterval(featuredAutoplayTimer);
+      featuredAutoplayTimer = null;
+    }
+    if (featuredTransitionTimer) {
+      clearTimeout(featuredTransitionTimer);
+      featuredTransitionTimer = null;
+    }
+  }
+
+  function setFeaturedOffset(track, px, animate) {
+    if (!track) return;
+    track.style.transition = animate ? 'transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)' : 'none';
+    track.style.transform = 'translate3d(' + px + 'px, 0, 0)';
+  }
+
+  function markFeaturedCenter(track, logicalIndex, count) {
+    if (!track || !count) return;
+    const cards = track.querySelectorAll('.home-product-card');
+    const i = ((logicalIndex % count) + count) % count;
+    cards.forEach((card, idx) => {
+      card.classList.toggle('is-center', idx % count === i);
+    });
+  }
 
   function startFeaturedAutoplay(carousel) {
+    stopFeaturedAutoplay();
     if (!carousel) return;
+
     const track = carousel.querySelector('.home-featured-track') || carousel.firstElementChild;
     if (!track) return;
 
-    const groups = track.querySelectorAll('.home-featured-group');
+    track.style.animation = 'none';
+    track.classList.remove('is-ready');
+
+    let groups = track.querySelectorAll('.home-featured-group');
     const group = groups[0];
     if (!group) return;
+
+    const baseCards = group.querySelectorAll('.home-product-card');
+    const count = baseCards.length;
+    if (count < 1) return;
 
     if (groups.length < 2) {
       const clone = group.cloneNode(true);
@@ -239,16 +278,70 @@
       track.appendChild(clone);
     }
 
-    const n = Math.max(1, group.querySelectorAll('.home-product-card').length);
-    const seconds = Math.max(28, Math.min(70, n * 5));
-    track.style.setProperty('--featured-marquee-duration', seconds + 's');
-    track.classList.add('is-ready');
+    featuredIndex = 0;
+    let wrapping = false;
+
+    function sidePad() {
+      const card = baseCards[0];
+      return Math.max(0, (carousel.clientWidth - (card ? card.offsetWidth : 0)) / 2);
+    }
+
+    function offsetForIndex(index) {
+      const cards = track.querySelectorAll('.home-product-card');
+      const card = cards[index];
+      if (!card) return sidePad();
+      return sidePad() - card.offsetLeft;
+    }
+
+    function apply(animate) {
+      setFeaturedOffset(track, offsetForIndex(featuredIndex), animate);
+      markFeaturedCenter(track, featuredIndex, count);
+    }
+
+    apply(false);
+    requestAnimationFrame(function () {
+      apply(false);
+    });
+
+    featuredAutoplayTimer = window.setInterval(function () {
+      if (wrapping || featuredScrollLock) return;
+      featuredIndex += 1;
+      apply(true);
+
+      if (featuredIndex >= count) {
+        wrapping = true;
+        featuredTransitionTimer = window.setTimeout(function () {
+          featuredIndex = 0;
+          apply(false);
+          wrapping = false;
+        }, 560);
+      }
+    }, 2000);
+
+    if (!carousel.dataset.md3StepBound) {
+      carousel.dataset.md3StepBound = '1';
+      window.addEventListener(
+        'resize',
+        function () {
+          apply(false);
+        },
+        { passive: true }
+      );
+      carousel.addEventListener(
+        'pointerdown',
+        function () {
+          stopFeaturedAutoplay();
+        },
+        { passive: true }
+      );
+    }
   }
 
   function renderHomeCarousel(container, products, labels) {
     if (!container) return;
     const lbl = labels || homeLabels();
     const carousel = container.closest('.home-featured-carousel') || container.parentElement;
+    stopFeaturedAutoplay();
 
     if (!products.length) {
       container.innerHTML = '';
@@ -256,7 +349,6 @@
       return;
     }
 
-    // Unique products first
     const seen = new Set();
     let list = [];
     products.forEach((p) => {
@@ -266,11 +358,10 @@
       list.push(p);
     });
 
-    // Pad with more catalog items (not the same product repeated) so the strip feels full
-    if (list.length < 6 && global.MD3Store && global.MD3Store.getProducts) {
+    if (list.length < 3 && global.MD3Store && global.MD3Store.getProducts) {
       try {
         global.MD3Store.getProducts().forEach((p) => {
-          if (list.length >= 8) return;
+          if (list.length >= 6) return;
           const id = p && p.id != null ? String(p.id) : '';
           if (!id || seen.has(id)) return;
           const name = String((p && p.name) || '').trim();
@@ -281,19 +372,18 @@
       } catch (_) {}
     }
 
+    while (list.length > 0 && list.length < 3) list = list.concat(list);
     if (!list.length) return;
 
-    // Duplicate the set only as needed for a wide enough loop track
-    let loop = list.slice();
-    while (loop.length < 6) loop = loop.concat(list);
-
-    const cards = loop.map((p) => storeCardHomeHtml(p, lbl)).join('');
+    const cards = list.map((p) => storeCardHomeHtml(p, lbl)).join('');
     container.innerHTML =
       '<div class="home-featured-group">' +
       cards +
       '</div><div class="home-featured-group" aria-hidden="true">' +
       cards +
       '</div>';
+    container.classList.add('is-ready');
+    container.style.removeProperty('--featured-marquee-duration');
 
     requestAnimationFrame(function () {
       startFeaturedAutoplay(carousel);
