@@ -33,14 +33,14 @@
     }
 
     if (DESKTOP_MQ.matches) {
-      // Keep her face below the header/nav band
+      // Keep her face clearly below the header/nav band
       const x = Math.min(62, Math.max(54, 58 + (ar - 1.6) * 2));
-      const y = Math.min(32, Math.max(22, 26 + (1.85 - ar) * 3));
+      const y = Math.min(22, Math.max(12, 16 + (1.85 - ar) * 2));
       img.style.objectPosition = x.toFixed(1) + '% ' + y.toFixed(1) + '%';
       return;
     }
 
-    img.style.objectPosition = '58% 30%';
+    img.style.objectPosition = '58% 18%';
   }
 
   function clearCtaScrollState() {

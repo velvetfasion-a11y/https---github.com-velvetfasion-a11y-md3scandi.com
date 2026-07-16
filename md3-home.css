@@ -77,13 +77,13 @@ body.home-page {
   height: 100%;
   object-fit: cover;
   /* Desktop: bias up so her face sits below the nav, not under LIFESTYLE / LIMITED */
-  object-position: 58% 28%;
+  object-position: 58% 18%;
   display: block;
 }
 
 @media (min-width: 769px) {
   #md3-hero .hero-bg-img {
-    object-position: 58% 26%;
+    object-position: 58% 16%;
   }
 }
 
