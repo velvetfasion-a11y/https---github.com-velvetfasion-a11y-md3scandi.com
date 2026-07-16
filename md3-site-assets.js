@@ -8,7 +8,7 @@
       label: 'Homepage hero',
       labelKey: 'site-img-hero',
       aliases: ['header', 'hero', 'start', 'top banner', 'huvudbild'],
-      defaultSrc: 'images/NyZx3.jpg?v=1',
+      defaultSrc: 'images/NyZx3.jpg?v=2',
       aspectRatio: 1376 / 752,
       maxWidth: 3840,
       admin: true,
@@ -175,12 +175,12 @@
 
     const heroImg = root.querySelector('#md3-hero .hero-bg-img, .hero-bg-img');
     if (heroImg) {
-      const url = images.hero || IMAGE_SLOTS.hero.defaultSrc;
-      if (url) {
-        heroImg.src = url;
-        const pic = heroImg.closest('picture');
-        if (pic) pic.querySelectorAll('source').forEach((s) => s.remove());
-      }
+      // Homepage hero is locked to NyZx3.jpg
+      const url = IMAGE_SLOTS.hero.defaultSrc;
+      heroImg.src = url;
+      heroImg.setAttribute('src', url);
+      const pic = heroImg.closest('picture');
+      if (pic) pic.querySelectorAll('source').forEach((s) => s.remove());
     }
 
     Object.entries(IMAGE_SLOTS).forEach(([slot, meta]) => {
