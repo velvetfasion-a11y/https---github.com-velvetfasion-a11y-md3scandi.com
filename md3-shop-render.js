@@ -345,26 +345,20 @@
     products.forEach((p) => {
       const id = p && p.id != null ? String(p.id) : '';
       if (!id || seen.has(id)) return;
+      if (p && p.featured === false) return;
       seen.add(id);
       list.push(p);
     });
 
-    if (list.length < 3 && global.MD3Store && global.MD3Store.getProducts) {
-      try {
-        global.MD3Store.getProducts().forEach((p) => {
-          if (list.length >= 6) return;
-          const id = p && p.id != null ? String(p.id) : '';
-          if (!id || seen.has(id)) return;
-          const name = String((p && p.name) || '').trim();
-          if (!name || name === '.' || name.length < 2) return;
-          seen.add(id);
-          list.push(p);
-        });
-      } catch (_) {}
+    // Only duplicate favourites for a smooth loop — never pull non-favourited catalog items
+    if (!list.length) {
+      container.innerHTML = '';
+      container.classList.remove('is-ready');
+      return;
     }
-
-    while (list.length > 0 && list.length < 3) list = list.concat(list);
-    if (!list.length) return;
+    const favourites = list.slice();
+    while (list.length < 3) list = list.concat(favourites);
+    list = list.slice(0, Math.max(favourites.length, 3));
 
     const cards = list.map((p) => storeCardHomeHtml(p, lbl)).join('');
     container.innerHTML =

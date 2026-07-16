@@ -276,14 +276,14 @@
 <script src="firebase-config.js"></script>
 <script src="md3-firebase.js?v=3"></script>
 <script src="md3-sizes.js?v=1"></script>
-<script src="md3-store.js?v=12"></script>
+<script src="md3-store.js?v=13"></script>
 <script src="md3-site-assets.js?v=7"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js?v=19"></script>
 <script src="md3-lang.js?v=29"></script>
 <script src="md3-currency.js?v=4"></script>
 <script src="md3-hero-fit.js?v=12"></script>
-<script src="md3-shop-render.js?v=25"></script>
+<script src="md3-shop-render.js?v=26"></script>
 <script>
   function updateCartBadge() {
     try {
@@ -341,59 +341,27 @@
           : MD3Store.getHomeFeaturedProducts
             ? MD3Store.getHomeFeaturedProducts()
             : [];
-        if (!products.length && MD3Store.getProducts) {
-          products = MD3Store.getProducts().slice(0, 4);
-        }
-        if (!products.length && MD3Store.defaultProducts) {
-          products = MD3Store.defaultProducts().filter((p) => p.featured);
-          if (!products.length) products = MD3Store.defaultProducts().slice(0, 4);
-        }
+        // Strict: only favourited/starred products — never fill with the rest of the catalog
+        products = (products || []).filter((p) => p && p.featured);
       } catch (e) {
         console.error('featured products', e);
         products = [];
       }
 
-      // Prefer products with usable photos (local preferred; skip junk names)
-      const withPhotos = products.filter((p) => {
+      // Prefer products with usable names (skip junk ".")
+      products = products.filter((p) => {
         const name = String((p && p.name) || '').trim();
-        if (!name || name === '.' || name.length < 2) return false;
-        try {
-          const imgs = MD3Store.normalizeProductImages
-            ? MD3Store.normalizeProductImages(p)
-            : p.images || (p.image ? [p.image] : []);
-          if (!imgs || !imgs.length) return true; // card will use category fallback
-          return true;
-        } catch (_) {
-          return true;
-        }
+        return !!(name && name !== '.' && name.length >= 2);
       });
-      if (withPhotos.length) products = withPhotos;
-
-      // Prefer a varied strip: if only 1–2 starred, pull more from the catalog
-      if (products.length < 4 && MD3Store.getProducts) {
-        const seen = new Set(products.map((p) => String(p.id)));
-        MD3Store.getProducts().forEach((p) => {
-          if (products.length >= 6) return;
-          const id = String(p && p.id);
-          if (!id || seen.has(id)) return;
-          const name = String((p && p.name) || '').trim();
-          if (!name || name === '.' || name.length < 2) return;
-          seen.add(id);
-          products.push(p);
-        });
-      }
 
       if (!products.length) {
-        // Keep the static HTML carousel already in the page
-        if (empty) empty.hidden = true;
+        grid.innerHTML = '';
+        grid.classList.remove('is-ready');
         if (carousel) {
-          carousel.hidden = false;
-          carousel.style.display = '';
+          carousel.hidden = true;
+          carousel.style.display = 'none';
         }
-        grid.classList.add('is-ready');
-        if (window.MD3Shop && MD3Shop.startFeaturedAutoplay) {
-          MD3Shop.startFeaturedAutoplay(carousel);
-        }
+        if (empty) empty.hidden = false;
         return;
       }
 

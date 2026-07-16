@@ -319,21 +319,9 @@
     return Number.isFinite(n) ? n : null;
   }
 
-  /** Homepage “New Collection” — products starred in admin (`featured: true`). */
+  /** Homepage “Pieces to remember” — only products starred/favourited in admin (`featured: true`). */
   function getHomeFeaturedProducts() {
-    const all = getProducts();
-    const starred = all.filter((p) => p && p.featured);
-    if (starred.length) return starred;
-
-    const byId = new Map();
-    all.forEach((p) => {
-      const id = productIdNum(p.id);
-      if (id != null) byId.set(id, p);
-    });
-    const defaults = HOME_FEATURED_IDS.map((id) => byId.get(id)).filter(Boolean);
-    if (defaults.length) return defaults;
-
-    return all.slice(0, 4);
+    return getProducts().filter((p) => p && p.featured);
   }
 
   /**
