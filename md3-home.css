@@ -885,6 +885,33 @@ html.is-mobile #md3-hero .hero-bg-img {
   gap: 3rem;
 }
 
+@media (max-width: 767px) {
+  .site-footer-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2rem 0.75rem;
+  }
+
+  /* Brand + newsletter stay full width; Shop / House / Help share one row */
+  .site-footer-grid > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .site-footer-col h4 {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    margin-bottom: 0.85rem;
+  }
+
+  .site-footer-col a {
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .site-footer-col ul {
+    gap: 0.45rem;
+  }
+}
+
 @media (min-width: 768px) {
   .site-footer-grid {
     grid-template-columns: 1.4fr 1fr 1fr 1fr;

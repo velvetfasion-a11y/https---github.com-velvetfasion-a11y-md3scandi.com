@@ -244,7 +244,13 @@ html.is-mobile .site-footer-inner {
 
 html[data-viewport='mobile'] .site-footer-grid,
 html.is-mobile .site-footer-grid {
-  gap: 2.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem 0.75rem;
+}
+
+html[data-viewport='mobile'] .site-footer-grid > :first-child,
+html.is-mobile .site-footer-grid > :first-child {
+  grid-column: 1 / -1;
 }
 
 html[data-viewport='mobile'] .boutique-page .sgrid,
