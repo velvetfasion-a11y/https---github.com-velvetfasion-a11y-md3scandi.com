@@ -2248,9 +2248,10 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
     if (type === 'set_featured') {
       const ids = Array.isArray(action.ids) ? action.ids : S().HOME_FEATURED_IDS;
+      const idSet = new Set(ids.map((id) => Number(id)).filter((n) => Number.isFinite(n)));
       const products = S().getProducts().map((p) => ({
         ...p,
-        featured: ids.includes(p.id),
+        featured: idSet.has(Number(p.id)),
       }));
       await S().saveProducts(products);
       return msg('admin-ai-done-featured', 'Featured products updated.');

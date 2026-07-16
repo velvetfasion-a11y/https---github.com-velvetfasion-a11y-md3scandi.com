@@ -305,20 +305,58 @@
     return `<span class="product-emoji-fallback">${(p && p.emoji) || '✦'}</span>`;
   }
 
-  /** Homepage “New Collection” row — fixed order */
+  /** Default featured IDs when seeding an empty catalog (admin stars override this). */
   const HOME_FEATURED_IDS = [1, 4, 7, 9];
 
-  function getHomeFeaturedProducts() {
-    const byId = new Map(getProducts().map((p) => [p.id, p]));
-    return HOME_FEATURED_IDS.map((id) => byId.get(id)).filter(Boolean);
+  function productIdNum(id) {
+    const n = Number(id);
+    return Number.isFinite(n) ? n : null;
   }
 
+  /** Homepage “New Collection” — products starred in admin (`featured: true`). */
+  function getHomeFeaturedProducts() {
+    const all = getProducts();
+    const starred = all.filter((p) => p && p.featured);
+    if (starred.length) return starred;
+
+    const byId = new Map();
+    all.forEach((p) => {
+      const id = productIdNum(p.id);
+      if (id != null) byId.set(id, p);
+    });
+    const defaults = HOME_FEATURED_IDS.map((id) => byId.get(id)).filter(Boolean);
+    if (defaults.length) return defaults;
+
+    return all.slice(0, 4);
+  }
+
+  /**
+   * Seed featured flags from HOME_FEATURED_IDS only when nothing is starred yet.
+   * Never overwrite admin-chosen featured products.
+   */
   function syncHomeFeaturedFlags() {
-    const featuredSet = new Set(HOME_FEATURED_IDS);
     const products = getProducts();
+    if (!products.length) return false;
+    if (products.some((p) => p && p.featured)) return false;
+
+    const featuredSet = new Set(HOME_FEATURED_IDS.map(productIdNum).filter((n) => n != null));
+    const hasDefaultIds = products.some((p) => {
+      const id = productIdNum(p.id);
+      return id != null && featuredSet.has(id);
+    });
+    const seedIds = hasDefaultIds
+      ? featuredSet
+      : new Set(
+          products
+            .slice(0, 4)
+            .map((p) => productIdNum(p.id))
+            .filter((n) => n != null)
+        );
+
     let changed = false;
     const next = products.map((p) => {
-      const want = featuredSet.has(p.id);
+      const id = productIdNum(p.id);
+      const want = id != null && seedIds.has(id);
       if (!!p.featured !== want) {
         changed = true;
         return { ...p, featured: want };
@@ -335,9 +373,7 @@
   }
 
   function getFeaturedProducts() {
-    const home = getHomeFeaturedProducts();
-    if (home.length) return home;
-    return getProducts().filter((p) => p.featured);
+    return getHomeFeaturedProducts();
   }
 
   function getProductById(id) {

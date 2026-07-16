@@ -187,6 +187,46 @@
     container.innerHTML = products.map((p) => storeCardHomeHtml(p, lbl)).join('');
   }
 
+  /** Featured carousel — swipe strip on phones, infinite marquee on desktop. */
+  function renderHomeCarousel(container, products, labels) {
+    if (!container) return;
+    const lbl = labels || homeLabels();
+    if (!products.length) {
+      container.innerHTML = '';
+      container.classList.remove('is-ready');
+      return;
+    }
+
+    const isMobile =
+      (global.matchMedia && global.matchMedia('(max-width: 767px)').matches) ||
+      (document.documentElement && document.documentElement.dataset.viewport === 'mobile');
+
+    if (isMobile) {
+      container.innerHTML =
+        '<div class="home-featured-group">' +
+        products.map((p) => storeCardHomeHtml(p, lbl)).join('') +
+        '</div>';
+      container.classList.add('is-ready');
+      container.style.removeProperty('--featured-marquee-duration');
+      return;
+    }
+
+    // Enough copies so the track always wider than the viewport
+    const minCards = 8;
+    let loop = products.slice();
+    while (loop.length < minCards) loop = loop.concat(products);
+    const cards = loop.map((p) => storeCardHomeHtml(p, lbl)).join('');
+    container.innerHTML =
+      '<div class="home-featured-group">' +
+      cards +
+      '</div><div class="home-featured-group" aria-hidden="true">' +
+      cards +
+      '</div>';
+    container.classList.add('is-ready');
+    const seconds = Math.max(28, Math.min(70, loop.length * 6));
+    container.style.setProperty('--featured-marquee-duration', seconds + 's');
+  }
+
   function renderGrid(container, products, labels) {
     if (!container) return;
     const lbl = labels || defaultLabels();
@@ -210,5 +250,6 @@
     homeLabels,
     renderGrid,
     renderHomeGrid,
+    renderHomeCarousel,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

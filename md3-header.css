@@ -11,6 +11,12 @@
   --md3-chrome-h: 112px;
 }
 
+@media (max-width: 767px) {
+  :root {
+    --md3-chrome-h: 96px;
+  }
+}
+
 .promo-bar {
   background: var(--md3-ink);
   color: var(--md3-cream);
@@ -59,6 +65,43 @@
 .site-header--overlay .lang.lang-compact button.active {
   color: #fff;
   border-bottom-color: var(--md3-gold);
+}
+
+/* Solid always wins for contrast (cream chrome over page content) */
+.site-header--solid .logo,
+.site-header--solid .header-nav a,
+.site-header--solid .header-icon-btn,
+.site-header--solid .header-menu-btn {
+  color: var(--md3-ink);
+}
+
+.site-header--solid .lang.lang-compact button {
+  color: var(--md3-ink-soft);
+}
+
+.site-header--solid .lang.lang-compact button.active {
+  color: var(--md3-ink);
+  border-bottom-color: var(--md3-gold);
+}
+
+/* Home: chrome floats over the hero so overlay colors sit on the photo */
+body.home-page #md3-site-header {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+}
+
+body.home-page #md3-site-header.is-fixed {
+  position: fixed;
+}
+
+body.home-page .site-header--solid {
+  background: rgba(248, 245, 240, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .site-header .header-inner {
@@ -110,18 +153,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.25rem;
+  padding: 0.35rem;
   margin-left: -0.25rem;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--md3-ink);
+  min-width: 40px;
+  min-height: 40px;
 }
 
 .header-menu-btn svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.4rem;
+  height: 1.4rem;
   display: block;
+  stroke-width: 1.75;
 }
 
 @media (min-width: 768px) {
@@ -427,6 +473,82 @@
   color: var(--md3-ink-soft);
 }
 
+.mobile-drawer-lang {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
+
+.mobile-drawer-lang .lang-btn {
+  font-family: 'Jost', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--md3-ink-soft);
+  background: none;
+  border: none;
+  border-bottom: 1.5px solid transparent;
+  cursor: pointer;
+  padding: 0 0 2px;
+  text-transform: uppercase;
+}
+
+.mobile-drawer-lang .lang-btn.active {
+  color: var(--md3-ink);
+  border-bottom-color: var(--md3-gold);
+}
+
 body.admin-active #md3-site-header {
   display: none;
+}
+
+/* Phone header: less crowding */
+@media (max-width: 767px) {
+  .site-header .header-inner {
+    padding: 0.45rem 1rem;
+    min-height: 3.5rem;
+    gap: 0.35rem;
+    grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+  }
+
+  .site-header .logo {
+    font-size: 1rem;
+    letter-spacing: 0.16em;
+  }
+
+  .site-header .logo em {
+    margin-left: 0.2rem;
+  }
+
+  .header-util {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Lang lives in the drawer on phones — frees header space */
+  .header-util > .lang.lang-compact {
+    display: none;
+  }
+
+  .header-icons {
+    gap: 0.35rem;
+  }
+
+  .site-header .header-icon-btn {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0.2rem;
+  }
+
+  .site-header .header-icon-btn .nav-icon-svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .promo-bar {
+    font-size: 8px;
+    letter-spacing: 0.14em;
+    padding: 0.45rem 0.75rem;
+    line-height: 1.35;
+  }
 }

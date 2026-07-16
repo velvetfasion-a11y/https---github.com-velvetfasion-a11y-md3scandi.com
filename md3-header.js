@@ -9,7 +9,7 @@
     '<div class="header-inner">' +
     '<div class="header-left">' +
     '<button type="button" class="header-menu-btn" id="headerMenuBtn" data-i18n-aria="nav-menu" aria-label="Menu" aria-expanded="false">' +
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg>' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg>' +
     '</button></div>' +
     '<div class="header-center">' +
     '<a href="index.html" class="logo" aria-label="MD3 Scandi">MD3<em>scandi</em></a>' +
@@ -45,6 +45,11 @@
     '<a href="boutique.html" data-i18n="nav-shop-all">Toute la boutique</a>' +
     '<a href="compte.html" data-i18n="nav-account">Compte</a>' +
     '<a href="mailto:info@md3scandi.com" data-i18n="footer-contact">Contact</a>' +
+    '<div class="mobile-drawer-lang lang lang-compact" role="group" data-i18n-aria="nav-lang" aria-label="Langue">' +
+    '<button type="button" class="lang-btn active" data-lang="fr">FR</button>' +
+    '<button type="button" class="lang-btn" data-lang="en">EN</button>' +
+    '<button type="button" class="lang-btn" data-lang="ar">AR</button>' +
+    '</div>' +
     '</div></nav></aside></div>';
 
   function isHomePage() {
@@ -119,20 +124,24 @@
 
   function initHeaderScroll() {
     const header = document.getElementById('siteHeader');
+    const chrome = document.getElementById('md3-site-header');
     const hero = document.getElementById('md3-hero');
     if (!header) return;
 
     const overlayHome = isHomePage() && !!hero;
     if (!overlayHome) {
       header.classList.add('site-header--solid');
+      header.classList.remove('site-header--overlay');
+      if (chrome) chrome.classList.remove('is-fixed');
       return;
     }
 
     header.classList.add('site-header--overlay');
+    if (chrome) chrome.classList.add('is-fixed');
 
     function update() {
       const y = global.scrollY || 0;
-      const solid = y > 48;
+      const solid = y > 40;
       header.classList.toggle('site-header--solid', solid);
       header.classList.toggle('site-header--overlay', !solid);
     }

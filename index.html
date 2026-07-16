@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@300;400;500&family=Noto+Sans+Arabic:wght@300;400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@300;400;500&family=Noto+Sans+Arabic:wght@300;400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" /></noscript>
-<link rel="stylesheet" href="md3-header.css?v=15" />
-<link rel="stylesheet" href="md3-responsive.css?v=6" />
-<link rel="stylesheet" href="md3-home.css?v=19" />
+<link rel="stylesheet" href="md3-header.css?v=16" />
+<link rel="stylesheet" href="md3-responsive.css?v=7" />
+<link rel="stylesheet" href="md3-home.css?v=21" />
 </head>
 <body class="home-page">
 <script src="md3-viewport.js"></script>
@@ -123,7 +123,9 @@
       </div>
       <a href="boutique.html" class="home-featured-view" data-i18n="featured-view-all">Voir tout</a>
     </div>
-    <div class="product-grid" id="featuredGrid"></div>
+    <div class="home-featured-carousel" id="featuredCarousel" aria-label="Featured products">
+      <div class="home-featured-track" id="featuredGrid"></div>
+    </div>
     <p class="shop-empty-state" id="featuredEmpty" hidden data-i18n="featured-empty">Aucun produit en vedette pour le moment.</p>
   </div>
 </section>
@@ -197,14 +199,14 @@
 </footer>
 
 <script src="md3-sizes.js?v=1" defer></script>
-<script src="md3-store.js?v=7" defer></script>
+<script src="md3-store.js?v=9" defer></script>
 <script src="md3-site-assets.js?v=6" defer></script>
 <script src="md3-nav-icons.js" defer></script>
-<script src="md3-header.js?v=15" defer></script>
+<script src="md3-header.js?v=16" defer></script>
 <script src="md3-lang.js?v=28" defer></script>
 <script src="md3-currency.js?v=4" defer></script>
 <script src="md3-hero-fit.js?v=3" defer></script>
-<script src="md3-shop-render.js?v=8" defer></script>
+<script src="md3-shop-render.js?v=10" defer></script>
 <script defer>
   function updateCartBadge() {
     MD3Header.updateCartBadge();
@@ -235,17 +237,26 @@
 
   let featuredTimer = null;
   function renderFeatured() {
-    const products = MD3Store.getHomeFeaturedProducts();
+    const products = MD3Store.getFeaturedProducts
+      ? MD3Store.getFeaturedProducts()
+      : MD3Store.getHomeFeaturedProducts();
     const grid = document.getElementById('featuredGrid');
     const empty = document.getElementById('featuredEmpty');
+    const carousel = document.getElementById('featuredCarousel');
     if (!grid) return;
     if (!products.length) {
       grid.innerHTML = '';
       if (empty) empty.hidden = false;
+      if (carousel) carousel.hidden = true;
       return;
     }
     if (empty) empty.hidden = true;
-    MD3Shop.renderHomeGrid(grid, products, MD3Shop.homeLabels());
+    if (carousel) carousel.hidden = false;
+    if (MD3Shop.renderHomeCarousel) {
+      MD3Shop.renderHomeCarousel(grid, products, MD3Shop.homeLabels());
+    } else {
+      MD3Shop.renderHomeGrid(grid, products, MD3Shop.homeLabels());
+    }
     updateCartBadge();
   }
 

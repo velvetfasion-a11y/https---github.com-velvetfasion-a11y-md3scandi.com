@@ -17,21 +17,21 @@
   .only-mobile { display: none !important; }
 }
 
-/* Safe areas (iPhone notch / home bar) */
-@supports (padding: max(0px)) {
-  body {
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
+/* Safe areas (iPhone notch / home bar) — keep on chrome, not body (avoids 100vw overflow) */
+html, body {
+  max-width: 100%;
+  overflow-x: clip;
+}
 
+@supports (padding: max(0px)) {
   .promo-bar {
     padding-left: max(1rem, env(safe-area-inset-left));
     padding-right: max(1rem, env(safe-area-inset-right));
   }
 
   .site-header .header-inner {
-    padding-left: max(1.25rem, env(safe-area-inset-left));
-    padding-right: max(1.25rem, env(safe-area-inset-right));
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
   }
 
   @media (min-width: 768px) {
@@ -75,18 +75,17 @@ html[data-viewport='mobile'] .header-util,
 html.is-mobile .header-util {
   flex-direction: row;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.4rem;
 }
 
 html[data-viewport='mobile'] .header-icons,
 html.is-mobile .header-icons {
-  gap: 0.65rem;
+  gap: 0.35rem;
 }
 
-html[data-viewport='mobile'] .lang.lang-compact button,
-html.is-mobile .lang.lang-compact button {
-  font-size: 9px;
-  letter-spacing: 0.1em;
+html[data-viewport='mobile'] .header-util > .lang.lang-compact,
+html.is-mobile .header-util > .lang.lang-compact {
+  display: none;
 }
 
 html[data-viewport='mobile'] #md3-hero.home-hero,
@@ -188,7 +187,23 @@ html.is-mobile .home-section-head {
 
 html[data-viewport='mobile'] .home-featured,
 html.is-mobile .home-featured {
-  padding: 4rem var(--md3-page-pad-mobile);
+  padding: 3.25rem var(--md3-page-pad-mobile) 3.5rem;
+}
+
+html[data-viewport='mobile'] .home-featured-head,
+html.is-mobile .home-featured-head {
+  margin-bottom: 1.75rem;
+  gap: 0.75rem;
+}
+
+html[data-viewport='mobile'] .home-section-title,
+html.is-mobile .home-section-title {
+  font-size: clamp(1.85rem, 8vw, 2.4rem);
+}
+
+html[data-viewport='mobile'] .home-featured-carousel,
+html.is-mobile .home-featured-carousel {
+  min-height: 300px;
 }
 
 html[data-viewport='mobile'] .home-featured .product-grid,
@@ -285,5 +300,38 @@ html.is-mobile .md3-shop-toast {
   html[data-viewport='mobile'] .boutique-hero h1,
   html.is-mobile .boutique-hero h1 {
     font-size: clamp(1.75rem, 8vw, 2.25rem);
+  }
+
+  /* Cart / checkout / account pages (not homepage — keep full-bleed hero) */
+  body:not(.home-page) main {
+    padding-left: max(1rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(1rem, env(safe-area-inset-right, 0px)) !important;
+    padding-bottom: max(3rem, calc(env(safe-area-inset-bottom, 0px) + 2rem));
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .checkout-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cart-item {
+    grid-template-columns: 72px 1fr !important;
+    gap: 12px !important;
+  }
+
+  .cart-item > :last-child {
+    grid-column: 1 / -1;
+  }
+
+  .product-page-wrap {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .home-journal-inner {
+    grid-template-columns: 1fr !important;
+    gap: 1.75rem !important;
   }
 }
