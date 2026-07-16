@@ -23,8 +23,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@300;400;500&family=Noto+Sans+Arabic:wght@300;400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@300;400;500&family=Noto+Sans+Arabic:wght@300;400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="md3-header.css?v=17" />
-<link rel="stylesheet" href="md3-responsive.css?v=12" />
-<link rel="stylesheet" href="md3-home.css?v=28" />
+<link rel="stylesheet" href="md3-responsive.css?v=13" />
+<link rel="stylesheet" href="md3-home.css?v=29" />
 </head>
 <body class="home-page">
 <script src="md3-viewport.js"></script>
@@ -44,20 +44,31 @@
     <div class="home-hero-detail-season" data-i18n="hero-season-code">SS26</div>
   </aside>
 
-  <div class="home-hero-foot">
-    <div class="home-hero-heading">
-      <h1 class="home-hero-title" id="heroTitle">
+  <!-- Desktop: title top-left -->
+  <div class="home-hero-heading only-desktop">
+    <h1 class="home-hero-title" id="heroTitle">
+      <span class="home-hero-line1" data-i18n="hero-t1">Ton univers,</span>
+      <span class="home-hero-line2" data-i18n="hero-t2">sublimé.</span>
+    </h1>
+  </div>
+
+  <div class="home-hero-copy" id="homeHeroCopy">
+    <!-- Mobile: title above buttons -->
+    <div class="home-hero-heading only-mobile">
+      <h1 class="home-hero-title">
         <span class="home-hero-line1" data-i18n="hero-t1">Ton univers,</span>
         <span class="home-hero-line2" data-i18n="hero-t2">sublimé.</span>
       </h1>
     </div>
-    <p class="home-hero-tagline" data-i18n="hero-tagline">Une sélection éditoriale de pièces intemporelles — du dressing au salon. Matières nobles, façonnées pour durer.</p>
-    <div class="home-hero-ctas">
-      <a href="#boutique" class="home-btn home-btn--luxury-primary">
-        <span data-i18n="hero-cta-shop">Découvrir la collection</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-      </a>
-      <a href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" class="home-btn home-btn--luxury-secondary" data-i18n="hero-cta-limited">Édition limitée</a>
+    <div class="home-hero-foot">
+      <p class="home-hero-tagline" data-i18n="hero-tagline">Une sélection éditoriale de pièces intemporelles — du dressing au salon. Matières nobles, façonnées pour durer.</p>
+      <div class="home-hero-ctas">
+        <a href="#boutique" class="home-btn home-btn--luxury-primary">
+          <span data-i18n="hero-cta-shop">Découvrir la collection</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+        <a href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" class="home-btn home-btn--luxury-secondary" data-i18n="hero-cta-limited">Édition limitée</a>
+      </div>
     </div>
   </div>
 </section>
@@ -241,8 +252,8 @@
 <script src="md3-header.js?v=17"></script>
 <script src="md3-lang.js?v=29"></script>
 <script src="md3-currency.js?v=4"></script>
-<script src="md3-hero-fit.js?v=5"></script>
-<script src="md3-shop-render.js?v=14"></script>
+<script src="md3-hero-fit.js?v=6"></script>
+<script src="md3-shop-render.js?v=15"></script>
 <script>
   function updateCartBadge() {
     try {
@@ -312,13 +323,22 @@
         products = [];
       }
 
-      // Prefer products that have a real photo
+      // Prefer real catalog photos with real names (skip broken "." products)
       const withPhotos = products.filter((p) => {
+        const name = String((p && p.name) || '').trim();
+        if (!name || name === '.' || name.length < 2) return false;
         try {
           const imgs = MD3Store.normalizeProductImages
             ? MD3Store.normalizeProductImages(p)
             : p.images || (p.image ? [p.image] : []);
-          return imgs && imgs.length;
+          if (!imgs || !imgs.length) return false;
+          const src = String(imgs[0] || '');
+          return (
+            src.startsWith('images/') ||
+            src.startsWith('/') ||
+            /^https?:\/\//i.test(src) ||
+            src.startsWith('data:image')
+          );
         } catch (_) {
           return !!(p && p.image);
         }
@@ -333,6 +353,9 @@
           carousel.style.display = '';
         }
         grid.classList.add('is-ready');
+        if (window.MD3Shop && MD3Shop.startFeaturedAutoplay) {
+          MD3Shop.startFeaturedAutoplay(carousel);
+        }
         return;
       }
 
@@ -346,6 +369,7 @@
         MD3Shop.renderHomeCarousel(grid, products, MD3Shop.homeLabels());
       } else if (window.MD3Shop && MD3Shop.renderHomeGrid) {
         MD3Shop.renderHomeGrid(grid, products, MD3Shop.homeLabels());
+        if (MD3Shop.startFeaturedAutoplay) MD3Shop.startFeaturedAutoplay(carousel);
       }
       updateCartBadge();
     } catch (e) {
@@ -375,6 +399,12 @@
 
   // Paint carousel immediately (static HTML already visible), then refresh from store
   scheduleFeaturedRender();
+  setTimeout(function () {
+    const carousel = document.getElementById('featuredCarousel');
+    if (carousel && window.MD3Shop && MD3Shop.startFeaturedAutoplay) {
+      MD3Shop.startFeaturedAutoplay(carousel);
+    }
+  }, 120);
 
   try {
     if (window.MD3Lang) {

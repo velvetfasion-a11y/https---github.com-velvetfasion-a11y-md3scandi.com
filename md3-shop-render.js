@@ -193,45 +193,107 @@
     container.innerHTML = products.map((p) => storeCardHomeHtml(p, lbl)).join('');
   }
 
-  /** Featured strip — swipe carousel on phones, marquee on desktop. */
+  /** Featured strip — centered focus card + 2s auto-advance. */
+  let featuredAutoplayTimer = null;
+  let featuredScrollLock = false;
+
+  function stopFeaturedAutoplay() {
+    if (featuredAutoplayTimer) {
+      clearInterval(featuredAutoplayTimer);
+      featuredAutoplayTimer = null;
+    }
+  }
+
+  function centerFeaturedCard(carousel, card) {
+    if (!carousel || !card) return;
+    const left = card.offsetLeft - (carousel.clientWidth - card.offsetWidth) / 2;
+    featuredScrollLock = true;
+    carousel.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+    window.setTimeout(function () {
+      featuredScrollLock = false;
+    }, 450);
+  }
+
+  function markCenteredCard(carousel) {
+    if (!carousel) return 0;
+    const cards = carousel.querySelectorAll('.home-product-card');
+    if (!cards.length) return 0;
+    const mid = carousel.scrollLeft + carousel.clientWidth / 2;
+    let best = 0;
+    let bestDist = Infinity;
+    cards.forEach((card, idx) => {
+      const c = card.offsetLeft + card.offsetWidth / 2;
+      const d = Math.abs(c - mid);
+      if (d < bestDist) {
+        bestDist = d;
+        best = idx;
+      }
+    });
+    cards.forEach((card, idx) => card.classList.toggle('is-center', idx === best));
+    return best;
+  }
+
+  function startFeaturedAutoplay(carousel) {
+    stopFeaturedAutoplay();
+    if (!carousel) return;
+    const cards = carousel.querySelectorAll('.home-product-card');
+    if (cards.length < 2) {
+      if (cards[0]) cards[0].classList.add('is-center');
+      return;
+    }
+
+    let index = markCenteredCard(carousel);
+    centerFeaturedCard(carousel, cards[index]);
+
+    featuredAutoplayTimer = window.setInterval(function () {
+      const list = carousel.querySelectorAll('.home-product-card');
+      if (!list.length) return;
+      index = (index + 1) % list.length;
+      centerFeaturedCard(carousel, list[index]);
+      list.forEach((card, idx) => card.classList.toggle('is-center', idx === index));
+    }, 2000);
+
+    if (!carousel.dataset.md3FeaturedBound) {
+      carousel.dataset.md3FeaturedBound = '1';
+      let scrollEndTimer = null;
+      carousel.addEventListener(
+        'scroll',
+        function () {
+          if (featuredScrollLock) return;
+          window.clearTimeout(scrollEndTimer);
+          scrollEndTimer = window.setTimeout(function () {
+            index = markCenteredCard(carousel);
+          }, 80);
+        },
+        { passive: true }
+      );
+      carousel.addEventListener('pointerdown', stopFeaturedAutoplay, { passive: true });
+    }
+  }
+
   function renderHomeCarousel(container, products, labels) {
     if (!container) return;
     const lbl = labels || homeLabels();
+    const carousel = container.closest('.home-featured-carousel') || container.parentElement;
+    stopFeaturedAutoplay();
+
     if (!products.length) {
       container.innerHTML = '';
       container.classList.remove('is-ready');
       return;
     }
 
-    const isMobile =
-      (global.matchMedia && global.matchMedia('(max-width: 767px)').matches) ||
-      (document.documentElement && document.documentElement.dataset.viewport === 'mobile');
-
-    if (isMobile) {
-      // One group — user swipes; hide duplicate via CSS
-      container.innerHTML =
-        '<div class="home-featured-group">' +
-        products.map((p) => storeCardHomeHtml(p, lbl)).join('') +
-        '</div>';
-      container.classList.add('is-ready');
-      container.style.removeProperty('--featured-marquee-duration');
-      return;
-    }
-
-    // Enough copies so the track always wider than the viewport
-    const minCards = 8;
-    let loop = products.slice();
-    while (loop.length < minCards) loop = loop.concat(products);
-    const cards = loop.map((p) => storeCardHomeHtml(p, lbl)).join('');
+    // Single group — snap + autoplay (no infinite marquee)
     container.innerHTML =
       '<div class="home-featured-group">' +
-      cards +
-      '</div><div class="home-featured-group" aria-hidden="true">' +
-      cards +
+      products.map((p) => storeCardHomeHtml(p, lbl)).join('') +
       '</div>';
     container.classList.add('is-ready');
-    const seconds = Math.max(28, Math.min(70, loop.length * 6));
-    container.style.setProperty('--featured-marquee-duration', seconds + 's');
+    container.style.removeProperty('--featured-marquee-duration');
+
+    requestAnimationFrame(function () {
+      startFeaturedAutoplay(carousel);
+    });
   }
 
   function renderGrid(container, products, labels) {
@@ -258,5 +320,7 @@
     renderGrid,
     renderHomeGrid,
     renderHomeCarousel,
+    startFeaturedAutoplay,
+    stopFeaturedAutoplay,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

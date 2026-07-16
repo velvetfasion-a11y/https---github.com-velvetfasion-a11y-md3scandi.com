@@ -110,7 +110,8 @@ html.is-mobile #md3-hero .hero-bg-img {
 
 .home-hero-heading,
 .home-hero-foot,
-.home-hero-detail {
+.home-hero-detail,
+.home-hero-copy {
   z-index: 3;
   color: #fff;
 }
@@ -139,12 +140,13 @@ html.is-mobile #md3-hero .hero-bg-img {
   text-transform: uppercase;
 }
 
+/* Desktop default: title top-left (classic layout) */
 .home-hero-heading {
-  position: relative;
-  top: auto;
-  left: auto;
-  max-width: none;
-  margin: 0 0 0.85rem;
+  position: absolute;
+  top: calc(var(--md3-chrome-h, 96px) + 0.75rem);
+  left: 5%;
+  max-width: min(52%, 46rem);
+  margin: 0;
   animation: home-rise 1s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -180,11 +182,18 @@ html.is-mobile #md3-hero .hero-bg-img {
   text-shadow: 0 2px 12px rgba(201, 169, 97, 0.28);
 }
 
-.home-hero-foot {
+.home-hero-copy {
   position: absolute;
   bottom: 8%;
   left: 5%;
-  max-width: 28rem;
+  max-width: 24rem;
+}
+
+.home-hero-foot {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  max-width: none;
   animation: home-rise 1s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
 }
 
@@ -268,14 +277,16 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 }
 
-/* Phone hero: title sits above buttons; full-width CTAs */
+/* Phone hero: title above buttons (inside copy); keep sticky CTAs */
 @media (max-width: 767px) {
-  .home-hero-heading {
+  .home-hero-heading.only-mobile {
+    position: relative;
+    top: auto;
     left: auto;
     right: auto;
     max-width: none;
     text-align: left;
-    margin-bottom: 0.65rem;
+    margin: 0 0 0.65rem;
   }
 
   .home-hero-line1 {
@@ -288,19 +299,17 @@ html.is-mobile #md3-hero .hero-bg-img {
     font-size: clamp(1.3rem, 7vw, 2rem);
   }
 
-  .home-hero-foot {
+  .home-hero-copy {
     left: 1.15rem;
     right: 1.15rem;
-    /* Start higher; JS clamps sticky follow so it never goes below the hero stop */
     bottom: max(14%, calc(env(safe-area-inset-bottom, 0px) + 4.5rem));
     max-width: none;
     width: auto;
     box-sizing: border-box;
-    text-align: left;
     z-index: 6;
   }
 
-  .home-hero-foot.is-cta-fixed {
+  .home-hero-copy.is-cta-fixed {
     position: fixed !important;
     left: 1.15rem !important;
     right: 1.15rem !important;
@@ -309,11 +318,20 @@ html.is-mobile #md3-hero .hero-bg-img {
     z-index: 30;
   }
 
-  .home-hero-foot.is-cta-parked {
+  .home-hero-copy.is-cta-parked {
     position: absolute !important;
     bottom: max(4.5%, calc(env(safe-area-inset-bottom, 0px) + 0.85rem)) !important;
     left: 1.15rem !important;
     right: 1.15rem !important;
+  }
+
+  .home-hero-foot {
+    left: auto;
+    right: auto;
+    bottom: auto;
+    max-width: none;
+    width: auto;
+    text-align: left;
   }
 
   .home-hero-tagline {
@@ -581,11 +599,21 @@ html.is-mobile #md3-hero .hero-bg-img {
 }
 
 .home-featured-carousel {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   width: 100%;
-  min-height: 280px;
-  mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
+  min-height: 320px;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  scrollbar-width: none;
+}
+
+.home-featured-carousel::-webkit-scrollbar {
+  display: none;
 }
 
 @media (min-width: 768px) {
@@ -593,58 +621,84 @@ html.is-mobile #md3-hero .hero-bg-img {
     width: 100vw;
     margin-left: calc(50% - 50vw);
     margin-right: calc(50% - 50vw);
-    min-height: 360px;
+    min-height: 420px;
   }
 }
 
 .home-featured-track {
-  --featured-marquee-duration: 40s;
   display: flex;
   width: max-content;
+  align-items: center;
   gap: 0;
-  min-height: 260px;
+  min-height: 300px;
+  padding: 1rem 0;
+  animation: none !important;
+  transform: none !important;
 }
 
 .home-featured-track.is-ready {
-  animation: home-featured-marquee var(--featured-marquee-duration) linear infinite;
+  animation: none !important;
 }
 
 .home-featured-carousel:hover .home-featured-track.is-ready {
-  animation-play-state: paused;
+  animation-play-state: unset;
 }
 
 .home-featured-group {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 1rem;
-  padding-right: 1rem;
+  padding: 0 max(1.25rem, calc(50vw - 7.5rem));
 }
 
 @media (min-width: 768px) {
   .home-featured-group {
-    gap: 1.75rem;
-    padding-right: 1.75rem;
+    gap: 1.5rem;
+    padding: 0 max(2rem, calc(50vw - 9rem));
   }
 }
 
-@keyframes home-featured-marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+.home-featured-group[aria-hidden='true'] {
+  display: none !important;
 }
 
-/* Phones: starred products as a swipeable photo carousel */
+.home-featured .home-product-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  flex: 0 0 auto;
+  width: min(58vw, 200px);
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  transform: scale(0.86);
+  opacity: 0.62;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+  transform-origin: center center;
+}
+
+.home-featured .home-product-card.is-center {
+  transform: scale(1.12);
+  opacity: 1;
+  width: min(68vw, 260px);
+  z-index: 2;
+}
+
+@media (min-width: 768px) {
+  .home-featured .home-product-card {
+    width: min(22vw, 220px);
+  }
+
+  .home-featured .home-product-card.is-center {
+    width: min(28vw, 300px);
+    transform: scale(1.08);
+  }
+}
+
+/* Phones */
 @media (max-width: 767px) {
   .home-featured-carousel {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x mandatory;
-    overscroll-behavior-x: contain;
-    width: 100%;
+    min-height: 340px;
     margin: 0;
-    min-height: 320px;
-    mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
     padding: 0 0 0.35rem;
     display: block !important;
   }
@@ -658,46 +712,16 @@ html.is-mobile #md3-hero .hero-bg-img {
   .home-featured-grid {
     display: flex !important;
     width: max-content !important;
-    max-width: none;
-    gap: 0;
-    animation: none !important;
-    transform: none !important;
-    min-height: 300px;
+    min-height: 320px;
   }
 
   .home-featured-group {
     display: flex !important;
-    align-items: stretch;
     gap: 0.85rem;
-    padding-right: 0.85rem;
-  }
-
-  .home-featured-group[aria-hidden='true'] {
-    display: none !important;
-  }
-
-  .home-featured .home-product-card {
-    width: min(68vw, 220px) !important;
-    flex: 0 0 auto;
-    scroll-snap-align: start;
   }
 
   .home-featured .home-product-visual {
     background: #ebe6dc;
-  }
-}
-
-.home-featured .home-product-card {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  flex: 0 0 auto;
-  width: min(58vw, 220px);
-}
-
-@media (min-width: 768px) {
-  .home-featured .home-product-card {
-    width: min(28vw, 280px);
   }
 }
 
@@ -1116,12 +1140,18 @@ html.is-mobile #md3-hero .hero-bg-img {
 }
 
 html[dir="rtl"] .home-hero-heading {
+  left: auto;
+  right: 5%;
+  text-align: right;
+}
+
+html[dir="rtl"] .home-hero-copy {
+  left: auto;
+  right: 5%;
   text-align: right;
 }
 
 html[dir="rtl"] .home-hero-foot {
-  left: auto;
-  right: 5%;
   text-align: right;
 }
 

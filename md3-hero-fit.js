@@ -43,53 +43,41 @@
   }
 
   /**
-   * Phone CTAs: start higher, stick to the viewport while scrolling the hero,
+   * Phone CTAs (+ mobile title): start higher, stick while scrolling the hero,
    * then park at the hero bottom (never follow into the next section).
    */
   function updateStickyCtas() {
     const hero = document.getElementById('md3-hero');
-    const foot = document.querySelector('.home-hero-foot');
-    if (!hero || !foot) return;
+    const copy = document.getElementById('homeHeroCopy');
+    if (!hero || !copy) return;
 
     if (!MOBILE_MQ.matches) {
-      foot.classList.remove('is-cta-fixed', 'is-cta-parked');
-      foot.style.bottom = '';
+      copy.classList.remove('is-cta-fixed', 'is-cta-parked');
+      copy.style.bottom = '';
       return;
     }
 
     const vh = window.innerHeight || 1;
-    const footH = foot.offsetHeight || 160;
-    const safe =
-      Math.max(
-        0,
-        Number.parseFloat(
-          getComputedStyle(document.documentElement).paddingBottom || '0'
-        )
-      ) || 0;
-    // Natural stop — same place buttons used to sit at the hero bottom
-    const stopBottom = Math.max(14 + safe, vh * 0.045);
-    // Start higher on the screen (larger offset from viewport bottom)
-    const startBottom = Math.max(stopBottom + 72, vh * 0.2);
+    const copyH = copy.offsetHeight || 220;
+    const stopBottom = Math.max(14, vh * 0.045);
+    const startBottom = Math.max(stopBottom + 72, vh * 0.14);
 
     const heroRect = hero.getBoundingClientRect();
     const heroBottom = heroRect.bottom;
-
-    // If fixed at startBottom, foot's bottom edge is at (vh - startBottom)
-    const footBottomIfFixed = vh - startBottom;
-    // Lowest allowed foot bottom while still inside the hero
-    const maxAllowedFootBottom = heroBottom - stopBottom;
+    const copyBottomIfFixed = vh - startBottom;
+    const maxAllowedCopyBottom = heroBottom - stopBottom;
 
     const park =
-      heroBottom <= stopBottom + footH * 0.35 || footBottomIfFixed > maxAllowedFootBottom;
+      heroBottom <= stopBottom + copyH * 0.35 || copyBottomIfFixed > maxAllowedCopyBottom;
 
     if (park) {
-      foot.classList.add('is-cta-parked');
-      foot.classList.remove('is-cta-fixed');
-      foot.style.bottom = '';
+      copy.classList.add('is-cta-parked');
+      copy.classList.remove('is-cta-fixed');
+      copy.style.bottom = '';
     } else {
-      foot.classList.add('is-cta-fixed');
-      foot.classList.remove('is-cta-parked');
-      foot.style.bottom = startBottom + 'px';
+      copy.classList.add('is-cta-fixed');
+      copy.classList.remove('is-cta-parked');
+      copy.style.bottom = startBottom + 'px';
     }
   }
 
