@@ -251,7 +251,7 @@
       index = (index + 1) % list.length;
       centerFeaturedCard(carousel, list[index]);
       list.forEach((card, idx) => card.classList.toggle('is-center', idx === index));
-    }, 2000);
+    }, 2000); // exactly 2 seconds per card
 
     if (!carousel.dataset.md3FeaturedBound) {
       carousel.dataset.md3FeaturedBound = '1';
@@ -283,10 +283,13 @@
       return;
     }
 
-    // Single group — snap + autoplay (no infinite marquee)
+    // Always enough cards to keep ≥3 visible in the strip
+    let list = products.slice();
+    while (list.length < 3) list = list.concat(products);
+
     container.innerHTML =
       '<div class="home-featured-group">' +
-      products.map((p) => storeCardHomeHtml(p, lbl)).join('') +
+      list.map((p) => storeCardHomeHtml(p, lbl)).join('') +
       '</div>';
     container.classList.add('is-ready');
     container.style.removeProperty('--featured-marquee-duration');
