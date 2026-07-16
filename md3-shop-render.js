@@ -23,39 +23,45 @@
     return global.MD3Lang && global.MD3Lang.productName ? global.MD3Lang.productName(p) : (p && p.name) || '';
   }
 
+  function categoryFallbackImage(p) {
+    const catKey = String((p && p.category) || '');
+    if (/maison|home/i.test(catKey)) return 'images/cat-maison.jpg';
+    if (/lifestyle/i.test(catKey)) return 'images/cat-lifestyle.jpg';
+    if (/édition|edition|limit/i.test(catKey)) return 'images/journal-linen.jpg';
+    return 'images/cat-mode.jpg';
+  }
+
+  function pickReliableHomeImage(p) {
+    const fallback = categoryFallbackImage(p);
+    const imgs =
+      global.MD3Store && global.MD3Store.normalizeProductImages
+        ? global.MD3Store.normalizeProductImages(p)
+        : p && p.images
+          ? p.images
+          : p && p.image
+            ? [p.image]
+            : [];
+    // Prefer local / data URLs — remote https often 404s on the live site
+    const local = (imgs || []).find((src) => {
+      const s = String(src || '');
+      return s.startsWith('images/') || s.startsWith('/') || s.startsWith('data:image');
+    });
+    if (local) return local;
+    return fallback;
+  }
+
   function storeCardHomeHtml(p, labels) {
     const href = global.MD3Store.productHref(p.id);
     const name = localizedName(p);
-    let image =
-      global.MD3Store && global.MD3Store.normalizeProductImages
-        ? global.MD3Store.normalizeProductImages(p)[0]
-        : p && p.image;
-    // Prefer reliable local photos when remote/broken URLs would empty the carousel
-    const catKey = String((p && p.category) || '');
-    const fallback =
-      /maison|home/i.test(catKey)
-        ? 'images/cat-maison.jpg'
-        : /lifestyle/i.test(catKey)
-          ? 'images/cat-lifestyle.jpg'
-          : /édition|edition|limit/i.test(catKey)
-            ? 'images/journal-linen.jpg'
-            : 'images/cat-mode.jpg';
-    if (
-      !image ||
-      (!String(image).startsWith('images/') &&
-        !String(image).startsWith('/') &&
-        !String(image).startsWith('data:image') &&
-        !/^https?:\/\//i.test(String(image)))
-    ) {
-      image = fallback;
-    }
+    const fallback = categoryFallbackImage(p);
+    const image = pickReliableHomeImage(p);
     const cat = labels.catLabel ? labels.catLabel(p.category) : p.category;
     const isLimited = /édition|edition|limit/i.test(String(p.category || ''));
     const badge = isLimited
       ? `<span class="home-product-badge">${esc(labels.limitedBadge || 'Édition')}</span>`
       : '';
     const imgHtml = image
-      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="lazy" onerror="this.onerror=null;this.src='${fallback}'" />`
+      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${fallback}'" />`
       : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
     return `
       <a href="${href}" class="home-product-card">
@@ -212,119 +218,43 @@
     container.innerHTML = products.map((p) => storeCardHomeHtml(p, lbl)).join('');
   }
 
-  /** Infinite looping featured carousel — smooth circle, 2.5s per step. */
-  let featuredAutoplayTimer = null;
-  let featuredTransitionTimer = null;
-  let featuredIndex = 0;
-
+  /**
+   * Continuous infinite marquee (CSS translateX -50%).
+   * Two identical groups → seamless circle. No step/scale “focus” effect.
+   */
   function stopFeaturedAutoplay() {
-    if (featuredAutoplayTimer) {
-      clearInterval(featuredAutoplayTimer);
-      featuredAutoplayTimer = null;
-    }
-    if (featuredTransitionTimer) {
-      clearTimeout(featuredTransitionTimer);
-      featuredTransitionTimer = null;
-    }
-  }
-
-  function setFeaturedOffset(track, px, animate) {
-    if (!track) return;
-    track.style.transition = animate ? 'transform 0.75s cubic-bezier(0.22, 1, 0.36, 1)' : 'none';
-    track.style.transform = 'translate3d(' + px + 'px, 0, 0)';
-  }
-
-  function markFeaturedCenter(track, logicalIndex, count) {
-    if (!track || !count) return;
-    const cards = track.querySelectorAll('.home-product-card');
-    const i = ((logicalIndex % count) + count) % count;
-    cards.forEach((card, idx) => {
-      card.classList.toggle('is-center', idx % count === i);
-    });
+    /* no JS timer — marquee is CSS-driven */
   }
 
   function startFeaturedAutoplay(carousel) {
-    stopFeaturedAutoplay();
     if (!carousel) return;
-
     const track = carousel.querySelector('.home-featured-track') || carousel.firstElementChild;
     if (!track) return;
 
-    let groups = track.querySelectorAll('.home-featured-group');
+    const groups = track.querySelectorAll('.home-featured-group');
     const group = groups[0];
     if (!group) return;
 
-    const baseCards = group.querySelectorAll('.home-product-card');
-    const count = baseCards.length;
-    if (count < 1) return;
-
-    // Duplicate the full group so the track can loop forever without a snap
     if (groups.length < 2) {
       const clone = group.cloneNode(true);
       clone.setAttribute('aria-hidden', 'true');
       track.appendChild(clone);
-      groups = track.querySelectorAll('.home-featured-group');
     }
 
-    featuredIndex = 0;
-    let wrapping = false;
-
-    function sidePad() {
-      const card = baseCards[0];
-      return Math.max(0, (carousel.clientWidth - (card ? card.offsetWidth : 0)) / 2);
-    }
-
-    function offsetForIndex(index) {
-      const cards = track.querySelectorAll('.home-product-card');
-      const card = cards[index];
-      if (!card) return sidePad();
-      return sidePad() - card.offsetLeft;
-    }
-
-    function apply(animate) {
-      setFeaturedOffset(track, offsetForIndex(featuredIndex), animate);
-      markFeaturedCenter(track, featuredIndex, count);
-    }
-
-    // Start centered on first card
-    apply(false);
-    requestAnimationFrame(function () {
-      apply(false);
-    });
-
-    featuredAutoplayTimer = window.setInterval(function () {
-      if (wrapping) return;
-      featuredIndex += 1;
-      apply(true);
-
-      // Landed on the clone of card 0 → instant jump to the real card 0 (same pixels)
-      if (featuredIndex >= count) {
-        wrapping = true;
-        featuredTransitionTimer = window.setTimeout(function () {
-          featuredIndex = 0;
-          apply(false);
-          wrapping = false;
-        }, 760);
-      }
-    }, 2500);
-
-    if (!carousel.dataset.md3LoopBound) {
-      carousel.dataset.md3LoopBound = '1';
-      window.addEventListener(
-        'resize',
-        function () {
-          apply(false);
-        },
-        { passive: true }
-      );
-    }
+    const cards = group.querySelectorAll('.home-product-card');
+    const n = Math.max(1, cards.length);
+    // ~2.5s of travel per card → full loop = one group width
+    const seconds = Math.max(20, Math.min(80, n * 2.5));
+    track.style.setProperty('--featured-marquee-duration', seconds + 's');
+    track.style.removeProperty('transform');
+    track.style.removeProperty('transition');
+    track.classList.add('is-ready');
   }
 
   function renderHomeCarousel(container, products, labels) {
     if (!container) return;
     const lbl = labels || homeLabels();
     const carousel = container.closest('.home-featured-carousel') || container.parentElement;
-    stopFeaturedAutoplay();
 
     if (!products.length) {
       container.innerHTML = '';
@@ -332,9 +262,32 @@
       return;
     }
 
-    // Enough unique slides for a strip, then duplicate group for infinite loop
-    let list = products.slice();
-    while (list.length < 3) list = list.concat(products);
+    // Dedupe by id, then pad with more catalog items so the strip isn't one product ×3
+    const seen = new Set();
+    let list = [];
+    products.forEach((p) => {
+      const id = p && p.id != null ? String(p.id) : '';
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      list.push(p);
+    });
+
+    if (list.length < 4 && global.MD3Store && global.MD3Store.getProducts) {
+      try {
+        global.MD3Store.getProducts().forEach((p) => {
+          if (list.length >= 6) return;
+          const id = p && p.id != null ? String(p.id) : '';
+          if (!id || seen.has(id)) return;
+          const name = String((p && p.name) || '').trim();
+          if (!name || name === '.' || name.length < 2) return;
+          seen.add(id);
+          list.push(p);
+        });
+      } catch (_) {}
+    }
+
+    while (list.length < 4) list = list.concat(list);
+    list = list.slice(0, Math.max(4, Math.min(list.length, 10)));
 
     const cards = list.map((p) => storeCardHomeHtml(p, lbl)).join('');
     container.innerHTML =
@@ -343,9 +296,6 @@
       '</div><div class="home-featured-group" aria-hidden="true">' +
       cards +
       '</div>';
-    container.classList.add('is-ready');
-    container.style.removeProperty('--featured-marquee-duration');
-    container.style.transform = 'translate3d(0,0,0)';
 
     requestAnimationFrame(function () {
       startFeaturedAutoplay(carousel);

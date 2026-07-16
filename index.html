@@ -24,7 +24,7 @@
 <noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@300;400;500&family=Noto+Sans+Arabic:wght@300;400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="md3-header.css?v=17" />
 <link rel="stylesheet" href="md3-responsive.css?v=16" />
-<link rel="stylesheet" href="md3-home.css?v=34" />
+<link rel="stylesheet" href="md3-home.css?v=35" />
 </head>
 <body class="home-page">
 <script src="md3-viewport.js"></script>
@@ -165,6 +165,36 @@
             </div>
           </a>
         </div>
+        <div class="home-featured-group" aria-hidden="true">
+          <a class="home-product-card" href="boutique.html?cat=Mode" tabindex="-1">
+            <div class="home-product-visual"><img src="images/cat-mode.jpg" alt="" loading="lazy" width="440" height="550" /></div>
+            <div class="home-product-meta">
+              <div class="home-product-cat">Mode</div>
+              <div class="home-product-name display-serif">Robe Lin Ivoire</div>
+            </div>
+          </a>
+          <a class="home-product-card" href="boutique.html?cat=Maison" tabindex="-1">
+            <div class="home-product-visual"><img src="images/cat-maison.jpg" alt="" loading="lazy" width="440" height="550" /></div>
+            <div class="home-product-meta">
+              <div class="home-product-cat">Maison</div>
+              <div class="home-product-name display-serif">Canapé Stockholm</div>
+            </div>
+          </a>
+          <a class="home-product-card" href="boutique.html?cat=Lifestyle" tabindex="-1">
+            <div class="home-product-visual"><img src="images/cat-lifestyle.jpg" alt="" loading="lazy" width="440" height="550" /></div>
+            <div class="home-product-meta">
+              <div class="home-product-cat">Lifestyle</div>
+              <div class="home-product-name display-serif">Carafe Nordique</div>
+            </div>
+          </a>
+          <a class="home-product-card" href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" tabindex="-1">
+            <div class="home-product-visual"><img src="images/journal-linen.jpg" alt="" loading="lazy" width="440" height="550" /></div>
+            <div class="home-product-meta">
+              <div class="home-product-cat">Édition limitée</div>
+              <div class="home-product-name display-serif">Set Lin Naturel</div>
+            </div>
+          </a>
+        </div>
       </div>
     </div>
     <p class="shop-empty-state" id="featuredEmpty" hidden data-i18n="featured-empty">Aucun produit en vedette pour le moment.</p>
@@ -253,7 +283,7 @@
 <script src="md3-lang.js?v=29"></script>
 <script src="md3-currency.js?v=4"></script>
 <script src="md3-hero-fit.js?v=9"></script>
-<script src="md3-shop-render.js?v=18"></script>
+<script src="md3-shop-render.js?v=19"></script>
 <script>
   function updateCartBadge() {
     try {
@@ -323,7 +353,7 @@
         products = [];
       }
 
-      // Prefer real catalog photos with real names (skip broken "." products)
+      // Prefer products with usable photos (local preferred; skip junk names)
       const withPhotos = products.filter((p) => {
         const name = String((p && p.name) || '').trim();
         if (!name || name === '.' || name.length < 2) return false;
@@ -331,19 +361,27 @@
           const imgs = MD3Store.normalizeProductImages
             ? MD3Store.normalizeProductImages(p)
             : p.images || (p.image ? [p.image] : []);
-          if (!imgs || !imgs.length) return false;
-          const src = String(imgs[0] || '');
-          return (
-            src.startsWith('images/') ||
-            src.startsWith('/') ||
-            /^https?:\/\//i.test(src) ||
-            src.startsWith('data:image')
-          );
+          if (!imgs || !imgs.length) return true; // card will use category fallback
+          return true;
         } catch (_) {
-          return !!(p && p.image);
+          return true;
         }
       });
       if (withPhotos.length) products = withPhotos;
+
+      // Prefer a varied strip: if only 1–2 starred, pull more from the catalog
+      if (products.length < 4 && MD3Store.getProducts) {
+        const seen = new Set(products.map((p) => String(p.id)));
+        MD3Store.getProducts().forEach((p) => {
+          if (products.length >= 6) return;
+          const id = String(p && p.id);
+          if (!id || seen.has(id)) return;
+          const name = String((p && p.name) || '').trim();
+          if (!name || name === '.' || name.length < 2) return;
+          seen.add(id);
+          products.push(p);
+        });
+      }
 
       if (!products.length) {
         // Keep the static HTML carousel already in the page
