@@ -228,19 +228,9 @@
     }
   }
 
-  function featuredCardStep(carousel, track) {
-    const group = track && track.querySelector('.home-featured-group');
-    if (!carousel || !track || !group) return 0;
-    const card = group.querySelector('.home-product-card');
-    if (!card) return 0;
-    const styles = window.getComputedStyle(group);
-    const gap = parseFloat(styles.columnGap || styles.gap) || 0;
-    return card.offsetWidth + gap;
-  }
-
   function setFeaturedOffset(track, px, animate) {
     if (!track) return;
-    track.style.transition = animate ? 'transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)' : 'none';
+    track.style.transition = animate ? 'transform 0.75s cubic-bezier(0.22, 1, 0.36, 1)' : 'none';
     track.style.transform = 'translate3d(' + px + 'px, 0, 0)';
   }
 
@@ -260,7 +250,7 @@
     const track = carousel.querySelector('.home-featured-track') || carousel.firstElementChild;
     if (!track) return;
 
-    const groups = track.querySelectorAll('.home-featured-group');
+    let groups = track.querySelectorAll('.home-featured-group');
     const group = groups[0];
     if (!group) return;
 
@@ -268,20 +258,31 @@
     const count = baseCards.length;
     if (count < 1) return;
 
-    // Ensure a duplicate group for seamless wrap
+    // Duplicate the full group so the track can loop forever without a snap
     if (groups.length < 2) {
       const clone = group.cloneNode(true);
       clone.setAttribute('aria-hidden', 'true');
       track.appendChild(clone);
+      groups = track.querySelectorAll('.home-featured-group');
     }
 
     featuredIndex = 0;
-    const sidePad = () => Math.max(0, (carousel.clientWidth - baseCards[0].offsetWidth) / 2);
+    let wrapping = false;
+
+    function sidePad() {
+      const card = baseCards[0];
+      return Math.max(0, (carousel.clientWidth - (card ? card.offsetWidth : 0)) / 2);
+    }
+
+    function offsetForIndex(index) {
+      const cards = track.querySelectorAll('.home-product-card');
+      const card = cards[index];
+      if (!card) return sidePad();
+      return sidePad() - card.offsetLeft;
+    }
 
     function apply(animate) {
-      const step = featuredCardStep(carousel, track);
-      const x = sidePad() - featuredIndex * step;
-      setFeaturedOffset(track, x, animate);
+      setFeaturedOffset(track, offsetForIndex(featuredIndex), animate);
       markFeaturedCenter(track, featuredIndex, count);
     }
 
@@ -292,15 +293,18 @@
     });
 
     featuredAutoplayTimer = window.setInterval(function () {
+      if (wrapping) return;
       featuredIndex += 1;
       apply(true);
 
-      // After landing on the clone of card 0, jump back without a flash
+      // Landed on the clone of card 0 → instant jump to the real card 0 (same pixels)
       if (featuredIndex >= count) {
+        wrapping = true;
         featuredTransitionTimer = window.setTimeout(function () {
           featuredIndex = 0;
           apply(false);
-        }, 720);
+          wrapping = false;
+        }, 760);
       }
     }, 2500);
 
