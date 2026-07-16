@@ -277,13 +277,10 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 }
 
-/* Phone hero: title above buttons; CSS sticky (no JS) so scroll stays smooth */
+/* Phone hero: title + buttons follow the bottom of the screen */
 @media (max-width: 767px) {
   #md3-hero.home-hero,
   #md3-hero.home-hero--cinema {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
     min-height: 100svh;
     min-height: 100dvh;
   }
@@ -309,18 +306,30 @@ html.is-mobile #md3-hero .hero-bg-img {
   }
 
   .home-hero-copy {
-    position: sticky;
-    bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
-    left: auto;
-    right: auto;
-    margin: 0 1.15rem max(0.75rem, env(safe-area-inset-bottom, 0px));
+    left: 1.15rem;
+    right: 1.15rem;
+    bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem));
     max-width: none;
     width: auto;
     box-sizing: border-box;
     z-index: 6;
-    /* Promote to own layer — sticky without layout thrash */
-    transform: translateZ(0);
-    will-change: transform;
+  }
+
+  .home-hero-copy.is-cta-fixed {
+    position: fixed !important;
+    left: 1.15rem !important;
+    right: 1.15rem !important;
+    width: auto !important;
+    max-width: none !important;
+    bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem)) !important;
+    z-index: 30;
+  }
+
+  .home-hero-copy.is-cta-parked {
+    position: absolute !important;
+    bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem)) !important;
+    left: 1.15rem !important;
+    right: 1.15rem !important;
   }
 
   .home-hero-foot {
