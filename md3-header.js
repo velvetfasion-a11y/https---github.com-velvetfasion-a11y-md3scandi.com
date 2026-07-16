@@ -128,25 +128,38 @@
     const hero = document.getElementById('md3-hero');
     if (!header) return;
 
+    const desktopMq = window.matchMedia('(min-width: 768px)');
     const overlayHome = isHomePage() && !!hero;
-    if (!overlayHome) {
+
+    function setSolid() {
       header.classList.add('site-header--solid');
       header.classList.remove('site-header--overlay');
-      if (chrome) chrome.classList.remove('is-fixed');
-      return;
     }
 
-    header.classList.add('site-header--overlay');
-    if (chrome) chrome.classList.add('is-fixed');
+    function setOverlay() {
+      header.classList.add('site-header--overlay');
+      header.classList.remove('site-header--solid');
+    }
 
     function update() {
-      const y = global.scrollY || 0;
-      const solid = y > 40;
-      header.classList.toggle('site-header--solid', solid);
-      header.classList.toggle('site-header--overlay', !solid);
+      // Desktop: white/cream bar always visible
+      if (!overlayHome || desktopMq.matches) {
+        setSolid();
+        if (overlayHome && chrome) chrome.classList.add('is-fixed');
+        else if (chrome) chrome.classList.remove('is-fixed');
+        return;
+      }
+
+      // Phone home only: transparent over hero, then solid after a short scroll
+      if (chrome) chrome.classList.add('is-fixed');
+      const solid = (global.scrollY || 0) > 40;
+      if (solid) setSolid();
+      else setOverlay();
     }
 
     global.addEventListener('scroll', update, { passive: true });
+    if (desktopMq.addEventListener) desktopMq.addEventListener('change', update);
+    else if (desktopMq.addListener) desktopMq.addListener(update);
     update();
   }
 

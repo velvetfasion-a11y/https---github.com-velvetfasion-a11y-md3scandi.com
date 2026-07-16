@@ -104,6 +104,34 @@ body.home-page .site-header--solid {
   -webkit-backdrop-filter: blur(12px);
 }
 
+/* Desktop: always show the cream top bar (never transparent over the hero) */
+@media (min-width: 768px) {
+  body.home-page .site-header,
+  body.home-page .site-header--overlay,
+  body.home-page .site-header--solid {
+    background: rgba(248, 245, 240, 0.98);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom-color: var(--md3-border);
+  }
+
+  body.home-page .site-header--overlay .logo,
+  body.home-page .site-header--overlay .header-nav a,
+  body.home-page .site-header--overlay .header-icon-btn,
+  body.home-page .site-header--overlay .header-menu-btn {
+    color: var(--md3-ink);
+  }
+
+  body.home-page .site-header--overlay .lang.lang-compact button {
+    color: var(--md3-ink-soft);
+  }
+
+  body.home-page .site-header--overlay .lang.lang-compact button.active {
+    color: var(--md3-ink);
+    border-bottom-color: var(--md3-gold);
+  }
+}
+
 .site-header .header-inner {
   max-width: 1400px;
   margin: 0 auto;
