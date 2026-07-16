@@ -202,9 +202,30 @@ html.is-mobile #md3-hero .hero-bg-img {
 
 .home-hero-copy {
   position: absolute;
-  bottom: 8%;
+  bottom: max(1.25rem, env(safe-area-inset-bottom, 0px) + 1rem);
   left: 5%;
   max-width: 24rem;
+  z-index: 6;
+}
+
+/* Pinned to the bottom of the viewport while the hero still covers it */
+.home-hero-copy.is-cta-fixed {
+  position: fixed;
+  left: 5%;
+  right: auto;
+  bottom: max(1.25rem, env(safe-area-inset-bottom, 0px) + 1rem);
+  max-width: 24rem;
+  width: auto;
+}
+
+/* Parked at the bottom of the hero once it scrolls past the viewport bottom */
+.home-hero-copy.is-cta-parked {
+  position: absolute;
+  left: 5%;
+  right: auto;
+  bottom: max(1.25rem, env(safe-area-inset-bottom, 0px) + 1rem);
+  max-width: 24rem;
+  width: auto;
 }
 
 .home-hero-foot {
@@ -335,8 +356,25 @@ html.is-mobile #md3-hero .hero-bg-img {
     width: auto;
     box-sizing: border-box;
     z-index: 6;
-    /* Never toggle fixed/park — stays one place in the hero */
     transform: none;
+  }
+
+  .home-hero-copy.is-cta-fixed {
+    position: fixed;
+    left: 1.15rem;
+    right: 1.15rem;
+    bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem));
+    max-width: none;
+    width: auto;
+  }
+
+  .home-hero-copy.is-cta-parked {
+    position: absolute;
+    left: 1.15rem;
+    right: 1.15rem;
+    bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem));
+    max-width: none;
+    width: auto;
   }
 
   .home-hero-foot {
