@@ -31,14 +31,8 @@
     return 'images/cat-mode.jpg';
   }
 
-  function pickReliableHomeImage(p) {
+  function pickHomeImage(p) {
     const fallback = categoryFallbackImage(p);
-    const pool = [
-      'images/cat-mode.jpg',
-      'images/cat-maison.jpg',
-      'images/cat-lifestyle.jpg',
-      'images/journal-linen.jpg',
-    ];
     const imgs =
       global.MD3Store && global.MD3Store.normalizeProductImages
         ? global.MD3Store.normalizeProductImages(p)
@@ -47,20 +41,13 @@
           : p && p.image
             ? [p.image]
             : [];
-    const list = imgs || [];
-    const local = list.find((src) => {
-      const s = String(src || '');
-      return s.startsWith('images/') || s.startsWith('/') || s.startsWith('data:image');
-    });
+    const list = (imgs || []).map((s) => String(s || '')).filter(Boolean);
+    const local = list.find(
+      (s) => s.startsWith('images/') || s.startsWith('/') || s.startsWith('data:image')
+    );
     if (local) return local;
-
-    // Allow remote URLs (onerror swaps to fallback) so real photos show when available
-    const remote = list.find((src) => /^https?:\/\//i.test(String(src || '')));
+    const remote = list.find((s) => /^https?:\/\//i.test(s));
     if (remote) return remote;
-
-    // Diversify fallbacks so a thin catalog doesn't look like one repeating card
-    const idNum = parseInt(p && p.id, 10);
-    if (!Number.isNaN(idNum) && idNum > 0) return pool[idNum % pool.length];
     return fallback;
   }
 
@@ -68,13 +55,12 @@
     const href = global.MD3Store.productHref(p.id);
     const name = localizedName(p);
     const fallback = categoryFallbackImage(p);
-    const image = pickReliableHomeImage(p);
+    const image = pickHomeImage(p);
     const cat = labels.catLabel ? labels.catLabel(p.category) : p.category;
     const isLimited = /édition|edition|limit/i.test(String(p.category || ''));
     const badge = isLimited
       ? `<span class="home-product-badge">${esc(labels.limitedBadge || 'Édition')}</span>`
       : '';
-    // eager: lazy + CSS transform marquees often blank images (esp. clone group / Safari)
     const imgHtml = image
       ? `<img src="${esc(image)}" alt="${esc(name)}" loading="eager" decoding="async" draggable="false" onerror="this.onerror=null;this.src='${fallback}'" />`
       : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
@@ -234,12 +220,9 @@
   }
 
   /**
-   * Continuous infinite marquee (CSS translateX -50%).
-   * Two identical groups → seamless circle. No step/scale “focus” effect.
+   * Continuous infinite marquee — two identical groups, CSS translateX(-50%).
    */
-  function stopFeaturedAutoplay() {
-    /* no JS timer — marquee is CSS-driven */
-  }
+  function stopFeaturedAutoplay() {}
 
   function startFeaturedAutoplay(carousel) {
     if (!carousel) return;
@@ -256,13 +239,9 @@
       track.appendChild(clone);
     }
 
-    const cards = group.querySelectorAll('.home-product-card');
-    const n = Math.max(1, cards.length);
-    // ~2.5s of travel per card → full loop = one group width
-    const seconds = Math.max(20, Math.min(80, n * 2.5));
+    const n = Math.max(1, group.querySelectorAll('.home-product-card').length);
+    const seconds = Math.max(28, Math.min(70, n * 5));
     track.style.setProperty('--featured-marquee-duration', seconds + 's');
-    track.style.removeProperty('transform');
-    track.style.removeProperty('transition');
     track.classList.add('is-ready');
   }
 
@@ -277,7 +256,7 @@
       return;
     }
 
-    // Dedupe by id, then pad with more catalog items so the strip isn't one product ×3
+    // Unique products first
     const seen = new Set();
     let list = [];
     products.forEach((p) => {
@@ -287,10 +266,11 @@
       list.push(p);
     });
 
-    if (list.length < 4 && global.MD3Store && global.MD3Store.getProducts) {
+    // Pad with more catalog items (not the same product repeated) so the strip feels full
+    if (list.length < 6 && global.MD3Store && global.MD3Store.getProducts) {
       try {
         global.MD3Store.getProducts().forEach((p) => {
-          if (list.length >= 6) return;
+          if (list.length >= 8) return;
           const id = p && p.id != null ? String(p.id) : '';
           if (!id || seen.has(id)) return;
           const name = String((p && p.name) || '').trim();
@@ -301,10 +281,13 @@
       } catch (_) {}
     }
 
-    while (list.length < 4) list = list.concat(list);
-    list = list.slice(0, Math.max(4, Math.min(list.length, 10)));
+    if (!list.length) return;
 
-    const cards = list.map((p) => storeCardHomeHtml(p, lbl)).join('');
+    // Duplicate the set only as needed for a wide enough loop track
+    let loop = list.slice();
+    while (loop.length < 6) loop = loop.concat(list);
+
+    const cards = loop.map((p) => storeCardHomeHtml(p, lbl)).join('');
     container.innerHTML =
       '<div class="home-featured-group">' +
       cards +

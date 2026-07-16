@@ -598,11 +598,10 @@ html.is-mobile #md3-hero .hero-bg-img {
 .home-featured-carousel {
   overflow: hidden;
   width: 100%;
-  min-height: 320px;
-  touch-action: pan-y;
-  /* Soft equal fade on both sides */
-  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  min-height: 280px;
+  /* No heavy edge fade — that made cards look cut off / “disappearing” */
+  mask-image: none;
+  -webkit-mask-image: none;
 }
 
 @media (min-width: 768px) {
@@ -610,23 +609,17 @@ html.is-mobile #md3-hero .hero-bg-img {
     width: 100vw;
     margin-left: calc(50% - 50vw);
     margin-right: calc(50% - 50vw);
-    min-height: 420px;
+    min-height: 360px;
   }
 }
 
 .home-featured-track {
-  --featured-marquee-duration: 28s;
-  --featured-gap: 1.25rem;
-  --featured-card-w: 200px;
+  --featured-marquee-duration: 40s;
   display: flex;
-  flex-wrap: nowrap;
   width: max-content;
-  align-items: flex-start;
-  gap: 0; /* groups must abut so -50% = exactly one group */
-  min-height: 280px;
-  padding: 1.25rem 0;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
+  gap: 0;
+  min-height: 260px;
+  padding: 0.5rem 0;
 }
 
 .home-featured-track.is-ready {
@@ -639,71 +632,46 @@ html.is-mobile #md3-hero .hero-bg-img {
 
 .home-featured-group {
   display: flex;
-  flex-wrap: nowrap;
-  align-items: flex-start;
-  flex: 0 0 auto;
-  gap: var(--featured-gap);
-  /* Matching end gap so seam between clones = card gap (keeps -50% seamless) */
-  padding: 0;
-  margin: 0;
-  padding-inline-end: var(--featured-gap);
-  box-sizing: content-box;
+  align-items: stretch;
+  gap: 1rem;
+  padding-right: 1rem;
 }
 
 @media (min-width: 768px) {
-  .home-featured-track {
-    --featured-gap: 1.5rem;
-    --featured-card-w: 230px;
-  }
-}
-
-@media (min-width: 1100px) {
-  .home-featured-track {
-    --featured-gap: 1.75rem;
-    --featured-card-w: 250px;
+  .home-featured-group {
+    gap: 1.75rem;
+    padding-right: 1.75rem;
   }
 }
 
 .home-featured-group[aria-hidden='true'] {
   display: flex !important;
-  visibility: visible !important;
 }
 
 @keyframes home-featured-marquee {
   0% {
-    transform: translate3d(0, 0, 0);
+    transform: translateX(0);
   }
   100% {
-    transform: translate3d(-50%, 0, 0);
+    transform: translateX(-50%);
   }
 }
 
-/* Fixed-width cards — equal size, no shrink/overlap */
 .home-featured .home-product-card {
   display: block;
   text-decoration: none;
   color: inherit;
-  flex: 0 0 var(--featured-card-w);
-  width: var(--featured-card-w);
-  max-width: var(--featured-card-w);
-  min-width: var(--featured-card-w);
-  box-sizing: border-box;
-  overflow: hidden;
-  transform: none;
-  opacity: 1;
+  flex: 0 0 auto;
+  width: min(58vw, 220px);
 }
 
-.home-featured .home-product-card.is-center {
-  transform: none;
-  opacity: 1;
+@media (min-width: 768px) {
+  .home-featured .home-product-card {
+    width: min(28vw, 280px);
+  }
 }
 
 @media (max-width: 767px) {
-  .home-featured-track {
-    --featured-gap: 1rem;
-    --featured-card-w: 158px;
-  }
-
   .home-featured-carousel {
     min-height: 300px;
     margin: 0;
@@ -719,14 +687,18 @@ html.is-mobile #md3-hero .hero-bg-img {
   .home-featured-track.is-ready,
   .home-featured-grid {
     display: flex !important;
-    flex-wrap: nowrap !important;
     width: max-content !important;
-    min-height: 260px;
+    min-height: 280px;
   }
 
   .home-featured-group {
     display: flex !important;
-    flex-wrap: nowrap !important;
+    gap: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .home-featured .home-product-card {
+    width: min(68vw, 220px);
   }
 
   .home-featured .home-product-visual {
@@ -736,11 +708,9 @@ html.is-mobile #md3-hero .hero-bg-img {
 
 .home-featured .home-product-visual {
   position: relative;
-  width: 100%;
   aspect-ratio: 4 / 5;
   background: var(--home-cream);
   overflow: hidden;
-  flex-shrink: 0;
 }
 
 .home-featured .home-product-visual img,
@@ -749,16 +719,11 @@ html.is-mobile #md3-hero .hero-bg-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
   transition: transform 1s ease-out;
-  /* Prevent Safari blanking images inside a transforming marquee */
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  backface-visibility: hidden;
 }
 
 .home-featured .home-product-card:hover .home-product-visual img {
-  transform: translateZ(0) scale(1.04);
+  transform: scale(1.05);
 }
 
 .home-featured .featured-emoji-fallback {
@@ -778,15 +743,10 @@ html.is-mobile #md3-hero .hero-bg-img {
   letter-spacing: 0.3em;
   text-transform: uppercase;
   padding: 0.25rem 0.65rem;
-  z-index: 1;
 }
 
 .home-product-meta {
-  margin-top: 0.85rem;
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden;
-  box-sizing: border-box;
+  margin-top: 1rem;
 }
 
 .home-product-cat {
@@ -794,9 +754,6 @@ html.is-mobile #md3-hero .hero-bg-img {
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--home-ink-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .home-product-name {
@@ -805,11 +762,6 @@ html.is-mobile #md3-hero .hero-bg-img {
   font-size: 1.125rem;
   line-height: 1.25;
   color: var(--home-ink);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  word-break: break-word;
 }
 
 @media (min-width: 768px) {
@@ -819,13 +771,10 @@ html.is-mobile #md3-hero .hero-bg-img {
 }
 
 .home-product-price {
-  margin-top: 0.45rem;
+  margin-top: 0.5rem;
   font-size: 0.875rem;
   font-weight: 300;
   color: var(--home-ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .home-featured .shop-empty-state {
