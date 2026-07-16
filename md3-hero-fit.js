@@ -59,8 +59,9 @@
 
     const vh = window.innerHeight || 1;
     const copyH = copy.offsetHeight || 220;
-    const stopBottom = Math.max(14, vh * 0.045);
-    const startBottom = Math.max(stopBottom + 72, vh * 0.14);
+    // Pin to the lower edge of the phone
+    const stopBottom = 12;
+    const startBottom = 12;
 
     const heroRect = hero.getBoundingClientRect();
     const heroBottom = heroRect.bottom;
@@ -77,7 +78,7 @@
     } else {
       copy.classList.add('is-cta-fixed');
       copy.classList.remove('is-cta-parked');
-      copy.style.bottom = startBottom + 'px';
+      copy.style.bottom = 'max(0.75rem, env(safe-area-inset-bottom, 0px))';
     }
   }
 

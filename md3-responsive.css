@@ -120,7 +120,7 @@ html[data-viewport='mobile'] .home-hero-copy,
 html.is-mobile .home-hero-copy {
   left: 1.15rem;
   right: 1.15rem;
-  bottom: max(14%, calc(env(safe-area-inset-bottom, 0px) + 4.5rem));
+  bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem));
   max-width: none;
   width: auto;
   box-sizing: border-box;
