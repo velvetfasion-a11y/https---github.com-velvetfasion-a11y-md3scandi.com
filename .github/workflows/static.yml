@@ -47,8 +47,19 @@ jobs:
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
         run: |
+          set +e
           node scripts/sync-firebase-config.mjs
+          fb=$?
           node scripts/sync-ai-config.mjs
+          ai=$?
+          set -e
+          if [ ! -f firebase-config.js ]; then
+            echo "window.MD3_FIREBASE_CONFIG = {};" > firebase-config.js
+          fi
+          if [ ! -f ai-config.js ]; then
+            echo "window.MD3_AI_CONFIG = {};" > ai-config.js
+          fi
+          echo "Config sync exit codes: firebase=$fb ai=$ai (non-zero is warning-only)"
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

@@ -41,15 +41,13 @@ const isCIRun = isCI();
 if (!config.geminiApiKey && !config.openaiApiKey) {
   const msg =
     'No GEMINI_API_KEY or OPENAI_API_KEY — admin AI image generation will not work on the deployed site.';
-  if (isCIRun) {
-    console.error('ERROR: ' + msg);
-    console.error('Add repository secret GEMINI_API_KEY (Settings → Secrets and variables → Actions), then re-run the deploy workflow.');
-    process.exit(1);
-  }
+  // Never block GitHub Pages deploy — the storefront must still publish.
   console.warn('Warning: ' + msg);
+  if (isCIRun) {
+    console.warn('Add repository secret GEMINI_API_KEY (Settings → Secrets and variables → Actions) for admin AI.');
+  }
 } else if (/^ya29\./i.test(config.geminiApiKey)) {
-  console.error(
-    'ERROR: GEMINI_API_KEY looks like a Google sign-in OAuth token (ya29.…), not a Gemini API key. Use https://aistudio.google.com/apikey (AQ.… or AIza…).'
+  console.warn(
+    'Warning: GEMINI_API_KEY looks like a Google sign-in OAuth token (ya29.…), not a Gemini API key. Use https://aistudio.google.com/apikey (AQ.… or AIza…).'
   );
-  process.exit(isCIRun ? 1 : 0);
 }

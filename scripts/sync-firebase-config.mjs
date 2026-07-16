@@ -48,10 +48,9 @@ const missing = required.filter(([, v]) => !v || String(v).includes('YOUR_')).ma
 
 if (missing.length) {
   const msg = 'Missing in .env: ' + missing.join(', ');
-  if (isCI()) {
-    console.error('ERROR: ' + msg);
-    console.error('Add Firebase secrets in GitHub → Settings → Secrets → Actions, then re-run deploy.');
-    process.exit(1);
-  }
+  // Never block GitHub Pages deploy — storefront still works with local defaults.
   console.warn('Warning: ' + msg);
+  if (isCI()) {
+    console.warn('Add Firebase secrets in GitHub → Settings → Secrets → Actions for cloud product sync.');
+  }
 }
