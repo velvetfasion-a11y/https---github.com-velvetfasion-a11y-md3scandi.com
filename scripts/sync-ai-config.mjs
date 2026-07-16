@@ -6,44 +6,13 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { isCI, loadEnv } from './lib/load-env.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
-const envPath = path.join(root, '.env');
 const outPath = path.join(root, 'ai-config.js');
 
-function parseEnvFile(content) {
-  const env = {};
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eq = trimmed.indexOf('=');
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    let val = trimmed.slice(eq + 1).trim();
-    if (
-      (val.startsWith('"') && val.endsWith('"')) ||
-      (val.startsWith("'") && val.endsWith("'"))
-    ) {
-      val = val.slice(1, -1);
-    }
-    env[key] = val;
-  }
-  return env;
-}
-
-function loadEnv() {
-  const merged = {};
-  if (fs.existsSync(envPath)) {
-    Object.assign(merged, parseEnvFile(fs.readFileSync(envPath, 'utf8')));
-  }
-  for (const [key, val] of Object.entries(process.env)) {
-    if (val != null && val !== '') merged[key] = val;
-  }
-  return merged;
-}
-
-const env = loadEnv();
+const env = loadEnv(root);
 
 const config = {
   provider: env.AI_PROVIDER || 'gemini',
@@ -57,8 +26,9 @@ const config = {
 };
 
 const body = `/**
- * Auto-generated from .env — do not edit by hand.
- * Edit .env then run: node scripts/sync-ai-config.mjs
+ * Auto-generated from .env — DO NOT EDIT. Secrets live only in .env (local) or GitHub Actions secrets (production).
+ * Regenerate: node scripts/sync-ai-config.mjs
+ * Verify key:  node scripts/test-gemini.mjs
  */
 window.MD3_AI_CONFIG = ${JSON.stringify(config, null, 2)};
 `;
@@ -66,6 +36,20 @@ window.MD3_AI_CONFIG = ${JSON.stringify(config, null, 2)};
 fs.writeFileSync(outPath, body, 'utf8');
 console.log('Wrote', path.relative(root, outPath));
 
+const isCIRun = isCI();
+
 if (!config.geminiApiKey && !config.openaiApiKey) {
-  console.warn('Warning: no GEMINI_API_KEY or OPENAI_API_KEY set — admin AI will use local parsing only.');
+  const msg =
+    'No GEMINI_API_KEY or OPENAI_API_KEY — admin AI image generation will not work on the deployed site.';
+  if (isCIRun) {
+    console.error('ERROR: ' + msg);
+    console.error('Add repository secret GEMINI_API_KEY (Settings → Secrets and variables → Actions), then re-run the deploy workflow.');
+    process.exit(1);
+  }
+  console.warn('Warning: ' + msg);
+} else if (/^AQ\.|^ya29\./i.test(config.geminiApiKey)) {
+  console.error(
+    'ERROR: GEMINI_API_KEY looks like an OAuth token, not a Gemini API key. Use https://aistudio.google.com/apikey (AIza…).'
+  );
+  process.exit(isCIRun ? 1 : 0);
 }

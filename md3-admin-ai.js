@@ -49,16 +49,28 @@
 
   function geminiKey() {
     const k = getCfg().geminiApiKey;
-    return k && !String(k).includes('YOUR_') ? k : '';
+    return k && !String(k).includes('YOUR_') ? String(k).trim() : '';
+  }
+
+  function geminiKeyIssue() {
+    const k = geminiKey();
+    if (!k) return 'missing';
+    if (/^AQ\.|^ya29\./i.test(k)) {
+      return 'oauth_not_api_key';
+    }
+    if (!/^AIza[\w-]{20,}/i.test(k)) {
+      return 'bad_format';
+    }
+    return '';
+  }
+
+  function hasGemini() {
+    return !!geminiKey() && !geminiKeyIssue();
   }
 
   function openaiKey() {
     const k = getCfg().openaiApiKey;
     return k && !String(k).includes('YOUR_') ? k : '';
-  }
-
-  function hasGemini() {
-    return !!geminiKey();
   }
 
   function hasOpenAI() {
@@ -68,15 +80,42 @@
   function hasCloudAI() {
     const p = (getCfg().provider || 'gemini').toLowerCase();
     if (p === 'openai') return hasOpenAI();
-    if (p === 'gemini') return hasGemini();
+    if (p === 'gemini') return hasGemini() || (!!geminiKey() && !hasOpenAI());
     return hasGemini() || hasOpenAI();
   }
 
   function cloudAISetupMessage() {
+    const issue = geminiKeyIssue();
+    if (issue === 'oauth_not_api_key') {
+      return msg(
+        'admin-ai-err-bad-key-type',
+        'Wrong key type in GEMINI_API_KEY. You need an API key from aistudio.google.com/apikey (starts with AIza…), not an OAuth token (AQ.…). Update .env, run node scripts/sync-ai-config.mjs, and add the same key to GitHub Actions secrets for the live site.'
+      );
+    }
+    if (issue === 'bad_format') {
+      return msg(
+        'admin-ai-err-bad-key-format',
+        'GEMINI_API_KEY does not look valid. Create a key at aistudio.google.com/apikey (starts with AIza…), put it in .env, then run node scripts/sync-ai-config.mjs.'
+      );
+    }
     return msg(
       'admin-ai-err-no-key',
       'Gemini API key missing. Locally: set GEMINI_API_KEY in .env, then run node scripts/sync-ai-config.mjs. Live site: add GEMINI_API_KEY in GitHub → Settings → Secrets → Actions.'
     );
+  }
+
+  function formatCloudError(err) {
+    const raw = String((err && err.message) || err || '');
+    if (/401|UNAUTHENTICATED|ACCESS_TOKEN_TYPE_UNSUPPORTED|invalid authentication/i.test(raw)) {
+      return cloudAISetupMessage();
+    }
+    if (/403|PERMISSION_DENIED|blocked|not enabled/i.test(raw)) {
+      return msg(
+        'admin-ai-err-gemini-disabled',
+        'Gemini API rejected this key. Create a new key at aistudio.google.com/apikey and enable the Generative Language API for your project.'
+      );
+    }
+    return msg('admin-ai-err-cloud', 'Cloud AI error: ') + raw.slice(0, 220);
   }
 
   function productNotFoundMessage() {
@@ -950,10 +989,18 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     return null;
   }
 
+  function getFocusedProductLabel() {
+    if (sessionCtx.focusedProductId == null) return '';
+    const p = S().getProducts().find((x) => x.id === sessionCtx.focusedProductId);
+    const name = String((p && p.name) || sessionCtx.focusedProductName || '').trim();
+    if (!name || name === '.' || name === '·') return p ? 'Product #' + p.id : '';
+    return name;
+  }
+
   function updateFocusChip() {
     const el = $('adminAiFocus');
     if (!el) return;
-    const name = sessionCtx.focusedProductName;
+    const name = getFocusedProductLabel();
     if (sessionCtx.focusedProductId != null && name) {
       el.hidden = false;
       el.textContent =
@@ -2679,13 +2726,18 @@ Product screenshots / admin UI shots → update existing product, never add_prod
           ) +
           '</small>';
         $('adminAiMessages').dataset.hinted = '1';
-      } else if (hasCloudAI() && !usedCloud && cloudErr && !$('adminAiMessages').dataset.cloudErr) {
+      } else if ((hasCloudAI() || geminiKey()) && !usedCloud && cloudErr && !$('adminAiMessages').dataset.cloudErr) {
         replyHtml +=
-          '<br><small class="admin-ai-hint">' +
-          esc(msg('admin-ai-err-cloud', 'Cloud AI error: ')) +
-          esc(String(cloudErr.message || cloudErr).slice(0, 180)) +
+          '<br><small class="admin-ai-hint admin-ai-hint--err">' +
+          esc(formatCloudError(cloudErr)) +
           '</small>';
         $('adminAiMessages').dataset.cloudErr = '1';
+      } else if (geminiKeyIssue() && !$('adminAiMessages').dataset.hinted) {
+        replyHtml +=
+          '<br><small class="admin-ai-hint admin-ai-hint--err">' +
+          esc(cloudAISetupMessage()) +
+          '</small>';
+        $('adminAiMessages').dataset.hinted = '1';
       }
 
       setLastBubble(replyHtml);

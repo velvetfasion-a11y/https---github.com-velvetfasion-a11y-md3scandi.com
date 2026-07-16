@@ -857,6 +857,10 @@ body.admin-active .modal {
   font-size: 0.72rem;
 }
 
+#page-admin .admin-ai-hint--err {
+  color: #9a4a3a;
+}
+
 #page-admin .admin-ai-typing {
   opacity: 0.65;
 }

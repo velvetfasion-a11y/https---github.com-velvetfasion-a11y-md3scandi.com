@@ -5,10 +5,10 @@
 (function (global) {
   async function ensureAuthReady() {
     if (!global.MD3_FIREBASE_CONFIG || !global.MD3_FIREBASE_CONFIG.apiKey) {
-      throw new Error('firebase-config.js is missing or empty.');
+      throw new Error('firebase-config.js is missing. Set FIREBASE_* in .env and run node scripts/sync-config.mjs');
     }
     if (String(global.MD3_FIREBASE_CONFIG.apiKey).includes('YOUR_')) {
-      throw new Error('Replace YOUR_API_KEY in firebase-config.js with your Firebase Web app config.');
+      throw new Error('Set FIREBASE_API_KEY in .env, then run node scripts/sync-config.mjs');
     }
     if (!global.MD3Firebase) {
       throw new Error('md3-firebase.js did not load.');
@@ -139,7 +139,7 @@
       'auth/account-exists-with-different-credential':
         'An account already exists with this email. Sign in with email and password instead.',
       'auth/api-key-not-valid':
-        'Invalid API key. Copy the config again from Firebase Console → Project settings → Your apps (Web), paste into firebase-config.js, deploy, and hard-refresh. Also check API key restrictions in Google Cloud Console.',
+        'Invalid API key. Copy Firebase Web config into .env (FIREBASE_*), run node scripts/sync-config.mjs, hard-refresh, and check API key restrictions in Google Cloud Console.',
     };
     if (err.code && friendly[err.code]) return friendly[err.code];
     return msg + code;

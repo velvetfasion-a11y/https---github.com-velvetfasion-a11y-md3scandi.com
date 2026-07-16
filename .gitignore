@@ -1,6 +1,9 @@
 # EmailJS private template keys (optional — public key can be committed)
 email-config.js
 recaptcha-config.js
+firebase-config.js
+firebase-config.example.js
 ai-config.js
+ai-config.example.js
 .env
 .env.local

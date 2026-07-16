@@ -32,25 +32,36 @@ Puis : [http://localhost:8080](http://localhost:8080)
 | `compte.html` | Compte, profil, admin |
 | `md3-store.js` | Boutique (cache local + sync Firebase) |
 | `md3-firebase.js` | Sync cloud Firestore + Storage |
-| `firebase-config.js` | Clés Firebase (à remplir) |
+| `firebase-config.js` | Auto-generated Firebase config (gitignored — from `.env`) |
 | `md3-email.js` | Envoi du code de confirmation (EmailJS) |
 | `email-config.js` | Clés EmailJS (à remplir) |
-| `.env` | Secrets locaux (reCAPTCHA, Gemini, OAuth) — voir `.env.example` |
-| `ai-config.js` | Config admin AI (généré depuis `.env`) |
+| `.env` | **All secrets** (Firebase, reCAPTCHA, Gemini, OAuth) — copy from `.env.example` |
+| `ai-config.js` | Auto-generated admin AI (gitignored) |
+
+## Configuration (`.env`)
+
+All secrets live in **`.env` only**. Browser files are generated — never edit them by hand.
+
+```bash
+cp .env.example .env
+# fill in FIREBASE_*, GEMINI_API_KEY, etc.
+node scripts/sync-config.mjs
+```
+
+Do **not** commit `.env`, `firebase-config.js`, or `ai-config.js`.
+
+**GitHub Pages:** add these Actions secrets (same values as `.env`):
+
+- `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_APP_ID`, `FIREBASE_MEASUREMENT_ID` (optional)
+- `GEMINI_API_KEY`
+
+Deploy runs `scripts/sync-config.mjs` automatically.
 
 ## Admin AI (Gemini)
 
-1. Copiez `.env.example` vers `.env` si besoin
-2. Renseignez `GEMINI_API_KEY` et les variables `AI_*` / `GEMINI_*` dans `.env`
-3. Générez le fichier navigateur :
-
-```bash
-node scripts/sync-ai-config.mjs
-```
-
-4. Rechargez `compte.html` (admin). Ne commitez pas `.env` ni `ai-config.js`.
-
-**GitHub Pages :** ajoutez le secret `GEMINI_API_KEY` dans *Settings → Secrets → Actions* ; le déploiement génère `ai-config.js` automatiquement.
+1. Set `GEMINI_API_KEY` in `.env` from [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (must start with **AIza**)
+2. `node scripts/sync-config.mjs`
+3. Optional: `node scripts/test-gemini.mjs`
 
 ## Confirmation email à l’inscription
 
@@ -79,10 +90,14 @@ Produits, images, comptes clients et paniers sont synchronisés via **Cloud Fire
 ### 2. Configurer le site
 
 1. **Paramètres du projet** → vos applications → **Web** `</>` → copier la config
-2. `cp firebase-config.example.js firebase-config.js` et coller `apiKey`, `projectId`, `storageBucket`, etc.
-3. Déployer **`firebase-config.js`** avec le site (comme `email-config.js`)
+2. Coller les valeurs dans `.env` (`FIREBASE_API_KEY`, `FIREBASE_PROJECT_ID`, etc.)
+3. Générer le fichier navigateur :
 
-Sans `firebase-config.js` valide, le site fonctionne encore en **localStorage** (données seulement sur ce navigateur).
+```bash
+node scripts/sync-config.mjs
+```
+
+Sans `firebase-config.js` généré, le site fonctionne encore en **localStorage** (données seulement sur ce navigateur).
 
 ### 3. Règles de sécurité (obligatoire — sinon `storage/unauthorized`)
 

@@ -11,7 +11,7 @@ function getFirebaseConfig() {
   const c = typeof window !== 'undefined' ? window.MD3_FIREBASE_CONFIG : null;
   if (!c || !c.apiKey || String(c.apiKey).includes('YOUR_')) {
     throw new Error(
-      'Firebase is not configured. Copy firebase-config.example.js to firebase-config.js and paste your keys from Firebase Console → Project settings → Your apps.'
+      'Firebase is not configured. Set FIREBASE_* in .env and run node scripts/sync-config.mjs'
     );
   }
   return c;
