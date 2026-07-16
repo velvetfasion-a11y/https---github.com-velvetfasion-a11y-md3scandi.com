@@ -1090,9 +1090,16 @@ html.is-mobile #md3-hero .hero-bg-img {
 
 .site-footer-col ul {
   list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0.875rem;
+}
+
+.site-footer-col li {
+  margin: 0;
+  padding: 0;
 }
 
 .site-footer-col a {
