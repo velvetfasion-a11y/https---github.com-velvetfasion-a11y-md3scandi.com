@@ -613,6 +613,7 @@ html.is-mobile #md3-hero .hero-bg-img {
 
 .home-featured-track {
   --featured-card-w: 200px;
+  --featured-gap: 1.25rem;
   display: flex;
   width: max-content;
   align-items: flex-start;
@@ -631,13 +632,17 @@ html.is-mobile #md3-hero .hero-bg-img {
   display: flex;
   align-items: flex-start;
   flex: 0 0 auto;
-  gap: 1rem;
+  gap: var(--featured-gap);
+  /* Same as card gap — without this, last card of group A touches first of clone B */
   padding: 0;
+  padding-inline-end: var(--featured-gap);
+  margin: 0;
+  box-sizing: content-box;
 }
 
 @media (min-width: 768px) {
-  .home-featured-group {
-    gap: 1.25rem;
+  .home-featured-track {
+    --featured-gap: 1.5rem;
   }
 }
 
@@ -656,16 +661,23 @@ html.is-mobile #md3-hero .hero-bg-img {
   min-width: var(--featured-card-w);
   box-sizing: border-box;
   overflow: hidden;
-  transform: none;
+  transform: none !important;
   opacity: 1;
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
 }
 
 .home-featured .home-product-card.is-center {
-  transform: none;
+  transform: none !important;
   opacity: 1;
 }
 
 @media (max-width: 767px) {
+  .home-featured-track {
+    --featured-gap: 0.85rem;
+  }
+
   .home-featured-carousel {
     min-height: 280px;
     margin: 0;
@@ -688,7 +700,8 @@ html.is-mobile #md3-hero .hero-bg-img {
 
   .home-featured-group {
     display: flex !important;
-    gap: 0.75rem;
+    gap: var(--featured-gap);
+    padding-inline-end: var(--featured-gap);
   }
 
   .home-featured .home-product-visual {
@@ -713,7 +726,7 @@ html.is-mobile #md3-hero .hero-bg-img {
 }
 
 .home-featured .home-product-card:hover .home-product-visual img {
-  transform: scale(1.05);
+  transform: scale(1.03);
 }
 
 .home-featured .featured-emoji-fallback {

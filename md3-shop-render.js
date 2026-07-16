@@ -266,21 +266,18 @@
     let wrapping = false;
     let stepPx = 0;
 
-    function measureStep() {
-      const card = group.querySelector('.home-product-card');
-      if (!card) return 0;
+    function layoutCards() {
       const styles = window.getComputedStyle(group);
       const gap = parseFloat(styles.columnGap || styles.gap) || 0;
-      // Use layout width (ignore CSS scale — we no longer scale cards)
-      return card.getBoundingClientRect().width + gap;
-    }
-
-    function layoutCards() {
-      // Exactly 3 equal cards fit the carousel width
-      const gap = parseFloat(window.getComputedStyle(group).columnGap || window.getComputedStyle(group).gap) || 0;
+      // 3 equal cards + 2 gutters inside the visible window
       const w = Math.max(120, (carousel.clientWidth - gap * 2) / 3);
       track.style.setProperty('--featured-card-w', w.toFixed(2) + 'px');
-      stepPx = measureStep();
+      track.style.setProperty('--featured-gap', gap.toFixed(2) + 'px');
+
+      // Force layout, then derive step from full group width
+      // (includes end padding = gap so the clone seam never touches)
+      void group.offsetWidth;
+      stepPx = count > 0 ? group.offsetWidth / count : 0;
     }
 
     function apply(animate) {
