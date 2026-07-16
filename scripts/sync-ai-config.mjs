@@ -25,6 +25,46 @@ const config = {
   model: env.OPENAI_MODEL || 'gpt-4o-mini',
 };
 
+function existingConfigLooksValid() {
+  if (!fs.existsSync(outPath)) return false;
+  try {
+    const body = fs.readFileSync(outPath, 'utf8');
+    const gemini = body.match(/"geminiApiKey"\s*:\s*"([^"]*)"/);
+    const openai = body.match(/"openaiApiKey"\s*:\s*"([^"]*)"/);
+    const g = (gemini && gemini[1]) || '';
+    const o = (openai && openai[1]) || '';
+    return (g.length > 8 && !g.includes('YOUR_')) || (o.length > 8 && !o.includes('YOUR_'));
+  } catch (_) {
+    return false;
+  }
+}
+
+if (!config.geminiApiKey && !config.openaiApiKey) {
+  const msg =
+    'No GEMINI_API_KEY or OPENAI_API_KEY — admin AI will not work on the deployed site.';
+  if (existingConfigLooksValid()) {
+    console.warn('Warning: ' + msg);
+    console.warn('Keeping existing ai-config.js (do not overwrite with empty values).');
+    process.exit(0);
+  }
+  console.error('Error: ' + msg);
+  if (isCI()) {
+    console.error(
+      'Add GEMINI_API_KEY in GitHub → Settings → Secrets → Actions, or commit a valid ai-config.js.'
+    );
+  } else {
+    console.error('Set GEMINI_API_KEY in .env and re-run this script.');
+  }
+  process.exit(1);
+}
+
+if (/^ya29\./i.test(config.geminiApiKey)) {
+  console.error(
+    'GEMINI_API_KEY looks like a Google sign-in OAuth token (ya29.…), not a Gemini API key. Use https://aistudio.google.com/apikey (AQ.… or AIza…).'
+  );
+  process.exit(1);
+}
+
 const body = `/**
  * Auto-generated from .env — DO NOT EDIT. Secrets live only in .env (local) or GitHub Actions secrets (production).
  * Regenerate: node scripts/sync-ai-config.mjs
@@ -35,19 +75,3 @@ window.MD3_AI_CONFIG = ${JSON.stringify(config, null, 2)};
 
 fs.writeFileSync(outPath, body, 'utf8');
 console.log('Wrote', path.relative(root, outPath));
-
-const isCIRun = isCI();
-
-if (!config.geminiApiKey && !config.openaiApiKey) {
-  const msg =
-    'No GEMINI_API_KEY or OPENAI_API_KEY — admin AI image generation will not work on the deployed site.';
-  // Never block GitHub Pages deploy — the storefront must still publish.
-  console.warn('Warning: ' + msg);
-  if (isCIRun) {
-    console.warn('Add repository secret GEMINI_API_KEY (Settings → Secrets and variables → Actions) for admin AI.');
-  }
-} else if (/^ya29\./i.test(config.geminiApiKey)) {
-  console.warn(
-    'Warning: GEMINI_API_KEY looks like a Google sign-in OAuth token (ya29.…), not a Gemini API key. Use https://aistudio.google.com/apikey (AQ.… or AIza…).'
-  );
-}

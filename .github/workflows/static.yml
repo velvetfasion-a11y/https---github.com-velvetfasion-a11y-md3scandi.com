@@ -47,24 +47,24 @@ jobs:
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
         run: |
-          # Firebase must be real — empty config breaks product sync on the custom domain
+          # Real Firebase + Gemini config required for custom-domain sync / admin AI
           node scripts/sync-firebase-config.mjs
-          set +e
           node scripts/sync-ai-config.mjs
-          ai=$?
-          set -e
-          if [ ! -f ai-config.js ]; then
-            echo "window.MD3_AI_CONFIG = {};" > ai-config.js
-          fi
-          echo "AI config sync exit code: $ai (non-zero is warning-only)"
           node -e "
             const fs = require('fs');
-            const body = fs.readFileSync('firebase-config.js', 'utf8');
-            if (!/\"apiKey\"\\s*:\\s*\"[^\"]+\"/.test(body) || /\"apiKey\"\\s*:\\s*\"\"/.test(body)) {
-              console.error('firebase-config.js is missing apiKey — refusing to deploy a broken storefront.');
+            const fb = fs.readFileSync('firebase-config.js', 'utf8');
+            if (!/\"apiKey\"\\s*:\\s*\"[^\"]+\"/.test(fb) || /\"apiKey\"\\s*:\\s*\"\"/.test(fb)) {
+              console.error('firebase-config.js is missing apiKey — refusing broken deploy.');
               process.exit(1);
             }
-            console.log('firebase-config.js OK');
+            const ai = fs.readFileSync('ai-config.js', 'utf8');
+            const g = (ai.match(/\"geminiApiKey\"\\s*:\\s*\"([^\"]*)\"/) || [])[1] || '';
+            const o = (ai.match(/\"openaiApiKey\"\\s*:\\s*\"([^\"]*)\"/) || [])[1] || '';
+            if (g.length < 8 && o.length < 8) {
+              console.error('ai-config.js is missing API keys — refusing broken deploy.');
+              process.exit(1);
+            }
+            console.log('firebase-config.js + ai-config.js OK');
           "
       - name: Setup Pages
         uses: actions/configure-pages@v5

@@ -1,9 +1,9 @@
-# EmailJS private template keys (optional — public key can be committed)
+# EmailJS / reCAPTCHA — optional private configs
 email-config.js
 recaptcha-config.js
-# firebase-config.js is committed (public web API keys) so GitHub Pages / custom domain can sync products
-firebase-config.example.js
+# Gemini key must not be committed (GitHub push protection). Generated in CI from secrets.
 ai-config.js
 ai-config.example.js
+firebase-config.example.js
 .env
 .env.local
