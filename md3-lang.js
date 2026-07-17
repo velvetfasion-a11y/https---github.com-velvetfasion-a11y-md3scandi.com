@@ -1624,6 +1624,16 @@
     });
   }
 
+  function ensureArabicFont() {
+    if (document.getElementById('md3-font-arabic')) return;
+    const link = document.createElement('link');
+    link.id = 'md3-font-arabic';
+    link.rel = 'stylesheet';
+    link.href =
+      'https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500&display=swap';
+    document.head.appendChild(link);
+  }
+
   function applyLang(lang, opts) {
     const dict = getMergedDict(lang);
     if (!dict || !T[lang]) return;
@@ -1635,6 +1645,7 @@
     if (document.body) {
       document.body.classList.toggle('lang-ar', lang === 'ar');
     }
+    if (lang === 'ar') ensureArabicFont();
 
     document.querySelectorAll('[data-i18n]').forEach((el) => {
       const key = el.getAttribute('data-i18n');

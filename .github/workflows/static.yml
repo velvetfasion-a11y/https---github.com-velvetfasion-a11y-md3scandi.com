@@ -68,6 +68,11 @@ jobs:
           "
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Prune unused heavy assets from deploy
+        run: |
+          rm -f images/hero-bg.jpeg images/hero-bg.webp images/hero-bg.png
+          rm -f storefront-full-bundle.txt md3-hero-stickers.js
+          echo "Pruned unused deploy bloat"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

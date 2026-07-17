@@ -94,7 +94,7 @@ html[data-viewport='mobile'] #md3-hero.home-hero--cinema,
 html.is-mobile #md3-hero.home-hero--cinema {
   aspect-ratio: auto;
   min-height: 100svh;
-  min-height: 100vh;
+  min-height: 100dvh;
   max-height: none;
 }
 

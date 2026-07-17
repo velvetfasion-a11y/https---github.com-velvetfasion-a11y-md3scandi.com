@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <script src="md3-lang-boot.js"></script>
+<script>
+(function () {
+  var m = window.matchMedia('(min-width: 768px)').matches;
+  var r = document.documentElement;
+  r.dataset.viewport = m ? 'desktop' : 'mobile';
+  r.classList.toggle('is-desktop', m);
+  r.classList.toggle('is-mobile', !m);
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>MD3 Scandi — Ton univers, sublimé</title>
 <meta name="description" content="MD3 Scandi — Mode, Maison, Lifestyle. Du dressing au salon, l'élégance partout." />
@@ -20,11 +29,11 @@
 <link rel="preload" as="image" href="images/NyZx3.jpg?v=2" fetchpriority="high" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@300;400;500&family=Noto+Sans+Arabic:wght@300;400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-<noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@300;400;500&family=Noto+Sans+Arabic:wght@300;400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" /></noscript>
-<link rel="stylesheet" href="md3-header.css?v=19" />
-<link rel="stylesheet" href="md3-responsive.css?v=18" />
-<link rel="stylesheet" href="md3-home.css?v=47" />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+<noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet" /></noscript>
+<link rel="stylesheet" href="md3-header.css?v=20" />
+<link rel="stylesheet" href="md3-responsive.css?v=19" />
+<link rel="stylesheet" href="md3-home.css?v=48" />
 </head>
 <body class="home-page">
 <script src="md3-viewport.js"></script>
@@ -35,7 +44,7 @@
 
 <section id="md3-hero" class="home-hero home-hero--luxury home-hero--cinema" aria-label="MD3 Scandi">
   <div class="hero-bg" aria-hidden="true">
-    <img class="hero-bg-img" src="images/NyZx3.jpg?v=2" alt="MD3 Scandi collection hero" width="1376" height="752" decoding="async" fetchpriority="high" />
+    <img class="hero-bg-img" src="images/NyZx3.jpg?v=2" alt="MD3 Scandi collection hero" width="1376" height="752" fetchpriority="high" />
   </div>
   <div class="home-hero-overlay" aria-hidden="true"></div>
 
@@ -52,7 +61,7 @@
     </h1>
   </div>
 
-  <div class="home-hero-copy" id="homeHeroCopy">
+  <div class="home-hero-copy is-cta-parked" id="homeHeroCopy">
     <!-- Mobile: title above buttons -->
     <div class="home-hero-heading only-mobile">
       <h1 class="home-hero-title">
@@ -208,223 +217,19 @@
   </div>
 </footer>
 
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-<script src="firebase-config.js"></script>
-<script src="md3-firebase.js?v=4"></script>
-<script src="md3-sizes.js?v=1"></script>
-<script src="md3-store.js?v=17"></script>
-<script src="md3-site-assets.js?v=7"></script>
-<script src="md3-nav-icons.js"></script>
-<script src="md3-header.js?v=19"></script>
-<script src="md3-lang.js?v=29"></script>
-<script src="md3-currency.js?v=4"></script>
-<script src="md3-hero-fit.js?v=13"></script>
-<script src="md3-shop-render.js?v=28"></script>
-<script>
-  function updateCartBadge() {
-    try {
-      if (window.MD3Header) MD3Header.updateCartBadge();
-    } catch (e) {}
-  }
-  document.documentElement.classList.add('js-reveal');
-
-  function initReveal() {
-    const reveals = document.querySelectorAll('.reveal');
-    if (!reveals.length) return;
-    // Featured products must stay visible even before scroll
-    const featured = document.getElementById('boutique');
-    if (featured) featured.classList.add('in-view');
-    if (typeof IntersectionObserver === 'undefined') {
-      reveals.forEach((el) => el.classList.add('in-view'));
-      return;
-    }
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) entry.target.classList.add('in-view');
-      });
-    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
-    reveals.forEach((el) => observer.observe(el));
-    requestAnimationFrame(() => {
-      reveals.forEach((el) => {
-        const r = el.getBoundingClientRect();
-        if (r.top < window.innerHeight * 0.92) el.classList.add('in-view');
-      });
-    });
-  }
-  initReveal();
-
-  let featuredTimer = null;
-  function renderFeatured() {
-    try {
-      const grid = document.getElementById('featuredGrid');
-      const empty = document.getElementById('featuredEmpty');
-      const carousel = document.getElementById('featuredCarousel');
-      const section = document.getElementById('boutique');
-      if (section) section.classList.add('in-view');
-      if (!grid) return;
-
-      // Keep static photo carousel if store is not ready yet
-      if (!window.MD3Store) return;
-
-      try {
-        if (MD3Store.ensureCaches) MD3Store.ensureCaches();
-      } catch (e) {}
-
-      let products = [];
-      try {
-        products = MD3Store.getFeaturedProducts
-          ? MD3Store.getFeaturedProducts()
-          : MD3Store.getHomeFeaturedProducts
-            ? MD3Store.getHomeFeaturedProducts()
-            : [];
-        const isFeat =
-          MD3Store.isProductFeatured ||
-          function (p) {
-            return !!(p && p.featured);
-          };
-        products = (products || []).filter(isFeat);
-      } catch (e) {
-        console.error('featured products', e);
-        products = [];
-      }
-
-      // Prefer products with usable names (skip junk ".")
-      products = products.filter((p) => {
-        const name = String((p && p.name) || '').trim();
-        return !!(name && name !== '.' && name.length >= 2);
-      });
-
-      if (!products.length) {
-        grid.innerHTML = '';
-        grid.classList.remove('is-ready');
-        if (carousel) {
-          carousel.hidden = true;
-          carousel.style.display = 'none';
-        }
-        if (empty) empty.hidden = false;
-        return;
-      }
-
-      if (empty) empty.hidden = true;
-      if (carousel) {
-        carousel.hidden = false;
-        carousel.style.display = '';
-      }
-
-      if (window.MD3Shop && MD3Shop.renderHomeCarousel) {
-        MD3Shop.renderHomeCarousel(grid, products, MD3Shop.homeLabels());
-      } else if (window.MD3Shop && MD3Shop.renderHomeGrid) {
-        MD3Shop.renderHomeGrid(grid, products, MD3Shop.homeLabels());
-        if (MD3Shop.startFeaturedAutoplay) MD3Shop.startFeaturedAutoplay(carousel);
-      }
-      updateCartBadge();
-    } catch (e) {
-      console.error('renderFeatured', e);
-    }
-  }
-
-  function scheduleFeaturedRender() {
-    clearTimeout(featuredTimer);
-    featuredTimer = setTimeout(renderFeatured, 50);
-  }
-
-  function updateNavAuth() {
-    try {
-      if (window.MD3Header) MD3Header.updateAuth();
-    } catch (e) {}
-  }
-
-  function bootShop() {
-    try { updateNavAuth(); } catch (e) {}
-    try { updateCartBadge(); } catch (e) {}
-    try {
-      if (window.MD3SiteAssets) MD3SiteAssets.applyToDocument();
-    } catch (e) {}
-    scheduleFeaturedRender();
-  }
-
-  // Refresh featured strip after store is ready (starred products only)
-  scheduleFeaturedRender();
-
-  try {
-    if (window.MD3Lang) {
-      MD3Lang.init({
-        onChange() {
-          try {
-            if (window.MD3Currency) MD3Currency.refreshCurrency();
-            MD3Lang.refreshUI();
-          } catch (e) {}
-          updateNavAuth();
-          scheduleFeaturedRender();
-          updateCartBadge();
-          if (window.MD3HeroFit) MD3HeroFit.fit();
-        }
-      });
-    }
-  } catch (e) {
-    console.error('MD3Lang.init', e);
-  }
-
-  document.querySelectorAll('a[href^="#"]').forEach((link) => {
-    link.addEventListener('click', (e) => {
-      const href = link.getAttribute('href');
-      if (!href || href === '#') return;
-      const target = document.querySelector(href);
-      if (target) {
-        e.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-  });
-
-  function startStore() {
-    if (!window.MD3Store || !MD3Store.init) {
-      bootShop();
-      return;
-    }
-    MD3Store.init()
-      .then(function () {
-        try {
-          if (window.MD3SiteAssets) MD3SiteAssets.init();
-        } catch (e) {}
-        bootShop();
-        // Second pass after cloud catalog settles (featured stars from Firebase)
-        setTimeout(scheduleFeaturedRender, 400);
-        setTimeout(scheduleFeaturedRender, 1500);
-      })
-      .catch(function (e) {
-        console.error('MD3Store.init', e);
-        bootShop();
-      });
-  }
-  startStore();
-
-  window.addEventListener('pageshow', function () {
-    updateNavAuth();
-    updateCartBadge();
-    scheduleFeaturedRender();
-  });
-
-  window.addEventListener('md3-products-updated', scheduleFeaturedRender);
-  window.addEventListener('md3-carts-updated', updateCartBadge);
-  window.addEventListener('md3-session-changed', updateNavAuth);
-  window.addEventListener('md3-site-assets-updated', function () {
-    if (window.MD3SiteAssets) MD3SiteAssets.applyToDocument();
-    if (window.MD3HeroFit) MD3HeroFit.fit();
-  });
-
-  if (location.hash === '#boutique' || location.hash.startsWith('#boutique?')) {
-    setTimeout(() => document.getElementById('boutique')?.scrollIntoView({ behavior: 'smooth' }), 300);
-  }
-
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'md3_products') scheduleFeaturedRender();
-    if (e.key === 'md3_carts') updateCartBadge();
-    if (e.key === 'md3_session') updateNavAuth();
-  });
-</script>
+<script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script defer src="firebase-config.js"></script>
+<script defer src="md3-firebase.js?v=5"></script>
+<script defer src="md3-sizes.js?v=1"></script>
+<script defer src="md3-store.js?v=18"></script>
+<script defer src="md3-site-assets.js?v=7"></script>
+<script defer src="md3-nav-icons.js"></script>
+<script defer src="md3-header.js?v=20"></script>
+<script defer src="md3-lang.js?v=30"></script>
+<script defer src="md3-currency.js?v=4"></script>
+<script defer src="md3-hero-fit.js?v=14"></script>
+<script defer src="md3-shop-render.js?v=29"></script>
+<script defer src="md3-home-boot.js?v=1"></script>
 </body>
 </html>

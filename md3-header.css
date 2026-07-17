@@ -40,10 +40,18 @@
 }
 
 .site-header--solid {
-  background: rgba(248, 245, 240, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--md3-cream);
   border-bottom-color: var(--md3-border);
+}
+
+@supports ((backdrop-filter: blur(8px)) or (-webkit-backdrop-filter: blur(8px))) {
+  @media (hover: hover) and (pointer: fine) {
+    .site-header--solid {
+      background: rgba(248, 245, 240, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+  }
 }
 
 .site-header--overlay {

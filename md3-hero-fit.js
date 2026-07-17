@@ -1,6 +1,6 @@
-/** Hero focal crop + pin title/CTAs to the viewport bottom until the hero ends */
+/** Hero focal crop + mobile CTA pin (unified 768px breakpoint) */
 (function () {
-  const DESKTOP_MQ = window.matchMedia('(min-width: 769px)');
+  const DESKTOP_MQ = window.matchMedia('(min-width: 768px)');
   const MOBILE_MQ = window.matchMedia('(max-width: 767px)');
 
   let pinRaf = 0;
@@ -11,10 +11,6 @@
     if (!el) return;
     el.style.fontSize = '';
     el.style.letterSpacing = '';
-    el.querySelectorAll('*').forEach((child) => {
-      child.style.fontSize = '';
-      child.style.letterSpacing = '';
-    });
   }
 
   /**
@@ -25,42 +21,40 @@
     const img = document.querySelector('#md3-hero .hero-bg-img');
     if (!img) return;
 
-    const isMobile = MOBILE_MQ.matches;
-    const w = window.innerWidth;
-    const h = window.innerHeight || 1;
-    const ar = w / h;
-
-    if (isMobile) {
+    if (MOBILE_MQ.matches) {
       img.style.objectPosition = '70% 34%';
       return;
     }
 
-    if (DESKTOP_MQ.matches) {
-      const x = Math.min(62, Math.max(54, 58 + (ar - 1.6) * 2));
-      const y = Math.min(22, Math.max(12, 16 + (1.85 - ar) * 2));
-      img.style.objectPosition = x.toFixed(1) + '% ' + y.toFixed(1) + '%';
-      return;
-    }
-
-    img.style.objectPosition = '58% 18%';
-  }
-
-  function bottomPad() {
-    return MOBILE_MQ.matches ? 16 : 28;
+    const w = window.innerWidth;
+    const h = window.innerHeight || 1;
+    const ar = w / h;
+    const x = Math.min(62, Math.max(54, 58 + (ar - 1.6) * 2));
+    const y = Math.min(22, Math.max(12, 16 + (1.85 - ar) * 2));
+    img.style.objectPosition = x.toFixed(1) + '% ' + y.toFixed(1) + '%';
   }
 
   /**
-   * Stick copy to the bottom of the viewport while the hero still covers that edge;
-   * park it at the bottom of the hero once the hero scrolls up.
+   * Mobile only: stick copy to the viewport bottom while the hero covers it;
+   * park at the hero bottom once it scrolls up. Desktop stays absolute in the hero.
    */
   function updateCtaPin() {
     const hero = document.getElementById('md3-hero');
     const copy = document.getElementById('homeHeroCopy');
     if (!hero || !copy) return;
 
+    if (!MOBILE_MQ.matches) {
+      if (lastMode !== 'parked') {
+        copy.classList.add('is-cta-parked');
+        copy.classList.remove('is-cta-fixed');
+        lastMode = 'parked';
+      }
+      return;
+    }
+
     const rect = hero.getBoundingClientRect();
     const vh = window.innerHeight || document.documentElement.clientHeight || 0;
-    const pad = bottomPad();
+    const pad = 16;
 
     if (rect.bottom <= 0 || rect.top >= vh) {
       if (lastMode !== 'parked') {
@@ -110,7 +104,7 @@
   window.addEventListener('scroll', schedulePin, { passive: true });
   window.addEventListener('resize', scheduleUpdates, { passive: true });
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', schedulePin, { passive: true });
+    window.visualViewport.addEventListener('resize', scheduleUpdates, { passive: true });
   }
 
   if (DESKTOP_MQ.addEventListener) {

@@ -35,8 +35,8 @@
           ? global.firebase.app()
           : global.firebase.initializeApp(c);
       db = global.firebase.firestore(app);
-      storage = global.firebase.storage(app);
-      auth = global.firebase.auth(app);
+      storage = global.firebase.storage ? global.firebase.storage(app) : null;
+      auth = global.firebase.auth ? global.firebase.auth(app) : null;
       active = true;
       return Promise.resolve(true);
     } catch (e) {

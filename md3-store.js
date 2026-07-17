@@ -879,23 +879,40 @@
     return !!(global.MD3Firebase && global.MD3Firebase.isEnabled());
   }
 
+  function isLiveAdminSurface() {
+    try {
+      const path = String((global.location && global.location.pathname) || '');
+      return /compte\.html$/i.test(path);
+    } catch (_) {
+      return false;
+    }
+  }
+
   async function syncCloud() {
     if (!global.MD3Firebase || !global.MD3Firebase.isConfigured()) return;
     const ok = await global.MD3Firebase.init();
     const FB = global.MD3Firebase;
+    const liveWatch = isLiveAdminSurface();
 
     try {
       if (ok) {
         await flushPendingProductsCloud();
       }
 
+      // Prefer REST on storefront — faster first paint than waiting on SDK listeners
       let remoteProducts = null;
-      try {
-        remoteProducts = await FB.loadProducts();
-      } catch (e) {
-        console.error('syncCloud loadProducts', e);
+      if (!liveWatch && FB.loadProductsViaRest) {
+        try {
+          remoteProducts = await FB.loadProductsViaRest();
+        } catch (_) {}
       }
-      // SDK may be unavailable on some hosts — REST still returns the catalog
+      if ((!remoteProducts || !remoteProducts.length) && ok) {
+        try {
+          remoteProducts = await FB.loadProducts();
+        } catch (e) {
+          console.error('syncCloud loadProducts', e);
+        }
+      }
       if ((!remoteProducts || !remoteProducts.length) && FB.loadProductsViaRest) {
         remoteProducts = await FB.loadProductsViaRest();
       }
@@ -907,7 +924,7 @@
           const merged = [...remoteProducts, ...localOnly];
           merged.sort((a, b) => a.id - b.id);
           setProductsCache(merged);
-          if (ok) {
+          if (ok && liveWatch) {
             FB.saveProducts(merged, { onlyIds: localOnly.map((p) => p.id) }).catch((e) =>
               console.error('syncCloud push local-only products', e)
             );
@@ -915,44 +932,48 @@
         } else {
           setProductsCache(remoteProducts);
         }
-        // Always refresh homepage featured strip after cloud catalog lands
         notifyProductsUpdated();
-      } else if (ok && productsCache && productsCache.length) {
+      } else if (ok && liveWatch && productsCache && productsCache.length) {
         await FB.saveProducts(productsCache);
       }
 
       if (!ok) return;
 
-      FB.watchProducts((list) => {
-        if (!list || !list.length) return;
-        const remoteIds = new Set(list.map((p) => String(p.id)));
-        const localOnly = productsCache
-          ? productsCache.filter((p) => !remoteIds.has(String(p.id)))
-          : [];
-        if (localOnly.length) {
-          const merged = [...list, ...localOnly];
-          merged.sort((a, b) => a.id - b.id);
-          setProductsCache(merged);
-        } else {
-          setProductsCache(list);
-        }
-      });
+      // Storefront: one-shot catalog + carts. Realtime watchers only on admin.
+      if (liveWatch) {
+        FB.watchProducts((list) => {
+          if (!list || !list.length) return;
+          const remoteIds = new Set(list.map((p) => String(p.id)));
+          const localOnly = productsCache
+            ? productsCache.filter((p) => !remoteIds.has(String(p.id)))
+            : [];
+          if (localOnly.length) {
+            const merged = [...list, ...localOnly];
+            merged.sort((a, b) => a.id - b.id);
+            setProductsCache(merged);
+          } else {
+            setProductsCache(list);
+          }
+        });
+      }
 
       const remoteUsers = await FB.loadUsersMap();
       if (remoteUsers && Object.keys(remoteUsers).length) {
         usersCache = remoteUsers;
         localStorage.setItem(USERS_KEY, JSON.stringify(usersCache));
-      } else if (Object.keys(usersCache).length) {
+      } else if (liveWatch && Object.keys(usersCache).length) {
         await FB.saveUsersMap(usersCache);
       }
 
-      FB.watchUsers((map) => {
-        usersCache = map;
-        try {
-          localStorage.setItem(USERS_KEY, JSON.stringify(usersCache));
-        } catch (_) {}
-        syncSessionFromUsersCache();
-      });
+      if (liveWatch) {
+        FB.watchUsers((map) => {
+          usersCache = map;
+          try {
+            localStorage.setItem(USERS_KEY, JSON.stringify(usersCache));
+          } catch (_) {}
+          syncSessionFromUsersCache();
+        });
+      }
 
       const remoteCarts = await FB.loadCartsMap();
       if (remoteCarts && Object.keys(remoteCarts).length) {
@@ -961,9 +982,11 @@
         await saveAllCarts(cartsCache, { fullMap: true });
       }
 
-      FB.watchCarts((map) => {
-        applyRemoteCartsMap(map);
-      });
+      if (liveWatch) {
+        FB.watchCarts((map) => {
+          applyRemoteCartsMap(map);
+        });
+      }
 
       if (FB.deleteLegacyGuestCart) {
         FB.deleteLegacyGuestCart().catch(() => {});
@@ -972,12 +995,12 @@
       const remoteTax = await FB.loadTaxonomy();
       if (remoteTax) {
         localStorage.setItem('md3_taxonomy', JSON.stringify(remoteTax));
-      } else {
+      } else if (liveWatch) {
         const localTax = localStorage.getItem('md3_taxonomy');
         if (localTax) await FB.saveTaxonomy(JSON.parse(localTax));
       }
 
-      if (FB.watchTaxonomy) {
+      if (liveWatch && FB.watchTaxonomy) {
         FB.watchTaxonomy((data) => {
           if (!data) return;
           try {

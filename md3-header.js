@@ -130,6 +130,8 @@
 
     const desktopMq = window.matchMedia('(min-width: 768px)');
     const overlayHome = isHomePage() && !!hero;
+    let scrollRaf = 0;
+    let lastSolid = null;
 
     function setSolid() {
       header.classList.add('site-header--solid');
@@ -142,21 +144,32 @@
     }
 
     function update() {
-      // Desktop: cream bar always solid and in document flow (hero starts below it)
       if (!overlayHome || desktopMq.matches) {
-        setSolid();
+        if (lastSolid !== true) {
+          setSolid();
+          lastSolid = true;
+        }
         if (chrome) chrome.classList.remove('is-fixed');
         return;
       }
 
-      // Phone home only: transparent over hero, then solid after a short scroll
       if (chrome) chrome.classList.add('is-fixed');
       const solid = (global.scrollY || 0) > 40;
+      if (solid === lastSolid) return;
+      lastSolid = solid;
       if (solid) setSolid();
       else setOverlay();
     }
 
-    global.addEventListener('scroll', update, { passive: true });
+    function onScroll() {
+      if (scrollRaf) return;
+      scrollRaf = requestAnimationFrame(function () {
+        scrollRaf = 0;
+        update();
+      });
+    }
+
+    global.addEventListener('scroll', onScroll, { passive: true });
     if (desktopMq.addEventListener) desktopMq.addEventListener('change', update);
     else if (desktopMq.addListener) desktopMq.addListener(update);
     update();

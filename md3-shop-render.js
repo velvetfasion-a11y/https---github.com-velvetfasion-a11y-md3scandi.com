@@ -51,7 +51,7 @@
     return fallback;
   }
 
-  function storeCardHomeHtml(p, labels) {
+  function storeCardHomeHtml(p, labels, opts) {
     const href = global.MD3Store.productHref(p.id);
     const name = localizedName(p);
     const fallback = categoryFallbackImage(p);
@@ -61,8 +61,9 @@
     const badge = isLimited
       ? `<span class="home-product-badge">${esc(labels.limitedBadge || 'Édition')}</span>`
       : '';
+    const eager = opts && opts.eager;
     const imgHtml = image
-      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="eager" decoding="async" draggable="false" onerror="this.onerror=null;this.src='${fallback}'" />`
+      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="${eager ? 'eager' : 'lazy'}" decoding="async" draggable="false" onerror="this.onerror=null;this.src='${fallback}'" />`
       : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
     return `
       <a href="${href}" class="home-product-card">
@@ -220,12 +221,14 @@
   }
 
   /**
-   * 3 equal photos visible; step one card every 2s; seamless infinite loop.
-   * No center-scale (that caused overlap + lag).
+   * Equal photos visible; step one card; seamless infinite loop.
+   * Visible count adapts: 1 phone / 2 tablet / 3 desktop. Pauses when off-screen.
    */
   let featuredAutoplayTimer = null;
   let featuredTransitionTimer = null;
   let featuredIndex = 0;
+  let featuredLastKey = '';
+  let featuredIo = null;
 
   function stopFeaturedAutoplay() {
     if (featuredAutoplayTimer) {
@@ -236,11 +239,23 @@
       clearTimeout(featuredTransitionTimer);
       featuredTransitionTimer = null;
     }
+    if (featuredIo) {
+      featuredIo.disconnect();
+      featuredIo = null;
+    }
+  }
+
+  function visibleCardCount(carousel) {
+    const w = (carousel && carousel.clientWidth) || window.innerWidth || 0;
+    if (w < 560) return 1;
+    if (w < 900) return 2;
+    return 3;
   }
 
   function startFeaturedAutoplay(carousel) {
     stopFeaturedAutoplay();
     if (!carousel) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const track = carousel.querySelector('.home-featured-track') || carousel.firstElementChild;
     if (!track) return;
@@ -265,17 +280,16 @@
     featuredIndex = 0;
     let wrapping = false;
     let stepPx = 0;
+    let paused = false;
 
     function layoutCards() {
       const styles = window.getComputedStyle(group);
       const gap = parseFloat(styles.columnGap || styles.gap) || 0;
-      // 3 equal cards + 2 gutters inside the visible window
-      const w = Math.max(120, (carousel.clientWidth - gap * 2) / 3);
+      const visible = visibleCardCount(carousel);
+      const gutters = Math.max(0, visible - 1);
+      const w = Math.max(140, (carousel.clientWidth - gap * gutters) / visible);
       track.style.setProperty('--featured-card-w', w.toFixed(2) + 'px');
       track.style.setProperty('--featured-gap', gap.toFixed(2) + 'px');
-
-      // Force layout, then derive step from full group width
-      // (includes end padding = gap so the clone seam never touches)
       void group.offsetWidth;
       stepPx = count > 0 ? group.offsetWidth / count : 0;
     }
@@ -283,33 +297,43 @@
     function apply(animate) {
       if (!stepPx) layoutCards();
       const x = -(featuredIndex * stepPx);
-      track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1)' : 'none';
+      track.style.transition = animate ? 'transform 0.45s cubic-bezier(0.25, 0.1, 0.25, 1)' : 'none';
       track.style.transform = 'translate3d(' + x + 'px, 0, 0)';
     }
 
     layoutCards();
     apply(false);
-    // Remeasure after fonts/images settle once
     requestAnimationFrame(function () {
       layoutCards();
       apply(false);
     });
 
-    featuredAutoplayTimer = window.setInterval(function () {
-      if (wrapping) return;
+    function tick() {
+      if (paused || wrapping || document.hidden) return;
       featuredIndex += 1;
       apply(true);
-
-      // After sliding onto the clone of card 0, jump back with no transition
       if (featuredIndex >= count) {
         wrapping = true;
         featuredTransitionTimer = window.setTimeout(function () {
           featuredIndex = 0;
           apply(false);
           wrapping = false;
-        }, 520);
+        }, 480);
       }
-    }, 2000);
+    }
+
+    featuredAutoplayTimer = window.setInterval(tick, 3500);
+
+    if (typeof IntersectionObserver !== 'undefined') {
+      featuredIo = new IntersectionObserver(
+        function (entries) {
+          const entry = entries[0];
+          paused = !(entry && entry.isIntersecting);
+        },
+        { threshold: 0.2 }
+      );
+      featuredIo.observe(carousel);
+    }
 
     if (!carousel.dataset.md3StepBound) {
       carousel.dataset.md3StepBound = '1';
@@ -321,7 +345,7 @@
           resizeTimer = window.setTimeout(function () {
             layoutCards();
             apply(false);
-          }, 100);
+          }, 120);
         },
         { passive: true }
       );
@@ -332,11 +356,12 @@
     if (!container) return;
     const lbl = labels || homeLabels();
     const carousel = container.closest('.home-featured-carousel') || container.parentElement;
-    stopFeaturedAutoplay();
 
     if (!products.length) {
+      stopFeaturedAutoplay();
       container.innerHTML = '';
       container.classList.remove('is-ready');
+      featuredLastKey = '';
       return;
     }
 
@@ -354,17 +379,28 @@
       list.push(p);
     });
 
-    // Only duplicate favourites for a smooth loop — never pull non-favourited catalog items
     if (!list.length) {
+      stopFeaturedAutoplay();
       container.innerHTML = '';
       container.classList.remove('is-ready');
+      featuredLastKey = '';
       return;
     }
+
     const favourites = list.slice();
+    const key = favourites.map((p) => String(p.id)).join(',');
+    if (key === featuredLastKey && container.querySelector('.home-featured-group')) {
+      return;
+    }
+    featuredLastKey = key;
+
+    stopFeaturedAutoplay();
     while (list.length < 3) list = list.concat(favourites);
     list = list.slice(0, Math.max(favourites.length, 3));
 
-    const cards = list.map((p) => storeCardHomeHtml(p, lbl)).join('');
+    const cards = list
+      .map((p, i) => storeCardHomeHtml(p, lbl, { eager: i < 2 }))
+      .join('');
     container.innerHTML =
       '<div class="home-featured-group">' +
       cards +
