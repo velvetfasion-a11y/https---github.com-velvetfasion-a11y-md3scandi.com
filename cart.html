@@ -202,8 +202,7 @@
     font-size: 1.5rem;
   }
   .cart-total-row span { color: var(--ink-soft); font-family: 'Jost', sans-serif; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; margin-right: 12px; }
-  .btn-continue,
-  .btn-checkout {
+  .btn-continue {
     padding: 14px 28px;
     background: var(--ink);
     color: var(--cream);
@@ -216,8 +215,90 @@
     cursor: pointer;
     font-family: inherit;
   }
-  .btn-continue:hover,
-  .btn-checkout:hover { background: var(--gold); }
+  .btn-continue:hover { background: var(--gold); }
+  .cart-message {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .cart-message-title {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-align: right;
+  }
+  .cart-message-btns {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .btn-msg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 18px;
+    border: 1px solid rgba(184, 147, 90, 0.35);
+    background: var(--ink);
+    color: var(--cream);
+    text-decoration: none;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.25s, border-color 0.25s, color 0.25s;
+  }
+  .btn-msg:hover { background: var(--gold); border-color: var(--gold); }
+  .btn-msg-whatsapp { background: #1f5c45; border-color: #1f5c45; }
+  .btn-msg-whatsapp:hover { background: #174836; border-color: #174836; }
+  .btn-msg-sms { background: var(--ink); }
+  .btn-msg-tiktok { background: #111; border-color: #111; }
+  .btn-msg-copy {
+    background: transparent;
+    color: var(--ink);
+    border-color: rgba(184, 147, 90, 0.45);
+  }
+  .btn-msg-copy:hover {
+    background: transparent;
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+  .cart-message-note {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    text-align: right;
+  }
+  .cart-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%) translateY(12px);
+    background: var(--ink);
+    color: var(--cream);
+    padding: 12px 18px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 300;
+    max-width: min(90vw, 420px);
+    text-align: center;
+  }
+  .cart-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  @media (min-width: 520px) {
+    .cart-message-btns { grid-template-columns: repeat(3, 1fr); }
+    .btn-msg-copy { grid-column: 1 / -1; }
+  }
   @media (max-width: 560px) {
     .cart-item {
       flex-wrap: wrap;
@@ -336,19 +417,21 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script defer src="firebase-config.js"></script>
-<script defer src="md3-firebase.js?v=8"></script>
+<script defer src="contact-config.js"></script>
+<script defer src="md3-firebase.js?v=9"></script>
 <script defer src="md3-sizes.js?v=2"></script>
-<script defer src="md3-store.js?v=27"></script>
+<script defer src="md3-store.js?v=28"></script>
 <script defer src="md3-auth.js?v=4"></script>
 <script defer src="md3-nav-icons.js"></script>
 <script defer src="md3-header.js?v=20"></script>
-<script defer src="md3-lang.js?v=31"></script>
+<script defer src="md3-lang.js?v=35"></script>
 <script defer src="md3-currency.js?v=4"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 (function () {
   const S = MD3Store;
   const t = (k) => MD3Lang.t(k);
+  let toastTimer = null;
 
   function setNavAuth() {
     MD3Header.updateAuth();
@@ -363,6 +446,161 @@ document.addEventListener('DOMContentLoaded', function () {
     d.textContent = s;
     return d.innerHTML;
   }
+
+  function contactCfg() {
+    return window.MD3_CONTACT || {};
+  }
+
+  function digitsPhone(raw) {
+    return String(raw || '').replace(/\D/g, '');
+  }
+
+  function absUrl(url) {
+    const s = String(url || '').trim();
+    if (!s || s.startsWith('data:')) return '';
+    if (/^https?:\/\//i.test(s)) return s;
+    try {
+      return new URL(s, window.location.href).href;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function productPhotoUrl(p) {
+    const imgs = (p && Array.isArray(p.images) && p.images.length)
+      ? p.images
+      : (p && p.image ? [p.image] : []);
+    for (let i = 0; i < imgs.length; i++) {
+      const u = absUrl(imgs[i]);
+      if (u) return u;
+    }
+    return '';
+  }
+
+  function productPageUrl(p) {
+    const rel = S.productHref ? S.productHref(p.id) : 'product.html?id=' + encodeURIComponent(p.id);
+    return absUrl(rel) || rel;
+  }
+
+  function lineName(p) {
+    return S.productDisplayName
+      ? S.productDisplayName(p)
+      : MD3Lang.productName
+        ? MD3Lang.productName(p)
+        : p.name || '';
+  }
+
+  function buildCartMessage() {
+    const lines = S.getCartLines();
+    const cfg = contactCfg();
+    const site = cfg.siteName || 'MD3 Scandi';
+    const parts = [
+      t('cart-message-hello').replace('%s', site),
+      '',
+      t('cart-message-intro'),
+      '',
+    ];
+    let total = 0;
+    lines.forEach(({ product: p, qty, size }, idx) => {
+      total += Number(p.price || 0) * qty;
+      parts.push(
+        t('cart-message-item')
+          .replace('%n', String(idx + 1))
+          .replace('%name', lineName(p))
+      );
+      if (size) parts.push(t('cart-message-size').replace('%s', size));
+      parts.push(t('cart-message-qty').replace('%s', String(qty)));
+      parts.push(t('cart-message-price').replace('%s', MD3Currency.formatPrice(p.price)));
+      const photo = productPhotoUrl(p);
+      if (photo) parts.push(t('cart-message-photo').replace('%s', photo));
+      parts.push(t('cart-message-link').replace('%s', productPageUrl(p)));
+      parts.push('');
+    });
+    parts.push(t('cart-message-total').replace('%s', MD3Currency.formatPrice(total)));
+    return parts.join('\n').trim();
+  }
+
+  function showToast(msg) {
+    let el = document.getElementById('cartToast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'cartToast';
+      el.className = 'cart-toast';
+      el.setAttribute('role', 'status');
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+  }
+
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_) {}
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  window.messageCartWhatsApp = async function () {
+    const text = buildCartMessage();
+    const cfg = contactCfg();
+    const phone = digitsPhone(cfg.whatsappPhone || cfg.phone);
+    if (!phone) {
+      await copyText(text);
+      showToast(t('cart-message-no-phone'));
+      return;
+    }
+    const url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(text);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  window.messageCartSms = async function () {
+    const text = buildCartMessage();
+    const cfg = contactCfg();
+    const phone = digitsPhone(cfg.phone || cfg.whatsappPhone);
+    if (!phone) {
+      await copyText(text);
+      showToast(t('cart-message-no-phone'));
+      return;
+    }
+    const url = 'sms:' + phone + '?&body=' + encodeURIComponent(text);
+    window.location.href = url;
+  };
+
+  window.messageCartTikTok = async function () {
+    const text = buildCartMessage();
+    await copyText(text);
+    const cfg = contactCfg();
+    const handle = String(cfg.tiktokHandle || '').replace(/^@/, '').trim();
+    if (!handle) {
+      showToast(t('cart-message-no-tiktok'));
+      return;
+    }
+    showToast(t('cart-message-tiktok-hint'));
+    window.open('https://www.tiktok.com/@' + encodeURIComponent(handle), '_blank', 'noopener,noreferrer');
+  };
+
+  window.copyCartMessage = async function () {
+    const ok = await copyText(buildCartMessage());
+    showToast(ok ? t('cart-message-copied') : t('cart-message-copied'));
+  };
 
   function renderCart() {
     MD3Currency.refreshCurrency();
@@ -381,12 +619,7 @@ document.addEventListener('DOMContentLoaded', function () {
       total += p.price * qty;
       const cat = MD3Lang.translateCategory(p.category);
       const sub = MD3Lang.translateSub(p.sub);
-      const name =
-        S.productDisplayName
-          ? S.productDisplayName(p)
-          : MD3Lang.productName
-            ? MD3Lang.productName(p)
-            : p.name || '';
+      const name = lineName(p);
       const href = S.productHref ? S.productHref(p.id) : 'product.html?id=' + encodeURIComponent(p.id);
       const sizeLine = size ? `<p class="cart-item-size">${esc(t('label-size'))}: ${esc(size)}</p>` : '';
       const lineKey = esc(key);
@@ -414,7 +647,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }).join('')}</div>
     <div class="cart-summary">
       <p class="cart-total-row"><span data-i18n="cart-total">Total</span>${MD3Currency.formatPrice(total)}</p>
-      <a href="checkout.html" class="btn-checkout" data-i18n="cart-checkout">Checkout</a>
+      <div class="cart-message">
+        <p class="cart-message-title" data-i18n="cart-message-title">Envoyer mon panier au vendeur</p>
+        <div class="cart-message-btns">
+          <button type="button" class="btn-msg btn-msg-whatsapp" onclick="messageCartWhatsApp()">${esc(t('cart-message-whatsapp'))}</button>
+          <button type="button" class="btn-msg btn-msg-sms" onclick="messageCartSms()">${esc(t('cart-message-sms'))}</button>
+          <button type="button" class="btn-msg btn-msg-tiktok" onclick="messageCartTikTok()">${esc(t('cart-message-tiktok'))}</button>
+          <button type="button" class="btn-msg btn-msg-copy" onclick="copyCartMessage()">${esc(t('cart-message-copy'))}</button>
+        </div>
+        <p class="cart-message-note" data-i18n="cart-message-note">Le message inclut chaque article, la taille, la quantité et le lien photo.</p>
+      </div>
     </div>`;
     MD3Lang.refreshUI();
   }
