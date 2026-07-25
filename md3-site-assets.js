@@ -284,12 +284,13 @@
       await global.MD3Firebase.init();
       if (!global.MD3Firebase.isEnabled || !global.MD3Firebase.isEnabled()) return;
       const remote = await global.MD3Firebase.loadSiteAssets();
-      if (remote && (remote.hero || remote.fashion || remote.images)) {
+      if (remote && (remote.hero || remote.fashion || remote.images || remote.contact)) {
         const local = load();
         const mergedRaw = {
           ...local,
           ...remote,
           images: { ...(local.images || {}), ...(remote.images || {}) },
+          contact: { ...(local.contact || {}), ...(remote.contact || {}) },
           updatedAt: remote.updatedAt || Date.now(),
         };
         if (remote.hero) mergedRaw.images.hero = remote.hero;
@@ -298,6 +299,9 @@
         try {
           localStorage.setItem(KEY, JSON.stringify(merged));
         } catch (_) {}
+        if (global.MD3Contact && global.MD3Contact.applyRemoteSiteAssets) {
+          global.MD3Contact.applyRemoteSiteAssets(merged);
+        }
         applyToDocument();
       }
     } catch (e) {

@@ -1307,9 +1307,10 @@
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js?v=20"></script>
 <script src="ai-config.js?v=3" onerror="window.MD3_AI_CONFIG=window.MD3_AI_CONFIG||{}"></script><!-- generated from .env via scripts/sync-ai-config.mjs -->
-<script src="md3-site-assets.js?v=7"></script>
+<script src="contact-config.js?v=2"></script>
+<script src="md3-site-assets.js?v=12"></script>
 <script src="md3-admin-ai.js?v=23"></script>
-<script src="md3-lang.js?v=34"></script>
+<script src="md3-lang.js?v=36"></script>
 <script src="md3-taxonomy.js?v=2"></script>
 <script src="md3-currency.js?v=4"></script>
 <script src="email-config.js?v=3"></script>
@@ -2302,6 +2303,24 @@ function renderAdminOverview() {
       </div>
     </div>
     <div class="admin-panel">
+      <h2>${L('admin-contact-title')}</h2>
+      <p class="admin-sub" style="margin-bottom:1rem">${L('admin-contact-note')}</p>
+      <div class="field">
+        <label for="adminContactPhone">${L('admin-contact-phone')}</label>
+        <input type="tel" id="adminContactPhone" inputmode="numeric" placeholder="33612345678" value="${escAttr((window.MD3Contact && MD3Contact.get().phone) || '')}" />
+      </div>
+      <div class="field">
+        <label for="adminContactWhatsApp">${L('admin-contact-whatsapp')}</label>
+        <input type="tel" id="adminContactWhatsApp" inputmode="numeric" placeholder="33612345678" value="${escAttr((window.MD3Contact && MD3Contact.get().whatsappPhone) || '')}" />
+      </div>
+      <div class="field">
+        <label for="adminContactTikTok">${L('admin-contact-tiktok')}</label>
+        <input type="text" id="adminContactTikTok" placeholder="md3scandi" value="${escAttr((window.MD3Contact && MD3Contact.get().tiktokHandle) || '')}" />
+      </div>
+      <button type="button" class="btn-primary" onclick="saveAdminContact()">${L('admin-contact-save')}</button>
+      <p class="success-msg" id="adminContactSaved" hidden>${L('admin-contact-saved')}</p>
+    </div>
+    <div class="admin-panel">
       <h2>${L('admin-quick-links')}</h2>
       <ul class="admin-list">
         <li><button type="button" class="admin-list-btn" data-admin-go="products">${L('admin-products-table')} <span aria-hidden="true">→</span></button></li>
@@ -2310,6 +2329,34 @@ function renderAdminOverview() {
       </ul>
     </div>`;
 }
+
+function escAttr(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
+}
+
+window.saveAdminContact = function () {
+  if (!window.MD3Contact) {
+    alert('MD3Contact missing');
+    return;
+  }
+  const phone = (document.getElementById('adminContactPhone') || {}).value || '';
+  const whatsappPhone = (document.getElementById('adminContactWhatsApp') || {}).value || '';
+  const tiktokHandle = (document.getElementById('adminContactTikTok') || {}).value || '';
+  MD3Contact.save({
+    phone,
+    whatsappPhone: whatsappPhone || phone,
+    tiktokHandle,
+    siteName: 'MD3 Scandi',
+  });
+  const ok = document.getElementById('adminContactSaved');
+  if (ok) {
+    ok.hidden = false;
+    setTimeout(() => { ok.hidden = true; }, 2500);
+  }
+};
 
 function compressSiteImage(dataUrl, maxW) {
   return new Promise((resolve) => {

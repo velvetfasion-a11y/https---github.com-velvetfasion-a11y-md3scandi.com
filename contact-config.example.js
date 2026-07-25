@@ -1,5 +1,5 @@
 /**
- * Copy to contact-config.js and fill in your details.
+ * Copy to contact-config.js, or set these in Admin → Contact (recommended).
  */
 window.MD3_CONTACT = {
   phone: '33612345678',

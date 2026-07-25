@@ -417,14 +417,15 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script defer src="firebase-config.js"></script>
-<script defer src="contact-config.js"></script>
+<script defer src="contact-config.js?v=2"></script>
 <script defer src="md3-firebase.js?v=9"></script>
 <script defer src="md3-sizes.js?v=2"></script>
 <script defer src="md3-store.js?v=28"></script>
+<script defer src="md3-site-assets.js?v=12"></script>
 <script defer src="md3-auth.js?v=4"></script>
 <script defer src="md3-nav-icons.js"></script>
 <script defer src="md3-header.js?v=20"></script>
-<script defer src="md3-lang.js?v=35"></script>
+<script defer src="md3-lang.js?v=36"></script>
 <script defer src="md3-currency.js?v=4"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -448,6 +449,9 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function contactCfg() {
+    if (window.MD3Contact && typeof MD3Contact.get === 'function') {
+      return MD3Contact.get();
+    }
     return window.MD3_CONTACT || {};
   }
 
@@ -510,13 +514,21 @@ document.addEventListener('DOMContentLoaded', function () {
       );
       if (size) parts.push(t('cart-message-size').replace('%s', size));
       parts.push(t('cart-message-qty').replace('%s', String(qty)));
-      parts.push(t('cart-message-price').replace('%s', MD3Currency.formatPrice(p.price)));
+      try {
+        parts.push(t('cart-message-price').replace('%s', MD3Currency.formatPrice(p.price)));
+      } catch (_) {
+        parts.push(t('cart-message-price').replace('%s', String(p.price) + ' €'));
+      }
       const photo = productPhotoUrl(p);
       if (photo) parts.push(t('cart-message-photo').replace('%s', photo));
       parts.push(t('cart-message-link').replace('%s', productPageUrl(p)));
       parts.push('');
     });
-    parts.push(t('cart-message-total').replace('%s', MD3Currency.formatPrice(total)));
+    try {
+      parts.push(t('cart-message-total').replace('%s', MD3Currency.formatPrice(total)));
+    } catch (_) {
+      parts.push(t('cart-message-total').replace('%s', String(total) + ' €'));
+    }
     return parts.join('\n').trim();
   }
 
@@ -532,22 +544,16 @@ document.addEventListener('DOMContentLoaded', function () {
     el.textContent = msg;
     el.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 4200);
   }
 
-  async function copyText(text) {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch (_) {}
+  function copyTextSync(text) {
     try {
       const ta = document.createElement('textarea');
       ta.value = text;
       ta.setAttribute('readonly', '');
       ta.style.position = 'fixed';
-      ta.style.opacity = '0';
+      ta.style.left = '-9999px';
       document.body.appendChild(ta);
       ta.select();
       const ok = document.execCommand('copy');
@@ -558,48 +564,100 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  window.messageCartWhatsApp = async function () {
-    const text = buildCartMessage();
-    const cfg = contactCfg();
-    const phone = digitsPhone(cfg.whatsappPhone || cfg.phone);
-    if (!phone) {
-      await copyText(text);
-      showToast(t('cart-message-no-phone'));
-      return;
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_) {}
+    return copyTextSync(text);
+  }
+
+  function openExternal(url) {
+    // Same-tab navigation avoids mobile popup blockers that make buttons look "dead"
+    window.location.assign(url);
+  }
+
+  function whatsAppUrl(text, phone) {
+    const q = 'text=' + encodeURIComponent(text);
+    if (phone) return 'https://wa.me/' + phone + '?' + q;
+    return 'https://wa.me/?' + q;
+  }
+
+  window.messageCartWhatsApp = function () {
+    try {
+      const text = buildCartMessage();
+      if (!text) {
+        showToast(t('cart-empty'));
+        return;
+      }
+      const cfg = contactCfg();
+      const phone = digitsPhone(cfg.whatsappPhone || cfg.phone);
+      if (!phone) {
+        copyTextSync(text);
+        showToast(t('cart-message-no-phone'));
+        // Still open WhatsApp so the customer can pick the seller contact
+        openExternal(whatsAppUrl(text, ''));
+        return;
+      }
+      openExternal(whatsAppUrl(text, phone));
+    } catch (e) {
+      console.error('messageCartWhatsApp', e);
+      alert(t('cart-message-error') || 'Could not open WhatsApp.');
     }
-    const url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(text);
-    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  window.messageCartSms = async function () {
-    const text = buildCartMessage();
-    const cfg = contactCfg();
-    const phone = digitsPhone(cfg.phone || cfg.whatsappPhone);
-    if (!phone) {
-      await copyText(text);
-      showToast(t('cart-message-no-phone'));
-      return;
+  window.messageCartSms = function () {
+    try {
+      const text = buildCartMessage();
+      if (!text) {
+        showToast(t('cart-empty'));
+        return;
+      }
+      const cfg = contactCfg();
+      const phone = digitsPhone(cfg.phone || cfg.whatsappPhone);
+      const body = encodeURIComponent(text.slice(0, 1400));
+      if (!phone) {
+        copyTextSync(text);
+        showToast(t('cart-message-no-phone'));
+        openExternal('sms:?&body=' + body);
+        return;
+      }
+      openExternal('sms:' + phone + '?&body=' + body);
+    } catch (e) {
+      console.error('messageCartSms', e);
+      alert(t('cart-message-error') || 'Could not open SMS.');
     }
-    const url = 'sms:' + phone + '?&body=' + encodeURIComponent(text);
-    window.location.href = url;
   };
 
-  window.messageCartTikTok = async function () {
-    const text = buildCartMessage();
-    await copyText(text);
-    const cfg = contactCfg();
-    const handle = String(cfg.tiktokHandle || '').replace(/^@/, '').trim();
-    if (!handle) {
-      showToast(t('cart-message-no-tiktok'));
-      return;
+  window.messageCartTikTok = function () {
+    try {
+      const text = buildCartMessage();
+      copyTextSync(text);
+      const cfg = contactCfg();
+      const handle = String(cfg.tiktokHandle || '').replace(/^@/, '').trim();
+      if (!handle) {
+        showToast(t('cart-message-no-tiktok'));
+        openExternal('https://www.tiktok.com/messages');
+        return;
+      }
+      showToast(t('cart-message-tiktok-hint'));
+      openExternal('https://www.tiktok.com/@' + encodeURIComponent(handle));
+    } catch (e) {
+      console.error('messageCartTikTok', e);
+      alert(t('cart-message-error') || 'Could not open TikTok.');
     }
-    showToast(t('cart-message-tiktok-hint'));
-    window.open('https://www.tiktok.com/@' + encodeURIComponent(handle), '_blank', 'noopener,noreferrer');
   };
 
   window.copyCartMessage = async function () {
-    const ok = await copyText(buildCartMessage());
-    showToast(ok ? t('cart-message-copied') : t('cart-message-copied'));
+    try {
+      const ok = await copyText(buildCartMessage());
+      showToast(ok ? t('cart-message-copied') : t('cart-message-copied'));
+    } catch (e) {
+      console.error('copyCartMessage', e);
+      alert(t('cart-message-error') || 'Could not copy.');
+    }
   };
 
   function renderCart() {
@@ -650,10 +708,10 @@ document.addEventListener('DOMContentLoaded', function () {
       <div class="cart-message">
         <p class="cart-message-title" data-i18n="cart-message-title">Envoyer mon panier au vendeur</p>
         <div class="cart-message-btns">
-          <button type="button" class="btn-msg btn-msg-whatsapp" onclick="messageCartWhatsApp()">${esc(t('cart-message-whatsapp'))}</button>
-          <button type="button" class="btn-msg btn-msg-sms" onclick="messageCartSms()">${esc(t('cart-message-sms'))}</button>
-          <button type="button" class="btn-msg btn-msg-tiktok" onclick="messageCartTikTok()">${esc(t('cart-message-tiktok'))}</button>
-          <button type="button" class="btn-msg btn-msg-copy" onclick="copyCartMessage()">${esc(t('cart-message-copy'))}</button>
+          <button type="button" class="btn-msg btn-msg-whatsapp" data-cart-msg="whatsapp">${esc(t('cart-message-whatsapp'))}</button>
+          <button type="button" class="btn-msg btn-msg-sms" data-cart-msg="sms">${esc(t('cart-message-sms'))}</button>
+          <button type="button" class="btn-msg btn-msg-tiktok" data-cart-msg="tiktok">${esc(t('cart-message-tiktok'))}</button>
+          <button type="button" class="btn-msg btn-msg-copy" data-cart-msg="copy">${esc(t('cart-message-copy'))}</button>
         </div>
         <p class="cart-message-note" data-i18n="cart-message-note">Le message inclut chaque article, la taille, la quantité et le lien photo.</p>
       </div>
@@ -720,6 +778,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
   document.getElementById('confirmModal').addEventListener('click', function (e) {
     if (e.target === this) closeConfirmModal();
+  });
+
+  document.getElementById('cartContent').addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-cart-msg]');
+    if (!btn) return;
+    e.preventDefault();
+    const kind = btn.getAttribute('data-cart-msg');
+    if (kind === 'whatsapp') messageCartWhatsApp();
+    else if (kind === 'sms') messageCartSms();
+    else if (kind === 'tiktok') messageCartTikTok();
+    else if (kind === 'copy') copyCartMessage();
   });
 
   MD3Lang.init({
