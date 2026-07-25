@@ -189,17 +189,20 @@
   }
   .cart-item-remove:hover { color: var(--danger); }
   .cart-summary {
-    margin-top: 32px;
-    padding-top: 24px;
+    margin-top: 36px;
+    padding-top: 28px;
     border-top: 1px solid rgba(184, 147, 90, 0.25);
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
-    gap: 16px;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
   }
   .cart-total-row {
     font-family: 'Cormorant Garamond', serif;
     font-size: 1.5rem;
+    text-align: center;
+    width: 100%;
   }
   .cart-total-row span { color: var(--ink-soft); font-family: 'Jost', sans-serif; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; margin-right: 12px; }
   .btn-continue {
@@ -218,23 +221,31 @@
   .btn-continue:hover { background: var(--gold); }
   .cart-message {
     width: 100%;
-    max-width: 420px;
+    max-width: 520px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
   }
   .cart-message-title {
-    font-size: 11px;
-    letter-spacing: 0.18em;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.6rem, 5.5vw, 2.15rem);
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    line-height: 1.15;
     text-transform: uppercase;
-    color: var(--ink-soft);
-    text-align: right;
+    color: var(--ink);
+    text-align: center;
+    margin: 0;
+    width: 100%;
   }
   .cart-message-btns {
     display: grid;
     grid-template-columns: 1fr;
     gap: 8px;
+    width: 100%;
   }
   .btn-msg {
     display: inline-flex;
@@ -272,12 +283,12 @@
     font-size: 12px;
     line-height: 1.5;
     color: var(--ink-soft);
-    text-align: right;
+    text-align: center;
   }
   .cart-toast {
     position: fixed;
     left: 50%;
-    bottom: 28px;
+    bottom: calc(28px + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%) translateY(12px);
     background: var(--ink);
     color: var(--cream);
@@ -383,6 +394,50 @@
     transition: background 0.3s;
   }
   .btn-confirm:hover { background: var(--gold); }
+  .photo-share-modal { max-width: 440px; text-align: center; }
+  .photo-share-modal h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 300;
+    margin: 0 0 0.5rem;
+  }
+  .photo-share-hint {
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    margin: 0 0 1rem;
+    line-height: 1.45;
+  }
+  .photo-share-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+  .photo-share-thumbs img {
+    width: 72px;
+    height: 96px;
+    object-fit: cover;
+    border: 1px solid rgba(184, 147, 90, 0.25);
+    background: var(--cream);
+  }
+  .photo-share-text {
+    text-align: left;
+    white-space: pre-wrap;
+    font-family: 'Jost', sans-serif;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--ink);
+    background: var(--cream);
+    border: 1px solid rgba(184, 147, 90, 0.2);
+    padding: 12px;
+    max-height: 160px;
+    overflow: auto;
+    margin: 0 0 0.5rem;
+  }
+  .photo-share-actions {
+    flex-wrap: wrap;
+  }
 </style>
 </head>
 <body data-meta-title="meta-title-cart" data-meta-desc="meta-desc-cart">
@@ -425,7 +480,7 @@
 <script defer src="md3-auth.js?v=4"></script>
 <script defer src="md3-nav-icons.js"></script>
 <script defer src="md3-header.js?v=20"></script>
-<script defer src="md3-lang.js?v=36"></script>
+<script defer src="md3-lang.js?v=38"></script>
 <script defer src="md3-currency.js?v=4"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -470,6 +525,15 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  /** Prefer live site links in messages (not localhost). */
+  function publicOrigin() {
+    const host = String(location.hostname || '');
+    if (host === 'localhost' || host === '127.0.0.1' || host === '::1') {
+      return 'https://md3scandi.com';
+    }
+    return location.origin;
+  }
+
   function productPhotoUrl(p) {
     const imgs = (p && Array.isArray(p.images) && p.images.length)
       ? p.images
@@ -483,7 +547,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function productPageUrl(p) {
     const rel = S.productHref ? S.productHref(p.id) : 'product.html?id=' + encodeURIComponent(p.id);
-    return absUrl(rel) || rel;
+    try {
+      return new URL(rel, publicOrigin() + '/').href;
+    } catch (_) {
+      return absUrl(rel) || rel;
+    }
   }
 
   function lineName(p) {
@@ -495,6 +563,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function buildCartMessage() {
+    // Order text only — never photo URLs or page links (images are attached as files).
     const lines = S.getCartLines();
     const cfg = contactCfg();
     const site = cfg.siteName || 'MD3 Scandi';
@@ -514,14 +583,6 @@ document.addEventListener('DOMContentLoaded', function () {
       );
       if (size) parts.push(t('cart-message-size').replace('%s', size));
       parts.push(t('cart-message-qty').replace('%s', String(qty)));
-      try {
-        parts.push(t('cart-message-price').replace('%s', MD3Currency.formatPrice(p.price)));
-      } catch (_) {
-        parts.push(t('cart-message-price').replace('%s', String(p.price) + ' €'));
-      }
-      const photo = productPhotoUrl(p);
-      if (photo) parts.push(t('cart-message-photo').replace('%s', photo));
-      parts.push(t('cart-message-link').replace('%s', productPageUrl(p)));
       parts.push('');
     });
     try {
@@ -575,7 +636,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function openExternal(url) {
-    // Same-tab navigation avoids mobile popup blockers that make buttons look "dead"
     window.location.assign(url);
   }
 
@@ -585,65 +645,206 @@ document.addEventListener('DOMContentLoaded', function () {
     return 'https://wa.me/?' + q;
   }
 
-  window.messageCartWhatsApp = function () {
+  function safeFileBase(name, idx) {
+    const base = String(name || 'product')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40);
+    return (base || 'product') + '-' + (idx + 1);
+  }
+
+  async function fetchImageFile(url, fileBase) {
+    const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+    if (!res.ok) throw new Error('image fetch ' + res.status);
+    const blob = await res.blob();
+    if (!blob || !blob.size) throw new Error('empty image');
+    let type = blob.type || 'image/jpeg';
+    if (!/^image\//i.test(type)) type = 'image/jpeg';
+    const ext = type.indexOf('png') >= 0 ? 'png' : type.indexOf('webp') >= 0 ? 'webp' : 'jpg';
+    return new File([blob], fileBase + '.' + ext, { type: type });
+  }
+
+  async function collectCartImageFiles() {
+    const lines = S.getCartLines();
+    const files = [];
+    const seen = {};
+    for (let i = 0; i < lines.length; i++) {
+      const p = lines[i].product;
+      const url = productPhotoUrl(p);
+      if (!url || seen[url]) continue;
+      seen[url] = true;
+      try {
+        const file = await fetchImageFile(url, safeFileBase(lineName(p), i));
+        files.push(file);
+      } catch (e) {
+        console.warn('cart image share skip', url, e);
+      }
+      if (files.length >= 10) break;
+    }
+    return files;
+  }
+
+  function downloadFiles(files) {
+    files.forEach((file, i) => {
+      try {
+        const url = URL.createObjectURL(file);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name || ('product-' + (i + 1) + '.jpg');
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 2500);
+      } catch (e) {
+        console.warn('download file', e);
+      }
+    });
+  }
+
+  function closePhotoShareModal() {
+    const el = document.getElementById('photoShareModal');
+    if (el) el.classList.remove('open');
+  }
+
+  function openPhotoShareModal(text, files, channel) {
+    let el = document.getElementById('photoShareModal');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'photoShareModal';
+      el.className = 'modal-overlay';
+      el.innerHTML = `
+        <div class="modal photo-share-modal">
+          <h2 id="photoShareTitle"></h2>
+          <p id="photoShareHint" class="photo-share-hint"></p>
+          <div id="photoShareThumbs" class="photo-share-thumbs"></div>
+          <pre id="photoShareText" class="photo-share-text"></pre>
+          <div class="modal-actions photo-share-actions">
+            <button type="button" class="btn-confirm" id="photoShareAgain"></button>
+            <button type="button" class="btn-confirm" id="photoShareDownload"></button>
+            <button type="button" class="btn-cancel" id="photoShareClose"></button>
+          </div>
+        </div>`;
+      document.body.appendChild(el);
+      el.addEventListener('click', function (e) {
+        if (e.target === el) closePhotoShareModal();
+      });
+      document.getElementById('photoShareClose').addEventListener('click', closePhotoShareModal);
+    }
+    el.dataset.channel = channel || '';
+    el._shareText = text;
+    el._shareFiles = files || [];
+    document.getElementById('photoShareTitle').textContent = t('cart-message-attach-title');
+    document.getElementById('photoShareHint').textContent = t('cart-message-attach-hint');
+    document.getElementById('photoShareText').textContent = text;
+    document.getElementById('photoShareAgain').textContent = t('cart-message-attach-share');
+    document.getElementById('photoShareDownload').textContent = t('cart-message-attach-download');
+    document.getElementById('photoShareClose').textContent = t('btn-cancel') || 'Cancel';
+    const thumbs = document.getElementById('photoShareThumbs');
+    thumbs.innerHTML = '';
+    (files || []).forEach((file) => {
+      const img = document.createElement('img');
+      img.alt = '';
+      img.src = URL.createObjectURL(file);
+      img.onload = function () {
+        setTimeout(() => URL.revokeObjectURL(img.src), 60000);
+      };
+      thumbs.appendChild(img);
+    });
+    document.getElementById('photoShareAgain').onclick = async function () {
+      try {
+        const ok = await tryShareWithPhotos(el._shareText, el._shareFiles);
+        if (ok) closePhotoShareModal();
+        else showToast(t('cart-message-share-need-phone'));
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+        showToast(t('cart-message-share-need-phone'));
+      }
+    };
+    document.getElementById('photoShareDownload').onclick = async function () {
+      downloadFiles(el._shareFiles || []);
+      await copyText(el._shareText || '');
+      showToast(t('cart-message-downloaded'));
+    };
+    el.classList.add('open');
+  }
+
+  async function tryShareWithPhotos(text, files) {
+    if (!files || !files.length || !navigator.share) return false;
+    const payload = {
+      title: (contactCfg().siteName || 'MD3 Scandi') + ' — ' + (t('cart-title') || 'Cart'),
+      text: text,
+      files: files,
+    };
+    // Prefer canShare when available; still try share if it lies on some browsers.
     try {
-      const text = buildCartMessage();
-      if (!text) {
+      if (navigator.canShare && !navigator.canShare({ files: files })) {
+        // Some desktop browsers reject files — still attempt once.
+      }
+    } catch (_) {}
+    await navigator.share(payload);
+    return true;
+  }
+
+  async function sendCartWithImages(channel) {
+    showToast(t('cart-message-preparing'));
+    const text = buildCartMessage();
+    const files = await collectCartImageFiles();
+    if (!files.length) {
+      showToast(t('cart-message-no-images'));
+      await copyText(text);
+      return;
+    }
+    try {
+      const shared = await tryShareWithPhotos(text, files);
+      if (shared) {
+        if (channel === 'sms') showToast(t('cart-message-share-sms-hint'));
+        else if (channel === 'whatsapp') showToast(t('cart-message-share-wa-hint'));
+        return;
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      console.warn('share photos', e);
+    }
+    // Never fall back to sms:/wa.me with Photo: URLs — show real image attach UI instead.
+    openPhotoShareModal(text, files, channel);
+  }
+
+  window.messageCartWhatsApp = async function () {
+    try {
+      if (!S.getCartLines().length) {
         showToast(t('cart-empty'));
         return;
       }
-      const cfg = contactCfg();
-      const phone = digitsPhone(cfg.whatsappPhone || cfg.phone);
-      if (!phone) {
-        copyTextSync(text);
-        showToast(t('cart-message-no-phone'));
-        // Still open WhatsApp so the customer can pick the seller contact
-        openExternal(whatsAppUrl(text, ''));
-        return;
-      }
-      openExternal(whatsAppUrl(text, phone));
+      await sendCartWithImages('whatsapp');
     } catch (e) {
       console.error('messageCartWhatsApp', e);
       alert(t('cart-message-error') || 'Could not open WhatsApp.');
     }
   };
 
-  window.messageCartSms = function () {
+  window.messageCartSms = async function () {
     try {
-      const text = buildCartMessage();
-      if (!text) {
+      if (!S.getCartLines().length) {
         showToast(t('cart-empty'));
         return;
       }
-      const cfg = contactCfg();
-      const phone = digitsPhone(cfg.phone || cfg.whatsappPhone);
-      const body = encodeURIComponent(text.slice(0, 1400));
-      if (!phone) {
-        copyTextSync(text);
-        showToast(t('cart-message-no-phone'));
-        openExternal('sms:?&body=' + body);
-        return;
-      }
-      openExternal('sms:' + phone + '?&body=' + body);
+      await sendCartWithImages('sms');
     } catch (e) {
       console.error('messageCartSms', e);
       alert(t('cart-message-error') || 'Could not open SMS.');
     }
   };
 
-  window.messageCartTikTok = function () {
+  window.messageCartTikTok = async function () {
     try {
-      const text = buildCartMessage();
-      copyTextSync(text);
-      const cfg = contactCfg();
-      const handle = String(cfg.tiktokHandle || '').replace(/^@/, '').trim();
-      if (!handle) {
-        showToast(t('cart-message-no-tiktok'));
-        openExternal('https://www.tiktok.com/messages');
+      if (!S.getCartLines().length) {
+        showToast(t('cart-empty'));
         return;
       }
-      showToast(t('cart-message-tiktok-hint'));
-      openExternal('https://www.tiktok.com/@' + encodeURIComponent(handle));
+      await sendCartWithImages('tiktok');
     } catch (e) {
       console.error('messageCartTikTok', e);
       alert(t('cart-message-error') || 'Could not open TikTok.');
@@ -706,14 +907,14 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="cart-summary">
       <p class="cart-total-row"><span data-i18n="cart-total">Total</span>${MD3Currency.formatPrice(total)}</p>
       <div class="cart-message">
-        <p class="cart-message-title" data-i18n="cart-message-title">Envoyer mon panier au vendeur</p>
+        <h2 class="cart-message-title" data-i18n="cart-message-title">Envoyer mon panier au vendeur</h2>
         <div class="cart-message-btns">
           <button type="button" class="btn-msg btn-msg-whatsapp" data-cart-msg="whatsapp">${esc(t('cart-message-whatsapp'))}</button>
           <button type="button" class="btn-msg btn-msg-sms" data-cart-msg="sms">${esc(t('cart-message-sms'))}</button>
           <button type="button" class="btn-msg btn-msg-tiktok" data-cart-msg="tiktok">${esc(t('cart-message-tiktok'))}</button>
           <button type="button" class="btn-msg btn-msg-copy" data-cart-msg="copy">${esc(t('cart-message-copy'))}</button>
         </div>
-        <p class="cart-message-note" data-i18n="cart-message-note">Le message inclut chaque article, la taille, la quantité et le lien photo.</p>
+        <p class="cart-message-note" data-i18n="cart-message-note">Les photos partent en pièces jointes.</p>
       </div>
     </div>`;
     MD3Lang.refreshUI();
@@ -780,16 +981,19 @@ document.addEventListener('DOMContentLoaded', function () {
     if (e.target === this) closeConfirmModal();
   });
 
-  document.getElementById('cartContent').addEventListener('click', function (e) {
-    const btn = e.target.closest('[data-cart-msg]');
-    if (!btn) return;
-    e.preventDefault();
-    const kind = btn.getAttribute('data-cart-msg');
-    if (kind === 'whatsapp') messageCartWhatsApp();
-    else if (kind === 'sms') messageCartSms();
-    else if (kind === 'tiktok') messageCartTikTok();
-    else if (kind === 'copy') copyCartMessage();
-  });
+  const cartContent = document.getElementById('cartContent');
+  if (cartContent) {
+    cartContent.addEventListener('click', function (e) {
+      const btn = e.target.closest('[data-cart-msg]');
+      if (!btn) return;
+      e.preventDefault();
+      const kind = btn.getAttribute('data-cart-msg');
+      if (kind === 'whatsapp') messageCartWhatsApp();
+      else if (kind === 'sms') messageCartSms();
+      else if (kind === 'tiktok') messageCartTikTok();
+      else if (kind === 'copy') copyCartMessage();
+    });
+  }
 
   MD3Lang.init({
     onChange() {
