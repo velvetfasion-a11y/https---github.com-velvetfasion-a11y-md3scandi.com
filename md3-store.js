@@ -21,6 +21,12 @@
   const ready = new Promise((r) => {
     readyResolve = r;
   });
+  let cloudReadyResolve;
+  const cloudReady = new Promise((r) => {
+    cloudReadyResolve = r;
+  });
+  let cloudSynced = false;
+  let initPromise = null;
 
   function isAdminLogin(identifier, password) {
     const id = (identifier || '').trim().toLowerCase();
@@ -53,11 +59,22 @@
     return CATEGORY_ALIASES[categoryKey(raw)] || raw;
   }
 
+  function imageUrlRank(url) {
+    const s = String(url || '');
+    if (/^https?:\/\//i.test(s)) return 0;
+    if (s.startsWith('images/') || s.startsWith('/')) return 1;
+    if (s.startsWith('data:image')) return 3;
+    if (s) return 2;
+    return 9;
+  }
+
   function normalizeProductImages(p) {
     const list = Array.isArray(p.images) ? p.images : [];
     const images = [...list, p.image]
       .filter((img) => typeof img === 'string' && img.trim())
       .filter((img, idx, arr) => arr.indexOf(img) === idx)
+      // Prefer Storage/CDN https over huge data: URLs (data URLs freeze the main thread)
+      .sort((a, b) => imageUrlRank(a) - imageUrlRank(b))
       .slice(0, 8);
     return images;
   }
@@ -67,15 +84,23 @@
     const images = normalizeProductImages(p);
     const feat = p.featured;
     const featured = feat === true || feat === 1 || feat === '1' || feat === 'true' || feat === 'yes';
+    const hid = p.hidden;
+    const hidden = hid === true || hid === 1 || hid === '1' || hid === 'true' || hid === 'yes';
     const out = {
       ...p,
       category: canonicalCategory(p.category),
       featured,
+      hidden,
       desc: typeof p.desc === 'string' ? p.desc : '',
     };
     if (images.length) {
-      out.images = images;
-      out.image = images[0];
+      // Keep only the best URL per slot — drop redundant data: blobs once HTTPS exists
+      const preferred = images.filter((img, i) => {
+        if (!img.startsWith('data:image')) return true;
+        return !images.some((other, j) => j !== i && imageUrlRank(other) < 3);
+      });
+      out.images = preferred.length ? preferred : images.slice(0, 1);
+      out.image = out.images[0];
     } else {
       delete out.images;
       delete out.image;
@@ -88,7 +113,7 @@
 
   function defaultProducts() {
     return [
-      { id: 1, name: 'Robe Lin Ivoire', category: 'Mode', sub: 'Vêtements', price: 149, emoji: '👗', image: 'images/cat-mode.jpg', sizeType: 'clothes', sizeStock: { XS: 1, S: 2, M: 3, L: 2, XL: 0, XXL: 0 }, stock: 8, featured: false, desc: 'Robe en lin lavé, coupe fluide et intemporelle.' },
+      { id: 1, name: 'Robe Lin Ivoire', category: 'Mode', sub: 'Vêtements', price: 149, emoji: '👗', image: 'images/cat-mode.jpg', sizeType: 'clothes', sizeStock: { XS: 1, S: 2, M: 3, L: 2, XL: 0 }, stock: 8, featured: false, desc: 'Robe en lin lavé, coupe fluide et intemporelle.' },
       { id: 2, name: 'Sac Tote Naturel', category: 'Mode', sub: 'Sacs', price: 89, emoji: '👜', stock: 5, featured: false, desc: '' },
       { id: 3, name: 'Sneakers Blanches', category: 'Mode', sub: 'Chaussures', price: 195, emoji: '👟', sizeType: 'shoes', sizeStock: { 36: 0, 37: 1, 38: 2, 39: 2, 40: 1, 41: 0, 42: 0, 43: 0, 44: 0, 45: 0 }, stock: 6, featured: false, desc: '' },
       { id: 4, name: 'Canapé Stockholm', category: 'Maison', sub: 'Canapés', price: 1290, emoji: '🛋️', image: 'images/cat-maison.jpg', stock: 3, featured: false, desc: 'Canapé scandinave en tissu naturel, lignes épurées.' },
@@ -210,7 +235,20 @@
 
   function productsSnapshot(list) {
     try {
-      return JSON.stringify(list || []);
+      // Lightweight fingerprint — avoid JSON.stringify of full catalog (images/urls)
+      return (list || [])
+        .map((p) =>
+          [
+            p.id,
+            p.hidden ? 1 : 0,
+            p.featured ? 1 : 0,
+            p.stock || 0,
+            p.price || 0,
+            String(p.name || '').slice(0, 24),
+            String((p.images && p.images[0]) || p.image || '').slice(-48),
+          ].join(':')
+        )
+        .join('|');
     } catch (_) {
       return '';
     }
@@ -236,6 +274,60 @@
     if (!p) return false;
     const v = p.featured;
     return v === true || v === 1 || v === '1' || v === 'true' || v === 'yes';
+  }
+
+  /** Hidden from boutique / homepage / product URLs when true. */
+  /** Brief lock so a late Firestore snapshot can't undo an admin visibility toggle. */
+  const visibilityGuard = new Map();
+
+  function guardProductVisibility(id, hidden, ms) {
+    visibilityGuard.set(String(id), {
+      hidden: !!hidden,
+      until: Date.now() + (ms || 12000),
+    });
+  }
+
+  function applyVisibilityGuard(p) {
+    if (!p || p.id == null) return p;
+    const g = visibilityGuard.get(String(p.id));
+    if (!g) return p;
+    if (Date.now() > g.until) {
+      visibilityGuard.delete(String(p.id));
+      return p;
+    }
+    return normalizeProductFields({ ...p, hidden: g.hidden });
+  }
+
+  function isProductHidden(p) {
+    if (!p) return true;
+    const g = visibilityGuard.get(String(p.id));
+    if (g && Date.now() <= g.until) return !!g.hidden;
+    const v = p.hidden;
+    return v === true || v === 1 || v === '1' || v === 'true' || v === 'yes';
+  }
+
+  function isProductVisible(p) {
+    return !!p && !isProductHidden(p);
+  }
+
+  /** Newer first: createdAt, else higher numeric id (admin allocates ascending ids). */
+  function productRecency(p) {
+    const created = Number(p && p.createdAt);
+    if (Number.isFinite(created) && created > 0) return created;
+    const id = Number(p && p.id);
+    return Number.isFinite(id) ? id : 0;
+  }
+
+  function sortProductsNewestFirst(list) {
+    return (list || []).slice().sort((a, b) => {
+      const diff = productRecency(b) - productRecency(a);
+      if (diff) return diff;
+      return String(b && b.id).localeCompare(String(a && a.id), undefined, { numeric: true });
+    });
+  }
+
+  function getVisibleProducts() {
+    return sortProductsNewestFirst(getProducts().filter(isProductVisible));
   }
 
   function markProductsPendingCloud(list, opts) {
@@ -345,6 +437,9 @@
       return;
     }
     try {
+      if (global.MD3Firebase.muteProductWatch) {
+        global.MD3Firebase.muteProductWatch(opts && opts.skipImages ? 8000 : 4000);
+      }
       const result = await global.MD3Firebase.saveProducts(list, opts);
       clearProductsPendingCloud();
       if (result && Array.isArray(result)) {
@@ -352,7 +447,12 @@
         const merged = list.map((item) => {
           const u = byId.get(String(item.id));
           if (!u) return item;
-          return normalizeProductFields({ ...item, ...u, featured: item.featured });
+          return normalizeProductFields({
+            ...item,
+            ...u,
+            featured: item.featured,
+            hidden: item.hidden,
+          });
         });
         setProductsCache(merged);
       }
@@ -365,7 +465,11 @@
   function productVisualInner(p) {
     const image = p && normalizeProductImages(p)[0];
     if (image) {
-      return `<img src="${image}" alt="" class="product-photo" loading="lazy" />`;
+      const safe = String(image)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;');
+      return `<img src="${safe}" alt="" loading="lazy" decoding="async" width="168" height="224" />`;
     }
     return `<span class="product-emoji-fallback">${(p && p.emoji) || '✦'}</span>`;
   }
@@ -373,7 +477,11 @@
   function productThumbInner(p) {
     const image = p && normalizeProductImages(p)[0];
     if (image) {
-      return `<img src="${image}" alt="" class="product-thumb" loading="lazy" />`;
+      const safe = String(image)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;');
+      return `<img src="${safe}" alt="" class="product-thumb" loading="lazy" decoding="async" width="96" height="128" />`;
     }
     return `<span class="product-emoji-fallback">${(p && p.emoji) || '✦'}</span>`;
   }
@@ -386,9 +494,31 @@
     return Number.isFinite(n) ? n : null;
   }
 
-  /** Homepage carousel — only products starred in admin (`featured: true`). */
+  /** Homepage carousel — every product starred in admin (`featured: true`). */
+  function isPlaceholderProductName(name) {
+    const n = String(name || '').trim();
+    return !n || n === '.' || n === '·' || n.length < 2;
+  }
+
+  /** Readable label when admin left name as "." / empty. */
+  function productDisplayName(p) {
+    if (!p) return '';
+    const localized =
+      global.MD3Lang && typeof global.MD3Lang.productName === 'function'
+        ? global.MD3Lang.productName(p)
+        : p.name;
+    if (!isPlaceholderProductName(localized)) return String(localized).trim();
+    const sub = String(p.sub || '').trim();
+    if (sub && !isPlaceholderProductName(sub)) return sub;
+    const cat = String(p.category || '').trim();
+    if (cat && !isPlaceholderProductName(cat)) return cat;
+    return 'Produit #' + p.id;
+  }
+
   function getHomeFeaturedProducts() {
-    return getProducts().filter(isProductFeatured);
+    return getProducts()
+      .filter((p) => isProductVisible(p) && isProductFeatured(p))
+      .sort((a, b) => Number(a.id) - Number(b.id));
   }
 
   /**
@@ -440,14 +570,19 @@
       localStorage.setItem(FLAG, '1');
       if (!changedIds.length) return false;
       setProductsCache(next);
-      try {
-        await saveProducts(next, { onlyIds: changedIds });
-      } catch (e) {
-        console.error('clearLegacyAutoFeatured persist', e);
-      }
-      return true;
+      return changedIds;
     } catch (_) {
       return false;
+    }
+  }
+
+  async function persistLegacyAutoFeaturedClear(changedIds) {
+    if (!changedIds || !changedIds.length) return;
+    try {
+      ensureCaches();
+      await saveProducts(productsCache, { onlyIds: changedIds });
+    } catch (e) {
+      console.error('clearLegacyAutoFeatured persist', e);
     }
   }
 
@@ -456,8 +591,15 @@
   }
 
   function getProductById(id) {
-    const n = parseInt(id, 10);
-    return getProducts().find((p) => p.id === n) || null;
+    if (id == null || id === '') return null;
+    ensureCaches();
+    const key = String(id);
+    const n = Number(id);
+    return (
+      (productsCache || []).find(
+        (p) => String(p.id) === key || (!Number.isNaN(n) && Number(p.id) === n)
+      ) || null
+    );
   }
 
   function productHref(id) {
@@ -888,15 +1030,159 @@
     }
   }
 
+  function pageProductId() {
+    try {
+      const path = String((global.location && global.location.pathname) || '');
+      if (!/product\.html$/i.test(path)) return null;
+      return new URLSearchParams(global.location.search).get('id');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function mergeRemoteProduct(remote) {
+    if (!remote || remote.id == null) return false;
+    ensureCaches();
+    const normalized = applyVisibilityGuard(normalizeProductFields(remote));
+    const id = String(normalized.id);
+    const idx = productsCache.findIndex((p) => String(p.id) === id);
+    if (idx >= 0) {
+      const local = productsCache[idx];
+      const merged = { ...local, ...normalized };
+      // Never let a stale cloud doc wipe an admin ★ still present locally
+      if (isProductFeatured(local) && !isProductFeatured(normalized)) {
+        merged.featured = true;
+      }
+      // Never let a stale cloud doc wipe an admin hide/show toggle
+      if (isProductHidden(local) !== isProductHidden(normalized)) {
+        merged.hidden = isProductHidden(local);
+      }
+      const g = visibilityGuard.get(id);
+      if (g && Date.now() <= g.until) merged.hidden = g.hidden;
+      productsCache[idx] = normalizeProductFields(merged);
+    } else {
+      productsCache.push(normalized);
+      productsCache.sort((a, b) => a.id - b.id);
+    }
+    setProductsCache(productsCache);
+    return true;
+  }
+
+  /** Fast path for product pages — one Firestore doc via REST. */
+  async function hydrateProductById(id) {
+    if (id == null || id === '') return null;
+    ensureCaches();
+    const existing = getProductById(id);
+    if (!global.MD3Firebase || !global.MD3Firebase.isConfigured()) return existing;
+    if (!global.MD3Firebase.loadProductViaRest) return existing;
+    try {
+      const remote = await global.MD3Firebase.loadProductViaRest(id);
+      if (remote) {
+        mergeRemoteProduct(remote);
+        return getProductById(id) || normalizeProductFields(remote);
+      }
+    } catch (e) {
+      console.error('hydrateProductById', e);
+    }
+    return getProductById(id);
+  }
+
+  /**
+   * Cloud catalog can lag behind admin ★ / visibility toggles.
+   * Keep local featured + hidden and push those ids back so the shop matches admin.
+   */
+  function reconcileRemoteWithLocalFeatured(remoteProducts) {
+    ensureCaches();
+    const localById = new Map((productsCache || []).map((p) => [String(p.id), p]));
+    const featuredPushIds = [];
+    const merged = (remoteProducts || []).map((r) => {
+      const local = localById.get(String(r.id));
+      const remoteFeat = isProductFeatured(r);
+      const localFeat = isProductFeatured(local);
+      const remoteHidden = isProductHidden(r);
+      const localHidden = isProductHidden(local);
+      let featured = remoteFeat;
+      let hidden = remoteHidden;
+      if (localFeat && !remoteFeat) {
+        featuredPushIds.push(r.id);
+        featured = true;
+      } else if (remoteFeat) {
+        featured = true;
+      } else if (local) {
+        featured = localFeat;
+      }
+      if (local && localHidden !== remoteHidden) {
+        featuredPushIds.push(r.id);
+        hidden = localHidden;
+      }
+      if (local) {
+        return applyVisibilityGuard(normalizeProductFields({ ...local, ...r, featured, hidden }));
+      }
+      return applyVisibilityGuard(normalizeProductFields({ ...r, featured, hidden }));
+    });
+    return { merged, featuredPushIds };
+  }
+
+  function applyRemoteProductsList(remoteProducts, ok, liveWatch, FB) {
+    if (!remoteProducts || !remoteProducts.length) return false;
+    const { merged: reconciled, featuredPushIds } = reconcileRemoteWithLocalFeatured(remoteProducts);
+    const remoteIds = new Set(reconciled.map((p) => String(p.id)));
+    const localOnly = (productsCache || []).filter((p) => !remoteIds.has(String(p.id)));
+    let next = reconciled;
+    if (localOnly.length) {
+      next = [...reconciled, ...localOnly];
+      next.sort((a, b) => Number(a.id) - Number(b.id));
+    }
+    setProductsCache(next);
+
+    const pushIds = [];
+    featuredPushIds.forEach((id) => pushIds.push(id));
+    localOnly.forEach((p) => {
+      if (isProductFeatured(p)) pushIds.push(p.id);
+    });
+    // Always try to push local-only products on admin; featured ★ from any surface
+    const idsToPush = [...new Set(pushIds.map(String))];
+    if (ok && FB && FB.saveProducts && idsToPush.length) {
+      FB.saveProducts(next, { onlyIds: idsToPush }).catch((e) =>
+        console.error('syncCloud push featured/local-only', e)
+      );
+    } else if (ok && liveWatch && localOnly.length && FB && FB.saveProducts) {
+      FB.saveProducts(next, { onlyIds: localOnly.map((p) => p.id) }).catch((e) =>
+        console.error('syncCloud push local-only products', e)
+      );
+    }
+    return true;
+  }
+
   async function syncCloud() {
     if (!global.MD3Firebase || !global.MD3Firebase.isConfigured()) return;
     const ok = await global.MD3Firebase.init();
     const FB = global.MD3Firebase;
     const liveWatch = isLiveAdminSurface();
+    const wantId = pageProductId();
 
     try {
+      // Product page: hydrate the requested doc FIRST, then unblock Loading immediately
+      if (!liveWatch && wantId && FB.loadProductViaRest) {
+        try {
+          const one = await FB.loadProductViaRest(wantId);
+          if (one) {
+            mergeRemoteProduct(one);
+            // Don't wait for the full catalog — product page can paint now
+            markCloudSynced();
+          }
+        } catch (_) {}
+      }
+
+      // Pending admin writes: never block storefront first paint (can upload large images)
       if (ok) {
-        await flushPendingProductsCloud();
+        if (liveWatch) {
+          await flushPendingProductsCloud();
+        } else {
+          Promise.resolve(flushPendingProductsCloud()).catch((e) =>
+            console.error('flushPendingProductsCloud', e)
+          );
+        }
       }
 
       // Prefer REST on storefront — faster first paint than waiting on SDK listeners
@@ -918,24 +1204,13 @@
       }
 
       if (remoteProducts && remoteProducts.length) {
-        const remoteIds = new Set(remoteProducts.map((p) => String(p.id)));
-        const localOnly = (productsCache || []).filter((p) => !remoteIds.has(String(p.id)));
-        if (localOnly.length) {
-          const merged = [...remoteProducts, ...localOnly];
-          merged.sort((a, b) => a.id - b.id);
-          setProductsCache(merged);
-          if (ok && liveWatch) {
-            FB.saveProducts(merged, { onlyIds: localOnly.map((p) => p.id) }).catch((e) =>
-              console.error('syncCloud push local-only products', e)
-            );
-          }
-        } else {
-          setProductsCache(remoteProducts);
-        }
-        notifyProductsUpdated();
+        applyRemoteProductsList(remoteProducts, ok, liveWatch, FB);
       } else if (ok && liveWatch && productsCache && productsCache.length) {
         await FB.saveProducts(productsCache);
       }
+
+      // Catalog is ready — unblock product "Loading…" before users/carts/taxonomy
+      markCloudSynced();
 
       if (!ok) return;
 
@@ -943,27 +1218,50 @@
       if (liveWatch) {
         FB.watchProducts((list) => {
           if (!list || !list.length) return;
-          const remoteIds = new Set(list.map((p) => String(p.id)));
-          const localOnly = productsCache
-            ? productsCache.filter((p) => !remoteIds.has(String(p.id)))
-            : [];
-          if (localOnly.length) {
-            const merged = [...list, ...localOnly];
-            merged.sort((a, b) => a.id - b.id);
-            setProductsCache(merged);
-          } else {
-            setProductsCache(list);
-          }
+          applyRemoteProductsList(list, true, true, FB);
         });
       }
 
-      const remoteUsers = await FB.loadUsersMap();
-      if (remoteUsers && Object.keys(remoteUsers).length) {
-        usersCache = remoteUsers;
-        localStorage.setItem(USERS_KEY, JSON.stringify(usersCache));
-      } else if (liveWatch && Object.keys(usersCache).length) {
-        await FB.saveUsersMap(usersCache);
-      }
+      // Secondary sync in parallel — don't block catalog UI
+      const secondary = [];
+
+      secondary.push(
+        (async () => {
+          const remoteUsers = await FB.loadUsersMap();
+          if (remoteUsers && Object.keys(remoteUsers).length) {
+            usersCache = remoteUsers;
+            localStorage.setItem(USERS_KEY, JSON.stringify(usersCache));
+            syncSessionFromUsersCache();
+          } else if (liveWatch && Object.keys(usersCache).length) {
+            await FB.saveUsersMap(usersCache);
+          }
+        })()
+      );
+
+      secondary.push(
+        (async () => {
+          const remoteCarts = await FB.loadCartsMap();
+          if (remoteCarts && Object.keys(remoteCarts).length) {
+            applyRemoteCartsMap(remoteCarts);
+          } else if (liveWatch && Object.keys(cartsCache).length) {
+            await saveAllCarts(cartsCache, { fullMap: true });
+          }
+        })()
+      );
+
+      secondary.push(
+        (async () => {
+          const remoteTax = await FB.loadTaxonomy();
+          if (remoteTax) {
+            localStorage.setItem('md3_taxonomy', JSON.stringify(remoteTax));
+          } else if (liveWatch) {
+            const localTax = localStorage.getItem('md3_taxonomy');
+            if (localTax) await FB.saveTaxonomy(JSON.parse(localTax));
+          }
+        })()
+      );
+
+      await Promise.all(secondary.map((p) => p.catch((e) => console.error('syncCloud secondary', e))));
 
       if (liveWatch) {
         FB.watchUsers((map) => {
@@ -973,66 +1271,83 @@
           } catch (_) {}
           syncSessionFromUsersCache();
         });
-      }
-
-      const remoteCarts = await FB.loadCartsMap();
-      if (remoteCarts && Object.keys(remoteCarts).length) {
-        applyRemoteCartsMap(remoteCarts);
-      } else if (Object.keys(cartsCache).length) {
-        await saveAllCarts(cartsCache, { fullMap: true });
-      }
-
-      if (liveWatch) {
         FB.watchCarts((map) => {
           applyRemoteCartsMap(map);
         });
-      }
-
-      if (FB.deleteLegacyGuestCart) {
-        FB.deleteLegacyGuestCart().catch(() => {});
-      }
-
-      const remoteTax = await FB.loadTaxonomy();
-      if (remoteTax) {
-        localStorage.setItem('md3_taxonomy', JSON.stringify(remoteTax));
-      } else if (liveWatch) {
-        const localTax = localStorage.getItem('md3_taxonomy');
-        if (localTax) await FB.saveTaxonomy(JSON.parse(localTax));
-      }
-
-      if (liveWatch && FB.watchTaxonomy) {
-        FB.watchTaxonomy((data) => {
-          if (!data) return;
-          try {
-            localStorage.setItem('md3_taxonomy', JSON.stringify(data));
-          } catch (_) {}
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('md3-taxonomy-updated'));
-          }
-        });
+        if (FB.watchTaxonomy) {
+          FB.watchTaxonomy((data) => {
+            if (!data) return;
+            try {
+              localStorage.setItem('md3_taxonomy', JSON.stringify(data));
+            } catch (_) {}
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('md3-taxonomy-updated'));
+            }
+          });
+        }
+        if (FB.deleteLegacyGuestCart) {
+          FB.deleteLegacyGuestCart().catch(() => {});
+        }
       }
     } catch (e) {
       console.error('MD3Store cloud sync', e);
     }
   }
 
-  async function init() {
-    ensureCaches();
-    syncHomeFeaturedFlags();
-    pruneAllCartsLocal();
+  function markCloudSynced() {
+    if (cloudSynced) return;
+    cloudSynced = true;
+    cloudReadyResolve();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('md3-cloud-ready'));
+    }
+  }
+
+  async function runCloudSyncPipeline() {
     try {
       await syncCloud();
-      // After Firebase load — strip old demo ★ and persist so sync can't bring them back
-      await clearLegacyAutoFeatured();
+      const cleared = await clearLegacyAutoFeatured();
+      if (cleared && cleared.length) await persistLegacyAutoFeaturedClear(cleared);
       syncHomeFeaturedFlags();
       if (global.MD3Auth && global.MD3Auth.initSessionSync) {
-        await global.MD3Auth.initSessionSync();
+        // Never await — must not block ready / first paint
+        Promise.resolve(global.MD3Auth.initSessionSync()).catch(() => {});
       }
     } catch (e) {
       console.error('MD3Store cloud sync', e);
-      await clearLegacyAutoFeatured();
+      try {
+        const cleared = await clearLegacyAutoFeatured();
+        if (cleared && cleared.length) await persistLegacyAutoFeaturedClear(cleared);
+      } catch (_) {}
+    } finally {
+      markCloudSynced();
     }
-    readyResolve();
+  }
+
+  function isCloudSynced() {
+    return cloudSynced;
+  }
+
+  async function init() {
+    if (initPromise) return initPromise;
+    initPromise = (async () => {
+      ensureCaches();
+      syncHomeFeaturedFlags();
+      pruneAllCartsLocal();
+      // Local-only legacy ★ cleanup — never block first paint on network
+      try {
+        await clearLegacyAutoFeatured();
+      } catch (_) {}
+      readyResolve();
+
+      const liveWatch = isLiveAdminSurface();
+      if (liveWatch) {
+        await runCloudSyncPipeline();
+      } else {
+        runCloudSyncPipeline();
+      }
+    })();
+    return initPromise;
   }
 
   global.MD3Store = {
@@ -1040,7 +1355,10 @@
     ADMIN_IDS,
     ADMIN_PASS,
     ready,
+    cloudReady,
+    isCloudSynced,
     init,
+    hydrateProductById,
     isCloudEnabled,
     isAdminLogin,
     defaultProducts,
@@ -1078,6 +1396,14 @@
     getFeaturedProducts,
     getHomeFeaturedProducts,
     isProductFeatured,
+    isProductHidden,
+    isProductVisible,
+    guardProductVisibility,
+    getVisibleProducts,
+    sortProductsNewestFirst,
+    productRecency,
+    isPlaceholderProductName,
+    productDisplayName,
     HOME_FEATURED_IDS,
     syncHomeFeaturedFlags,
     getProductById,

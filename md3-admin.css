@@ -501,7 +501,182 @@ body.admin-active #md3-site-header {
   cursor: not-allowed;
 }
 
-/* ── Product table ── */
+/* ── Product visual grid (image + edit) ── */
+#page-admin .admin-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+#page-admin .admin-product-grid-empty {
+  grid-column: 1 / -1;
+  padding: 1.25rem 0;
+}
+
+#page-admin .admin-product-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 16px;
+  padding: 0.65rem;
+  box-shadow: var(--admin-shadow);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+#page-admin .admin-product-card:hover {
+  border-color: rgba(184, 148, 106, 0.45);
+}
+
+#page-admin .admin-product-card--focus {
+  border-color: var(--admin-wood);
+  box-shadow: 0 0 0 2px rgba(184, 148, 106, 0.2);
+}
+
+#page-admin .admin-product-card-media {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--admin-cream);
+  cursor: pointer;
+}
+
+#page-admin .admin-product-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+#page-admin .admin-product-card-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: var(--admin-stone);
+}
+
+#page-admin .admin-product-card-media .admin-star {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+#page-admin .admin-product-card-edit {
+  flex: 1;
+  min-width: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+#page-admin .admin-product-card-edit:hover,
+#page-admin .admin-product-card-edit:active {
+  background: var(--admin-ink);
+  color: #fff;
+  border-color: var(--admin-ink);
+}
+
+#page-admin .admin-product-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+#page-admin .admin-product-card-price {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--admin-charcoal);
+  letter-spacing: 0.02em;
+  padding: 0 0.1rem;
+}
+
+#page-admin .admin-product-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+#page-admin .admin-product-card--hidden {
+  opacity: 0.72;
+}
+
+#page-admin .admin-product-card--hidden .admin-product-card-media {
+  filter: grayscale(0.35);
+}
+
+#page-admin .admin-visibility {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+  margin: 0;
+}
+
+#page-admin .admin-visibility input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+#page-admin .admin-visibility-track {
+  position: relative;
+  width: 2.35rem;
+  height: 1.3rem;
+  border-radius: 999px;
+  background: #d8d4cc;
+  border: 1px solid rgba(26, 24, 22, 0.12);
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+#page-admin .admin-visibility-track::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s;
+}
+
+#page-admin .admin-visibility input:checked + .admin-visibility-track {
+  background: var(--admin-wood);
+  border-color: var(--admin-wood);
+}
+
+#page-admin .admin-visibility input:checked + .admin-visibility-track::after {
+  transform: translateX(1.05rem);
+}
+
+#page-admin .admin-visibility-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+  max-width: 3.6rem;
+  line-height: 1.2;
+}
+
+#page-admin .admin-visibility input:checked ~ .admin-visibility-label {
+  color: var(--admin-wood);
+}
+
+/* ── Product table (kept for other surfaces) ── */
 #page-admin .admin-table-wrap {
   overflow-x: auto;
   background: var(--admin-surface);
@@ -780,7 +955,7 @@ body.admin-active #md3-site-header {
 
 #page-admin .admin-image-thumb {
   position: relative;
-  aspect-ratio: 1;
+  aspect-ratio: 3 / 4;
   border-radius: var(--admin-radius-sm);
   overflow: hidden;
   border: 1px solid var(--admin-border);
@@ -831,7 +1006,7 @@ body.admin-active #md3-site-header {
 }
 
 #page-admin .admin-image-add {
-  aspect-ratio: 1;
+  aspect-ratio: 3 / 4;
   border: 1px dashed var(--admin-border-strong);
   border-radius: var(--admin-radius-sm);
   background: var(--admin-cream);
@@ -953,7 +1128,11 @@ body.admin-active #md3-site-header {
 }
 
 #page-admin .admin-crop-wrap {
-  max-height: 360px;
+  position: relative;
+  width: min(100%, 320px);
+  margin-inline: auto;
+  aspect-ratio: 3 / 4;
+  max-height: min(70vh, 560px);
   background: var(--admin-cream);
   border-radius: var(--admin-radius-sm);
   overflow: hidden;
@@ -962,6 +1141,28 @@ body.admin-active #md3-site-header {
 #page-admin .admin-crop-wrap img {
   max-width: 100%;
   display: block;
+}
+
+#page-admin .admin-crop-wrap .cropper-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#page-admin .admin-crop-wrap .cropper-bg,
+#page-admin .admin-crop-wrap .cropper-modal {
+  background-color: var(--admin-cream);
+}
+
+#page-admin .admin-crop-wrap .cropper-view-box,
+#page-admin .admin-crop-wrap .cropper-face {
+  border-radius: 0;
+}
+
+#page-admin .admin-crop-hint {
+  margin: 0.55rem 0 0;
+  font-size: 0.72rem;
+  color: var(--admin-muted);
+  line-height: 1.4;
 }
 
 #page-admin .admin-crop-toolbar {
@@ -1085,6 +1286,23 @@ body.admin-active #md3-site-header {
   align-self: flex-end;
   background: var(--admin-ink);
   color: #fff;
+}
+
+#page-admin .admin-ai-user-imgs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 0.5rem;
+}
+
+#page-admin .admin-ai-user-imgs img {
+  width: 96px;
+  height: 128px;
+  object-fit: cover;
+  object-position: center center;
+  border-radius: 10px;
+  display: block;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 #page-admin .admin-ai-hint {
@@ -1253,6 +1471,11 @@ body.admin-active .modal {
   #page-admin .admin-search-wrap {
     max-width: none;
     width: 100%;
+  }
+
+  #page-admin .admin-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
   }
 
   #page-admin .admin-table th,

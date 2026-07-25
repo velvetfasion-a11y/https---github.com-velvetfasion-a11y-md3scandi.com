@@ -72,6 +72,35 @@
     },
   };
 
+  function isHeavyDataUrl(url) {
+    const s = String(url || '');
+    return s.startsWith('data:image');
+  }
+
+  /** Drop embedded data: images — they bloat localStorage/Firestore and stall paint. */
+  function sanitizeAssets(data) {
+    const d = data && typeof data === 'object' ? { ...data } : {};
+    d.images = { ...(d.images || {}) };
+    let changed = false;
+    Object.keys(d.images).forEach((slot) => {
+      if (isHeavyDataUrl(d.images[slot])) {
+        delete d.images[slot];
+        changed = true;
+      }
+    });
+    if (isHeavyDataUrl(d.hero)) {
+      delete d.hero;
+      changed = true;
+    }
+    if (isHeavyDataUrl(d.fashion)) {
+      delete d.fashion;
+      changed = true;
+    }
+    if (d.hero && !d.images.hero) d.images.hero = d.hero;
+    if (d.fashion && !d.images.fashion) d.images.fashion = d.fashion;
+    return { data: d, changed };
+  }
+
   function load() {
     try {
       const raw = JSON.parse(localStorage.getItem(KEY) || '{}');
@@ -80,19 +109,31 @@
         if (raw.hero) raw.images.hero = raw.hero;
         if (raw.fashion) raw.images.fashion = raw.fashion;
       }
-      return raw;
+      const { data, changed } = sanitizeAssets(raw);
+      if (changed) {
+        try {
+          localStorage.setItem(KEY, JSON.stringify(data));
+        } catch (_) {}
+      }
+      return data;
     } catch (_) {
       return {};
     }
   }
 
   function save(data) {
-    localStorage.setItem(KEY, JSON.stringify(data));
+    const { data: clean } = sanitizeAssets(data || {});
+    try {
+      localStorage.setItem(KEY, JSON.stringify(clean));
+    } catch (e) {
+      console.warn('site assets save skipped (quota)', e);
+      return;
+    }
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('md3-site-assets-updated', { detail: data }));
+      window.dispatchEvent(new CustomEvent('md3-site-assets-updated', { detail: clean }));
     }
     if (global.MD3Firebase && global.MD3Firebase.isEnabled && global.MD3Firebase.isEnabled()) {
-      global.MD3Firebase.saveSiteAssets(data).catch((e) => console.error('site assets sync', e));
+      global.MD3Firebase.saveSiteAssets(clean).catch((e) => console.error('site assets sync', e));
     }
   }
 
@@ -119,6 +160,11 @@
 
   function setImage(slot, url) {
     if (!IMAGE_SLOTS[slot]) return null;
+    // Never persist data: URLs as site assets — use Storage HTTPS or local files only
+    if (isHeavyDataUrl(url)) {
+      console.warn('MD3SiteAssets: refusing data: URL for slot', slot);
+      return null;
+    }
     const d = load();
     d.images = d.images || {};
     d.images[slot] = url;
@@ -185,13 +231,18 @@
 
     Object.entries(IMAGE_SLOTS).forEach(([slot, meta]) => {
       if (slot === 'hero' || !meta.selector) return;
-      const url = images[slot] || meta.defaultSrc;
+      let url = images[slot] || meta.defaultSrc;
+      if (isHeavyDataUrl(url)) url = meta.defaultSrc || '';
       if (!url) return;
       const el = root.querySelector(meta.selector);
       if (!el) return;
       if (el.tagName === 'IMG') {
-        el.src = url;
-      } else if (images[slot]) {
+        if (el.getAttribute('src') !== url) {
+          el.loading = el.loading || 'lazy';
+          el.decoding = 'async';
+          el.src = url;
+        }
+      } else if (images[slot] && !isHeavyDataUrl(images[slot])) {
         const safe = String(url).replace(/'/g, "\\'");
         el.style.backgroundImage = "url('" + safe + "')";
         el.style.backgroundSize = 'cover';
@@ -235,15 +286,18 @@
       const remote = await global.MD3Firebase.loadSiteAssets();
       if (remote && (remote.hero || remote.fashion || remote.images)) {
         const local = load();
-        const merged = {
+        const mergedRaw = {
           ...local,
           ...remote,
           images: { ...(local.images || {}), ...(remote.images || {}) },
           updatedAt: remote.updatedAt || Date.now(),
         };
-        if (remote.hero) merged.images.hero = remote.hero;
-        if (remote.fashion) merged.images.fashion = remote.fashion;
-        localStorage.setItem(KEY, JSON.stringify(merged));
+        if (remote.hero) mergedRaw.images.hero = remote.hero;
+        if (remote.fashion) mergedRaw.images.fashion = remote.fashion;
+        const { data: merged } = sanitizeAssets(mergedRaw);
+        try {
+          localStorage.setItem(KEY, JSON.stringify(merged));
+        } catch (_) {}
         applyToDocument();
       }
     } catch (e) {

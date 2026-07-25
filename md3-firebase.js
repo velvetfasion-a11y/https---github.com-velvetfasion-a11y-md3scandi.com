@@ -85,12 +85,15 @@
       stock: Math.max(0, parseInt(p.stock, 10) || 0),
       emoji: p.emoji || '✦',
       featured: !!p.featured,
+      hidden: !!p.hidden,
       desc: typeof p.desc === 'string' ? p.desc : '',
     };
     if (images.length) {
       out.images = images;
       out.image = images[0];
     }
+    if (p.sizeType) out.sizeType = String(p.sizeType);
+    if (p.sizeStock && typeof p.sizeStock === 'object') out.sizeStock = { ...p.sizeStock };
     return out;
   }
 
@@ -98,13 +101,47 @@
    * Upload cropped image (data URL) via Storage putString data_url format.
    * Compat SDK equivalent of modular uploadString(ref, data, 'data_url').
    */
+  /**
+   * Shrink data-URL JPEGs before Storage upload so storefront cards stay light.
+   */
+  function compressDataUrlForUpload(dataUrl, maxEdge, quality) {
+    if (!dataUrl || !dataUrl.startsWith('data:')) return Promise.resolve(dataUrl);
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          let w = img.width;
+          let h = img.height;
+          const cap = maxEdge || 1000;
+          const long = Math.max(w, h);
+          if (long > cap) {
+            const scale = cap / long;
+            w = Math.max(1, Math.round(w * scale));
+            h = Math.max(1, Math.round(h * scale));
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality != null ? quality : 0.78));
+        } catch (_) {
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
   async function uploadProductImage(productId, dataUrl, index) {
     if (!storage || !dataUrl) return dataUrl || null;
     if (!dataUrl.startsWith('data:')) return dataUrl;
+    const modest = await compressDataUrlForUpload(dataUrl, 1000, 0.78);
     const suffix = index ? '-' + String(index + 1) : '';
     const storageRef = storage.ref('products/' + String(productId) + suffix + '.jpg');
     try {
-      await storageRef.putString(dataUrl, 'data_url', { contentType: 'image/jpeg' });
+      await storageRef.putString(modest, 'data_url', { contentType: 'image/jpeg' });
       return storageRef.getDownloadURL();
     } catch (e) {
       if (e && e.code === 'storage/unauthorized') {
@@ -143,22 +180,36 @@
 
   /**
    * Full document write (no merge) so removing image clears the field in Firestore.
+   * opts.skipImages — metadata-only save (visibility / featured); never re-upload blobs.
    */
   async function writeProductDoc(raw, opts) {
     const p = normalizeProduct(raw);
     if (!p) return null;
 
-    const rawImages = (Array.isArray(raw.images) ? raw.images : [raw.image])
-      .filter((img) => typeof img === 'string' && img.trim())
-      .slice(0, 3);
-    const imageUrls = [];
-    for (let i = 0; i < rawImages.length; i++) {
-      imageUrls.push(await uploadProductImage(p.id, rawImages[i], i));
+    const skipImages = !!(opts && opts.skipImages);
+    let imageUrls = [];
+    if (skipImages) {
+      imageUrls = (Array.isArray(raw.images) ? raw.images : [raw.image])
+        .filter((img) => typeof img === 'string' && img.trim() && !img.startsWith('data:'))
+        .filter((img, idx, arr) => arr.indexOf(img) === idx)
+        .slice(0, 8);
+    } else {
+      const rawImages = (Array.isArray(raw.images) ? raw.images : [raw.image])
+        .filter((img) => typeof img === 'string' && img.trim())
+        .slice(0, 8);
+      for (let i = 0; i < rawImages.length; i++) {
+        imageUrls.push(await uploadProductImage(p.id, rawImages[i], i));
+      }
+      raw.images = imageUrls;
+      raw.image = imageUrls[0];
     }
-    raw.images = imageUrls;
-    raw.image = imageUrls[0];
 
     const data = { ...p };
+    // Always persist boolean so Off site (hidden:true) survives cloud round-trips
+    data.hidden = !!p.hidden;
+    data.featured = !!p.featured;
+    if (raw.createdAt) data.createdAt = Number(raw.createdAt) || raw.createdAt;
+    if (raw.updatedAt) data.updatedAt = Number(raw.updatedAt) || raw.updatedAt;
     if (imageUrls.length) {
       data.images = imageUrls;
       data.image = imageUrls[0];
@@ -231,6 +282,28 @@
     }
   }
 
+  /** Single-product REST read — used for instant product page paint. */
+  async function loadProductViaRest(id) {
+    const c = config();
+    if (!c || !c.projectId || !c.apiKey || id == null || id === '') return null;
+    const url =
+      'https://firestore.googleapis.com/v1/projects/' +
+      encodeURIComponent(c.projectId) +
+      '/databases/(default)/documents/products/' +
+      encodeURIComponent(String(id)) +
+      '?key=' +
+      encodeURIComponent(c.apiKey);
+    try {
+      const res = await fetch(url, { credentials: 'omit' });
+      if (!res.ok) return null;
+      const doc = await res.json();
+      return productFromRestDoc(doc);
+    } catch (e) {
+      console.error('loadProductViaRest', e);
+      return null;
+    }
+  }
+
   async function loadProducts() {
     let list = null;
     if (db) {
@@ -250,10 +323,10 @@
 
   async function saveProducts(products, options) {
     if (!db) return products;
-    muteProductWatch();
+    const opts = options || {};
+    muteProductWatch(opts.skipImages ? 10000 : opts.muteMs || 5000);
     const saved = (products || []).map((p) => ({ ...p }));
     const ids = new Set(saved.map((p) => String(p.id)));
-    const opts = options || {};
     const onlyIds = opts.onlyIds ? new Set(opts.onlyIds.map((id) => String(id))) : null;
     const removeImageSet = new Set((opts.removeImageIds || []).map((id) => String(id)));
     const deletedIds = opts.deletedIds || [];
@@ -266,7 +339,10 @@
     }
 
     for (const raw of toWrite) {
-      await writeProductDoc(raw, { clearImage: removeImageSet.has(String(raw.id)) });
+      await writeProductDoc(raw, {
+        clearImage: removeImageSet.has(String(raw.id)),
+        skipImages: !!opts.skipImages,
+      });
     }
 
     for (const id of deletedIds) {
@@ -287,6 +363,8 @@
       if (pending) await batch.commit();
     }
 
+    // Keep listeners muted a bit after write so late snapshots can't undo toggles
+    muteProductWatch(opts.skipImages ? 4000 : 2000);
     return saved;
   }
 
@@ -475,7 +553,9 @@
     getAuth,
     loadProducts,
     loadProductsViaRest,
+    loadProductViaRest,
     saveProducts,
+    muteProductWatch,
     watchProducts,
     loadUsersMap,
     saveUsersMap,

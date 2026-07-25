@@ -5,6 +5,12 @@
   const S = () => global.MD3Store;
   const L = (k) => (global.MD3Lang ? global.MD3Lang.t(k) : k);
   const MAX_ATTACH = 8;
+  /** Longest edge for images shown in chat + sent to the planner model. */
+  const AI_ATTACH_MAX_EDGE = 1024;
+  /** Longest edge for reference images sent to the image model. */
+  const AI_REF_MAX_EDGE = 1280;
+  /** Longest edge when saving AI-generated product photos. */
+  const AI_STORE_MAX_EDGE = 1600;
   const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
   const MAX_HISTORY_TURNS = 24;
   const MAX_GALLERY_SHOTS = 4;
@@ -889,23 +895,25 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     };
   }
 
-  async function compressImage(dataUrl, maxW) {
+  async function compressImage(dataUrl, maxEdge, quality) {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
         let w = img.width;
         let h = img.height;
-        const cap = maxW || 2400;
-        if (w > cap) {
-          h = Math.round((h * cap) / w);
-          w = cap;
+        const cap = maxEdge || AI_ATTACH_MAX_EDGE;
+        const long = Math.max(w, h);
+        if (long > cap) {
+          const scale = cap / long;
+          w = Math.max(1, Math.round(w * scale));
+          h = Math.max(1, Math.round(h * scale));
         }
         const canvas = document.createElement('canvas');
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.92));
+        resolve(canvas.toDataURL('image/jpeg', quality != null ? quality : 0.82));
       };
       img.onerror = () => resolve(dataUrl);
       img.src = dataUrl;
@@ -921,7 +929,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
         continue;
       }
       let dataUrl = await readFileAsDataUrl(file);
-      dataUrl = await compressImage(dataUrl, 3840);
+      dataUrl = await compressImage(dataUrl, AI_ATTACH_MAX_EDGE, 0.82);
       attachments.push({ name: file.name, dataUrl });
     }
     renderAttachments();
@@ -1692,7 +1700,8 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
     const parts = [{ text: fullPrompt }];
     if (referenceDataUrl) {
-      const ref = dataUrlToGeminiPart(referenceDataUrl);
+      const modestRef = await compressImage(referenceDataUrl, AI_REF_MAX_EDGE, 0.85);
+      const ref = dataUrlToGeminiPart(modestRef);
       if (ref) parts.push(ref);
     }
 
@@ -1718,7 +1727,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
         const respParts = (candidate && candidate.content && candidate.content.parts) || [];
         for (const part of respParts) {
           const dataUrl = geminiPartToDataUrl(part);
-          if (dataUrl) return compressImage(dataUrl, 2400);
+          if (dataUrl) return compressImage(dataUrl, AI_STORE_MAX_EDGE, 0.88);
         }
         lastErr = new Error('No image returned from ' + model);
       } catch (e) {
@@ -1867,7 +1876,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       let slot = type === 'set_hero_image' ? 'hero' : type === 'set_fashion_image' ? 'fashion' : resolveSiteSlot(action);
       if (!slot) slot = resolveSiteSlot({ slot: sessionCtx.lastUserText || '' });
       if (!slot) return msg('admin-ai-err-slot', 'Which section? Try: hero, fashion, maison, lifestyle, limited, manifesto.');
-      const url = await compressImage(img, slot === 'hero' ? 3840 : 2400);
+      const url = await compressImage(img, slot === 'hero' ? 1920 : AI_STORE_MAX_EDGE, 0.88);
       if (global.MD3SiteAssets && global.MD3SiteAssets.setImage) {
         global.MD3SiteAssets.setImage(slot, url);
       } else if (slot === 'hero') {
@@ -2170,6 +2179,8 @@ Product screenshots / admin UI shots → update existing product, never add_prod
           desc,
           featured: !!action.featured,
           emoji: action.emoji || '✦',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
         };
         if (productImages.length) {
           item.images = productImages;

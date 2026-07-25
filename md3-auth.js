@@ -13,8 +13,10 @@
     if (!global.MD3Firebase) {
       throw new Error('md3-firebase.js did not load.');
     }
-    if (global.MD3Store && global.MD3Store.ready) {
-      await global.MD3Store.ready;
+    // Do not await MD3Store.ready — init() used to call initSessionSync while
+    // ready was still pending, which deadlocked product/boutique pages.
+    if (global.MD3Store && typeof global.MD3Store.ensureCaches === 'function') {
+      global.MD3Store.ensureCaches();
     }
     if (!global.MD3Firebase.isEnabled()) {
       await global.MD3Firebase.init();

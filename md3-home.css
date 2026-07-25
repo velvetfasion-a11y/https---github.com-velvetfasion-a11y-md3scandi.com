@@ -18,11 +18,17 @@ body.home-page {
   font-weight: 300;
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
+  margin: 0;
+  padding: 0;
 }
 
 .home-main {
   flex: 1;
   overflow-x: clip;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* Eyebrow utility */
@@ -54,22 +60,28 @@ body.home-page {
 #md3-hero.home-hero {
   position: relative;
   width: 100%;
+  max-width: 100%;
+  min-width: 100%;
+  margin: 0;
+  border-radius: 0;
   overflow: hidden;
   min-height: 100svh;
   min-height: 100vh;
 }
 
 #md3-hero.home-hero--cinema {
-  /* Match NyZx3.jpg so the full scene reads like the photo */
+  /* Full-bleed: never let aspect-ratio + max-height shrink width (Safari gutters) */
   min-height: 0;
-  aspect-ratio: 1376 / 752;
-  max-height: min(92svh, 920px);
+  aspect-ratio: auto;
+  height: min(92svh, 920px);
+  max-height: none;
 }
 
 #md3-hero .hero-bg {
   position: absolute;
   inset: 0;
   z-index: 0;
+  border-radius: 0;
 }
 
 #md3-hero .hero-bg-img {
@@ -79,6 +91,7 @@ body.home-page {
   /* Desktop: bias up so her face sits below the nav, not under LIFESTYLE / LIMITED */
   object-position: 58% 18%;
   display: block;
+  border-radius: 0;
 }
 
 @media (min-width: 768px) {
@@ -295,7 +308,9 @@ html.is-mobile #md3-hero .hero-bg-img {
 
 @media (min-width: 768px) and (max-width: 1023px) {
   #md3-hero.home-hero--cinema {
-    max-height: min(78svh, 720px);
+    height: min(78svh, 720px);
+    aspect-ratio: auto;
+    max-height: none;
   }
 
   .home-hero-line1 {
@@ -334,10 +349,15 @@ html.is-mobile #md3-hero .hero-bg-img {
   #md3-hero.home-hero,
   #md3-hero.home-hero--cinema {
     position: relative;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
     min-height: 100svh;
     min-height: 100dvh;
     max-height: none;
+    height: auto;
     aspect-ratio: auto;
+    border-radius: 0;
   }
 
   .home-hero-heading.only-mobile {
@@ -780,9 +800,11 @@ html.is-mobile #md3-hero .hero-bg-img {
 
 .home-featured .home-product-visual {
   position: relative;
-  aspect-ratio: 4 / 5;
+  /* Match admin crop export (3:4) — was 4:5 and re-cropped heads off */
+  aspect-ratio: 3 / 4;
   background: var(--home-cream);
   overflow: hidden;
+  contain: layout paint style;
 }
 
 .home-featured .home-product-visual img,
@@ -791,6 +813,7 @@ html.is-mobile #md3-hero .hero-bg-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center center;
   transition: transform 1s ease-out;
 }
 

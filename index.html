@@ -27,13 +27,14 @@
 <meta name="twitter:description" content="MD3 Scandi — Mode, Maison, Lifestyle. Du dressing au salon, l'élégance partout." />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
 <link rel="preload" as="image" href="images/NyZx3.jpg?v=2" fetchpriority="high" />
+<link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet" /></noscript>
-<link rel="stylesheet" href="md3-header.css?v=20" />
-<link rel="stylesheet" href="md3-responsive.css?v=19" />
-<link rel="stylesheet" href="md3-home.css?v=48" />
+<link rel="stylesheet" href="md3-header.css?v=21" />
+<link rel="stylesheet" href="md3-responsive.css?v=21" />
+<link rel="stylesheet" href="md3-home.css?v=51" />
 </head>
 <body class="home-page">
 <script src="md3-viewport.js"></script>
@@ -109,21 +110,21 @@
     </div>
     <div class="home-univers-grid">
       <a href="boutique.html?cat=Mode" class="home-univers-card home-univers-card--mode">
-        <img src="images/cat-mode.jpg" alt="Mode" loading="lazy" />
+        <img src="images/cat-mode.jpg" alt="Mode" width="900" height="1200" loading="lazy" decoding="async" />
         <div class="home-univers-card-body">
           <div class="home-univers-sub" data-i18n="home-mode-sub">Vestiaire essentiel</div>
           <div class="home-univers-name display-serif"><span data-i18n="nav-fashion">Mode</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
         </div>
       </a>
       <a href="boutique.html?cat=Maison" class="home-univers-card home-univers-card--maison">
-        <img src="images/cat-maison.jpg" alt="Maison" loading="lazy" />
+        <img src="images/cat-maison.jpg" alt="Maison" width="900" height="1200" loading="lazy" decoding="async" />
         <div class="home-univers-card-body">
           <div class="home-univers-sub" data-i18n="home-maison-sub">Habiter avec grâce</div>
           <div class="home-univers-name display-serif"><span data-i18n="nav-home">Maison</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
         </div>
       </a>
       <a href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" class="home-univers-card home-univers-card--lifestyle home-univers-card--limited">
-        <img src="images/cat-lifestyle.jpg" alt="Édition limitée" loading="lazy" />
+        <img src="images/cat-lifestyle.jpg" alt="Édition limitée" width="900" height="1200" loading="lazy" decoding="async" />
         <div class="home-univers-card-body">
           <div class="home-univers-sub" data-i18n="home-limited-sub">Pièces rares</div>
           <div class="home-univers-name display-serif"><span data-i18n="nav-limited">Édition limitée</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
@@ -161,7 +162,7 @@
       <a href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" class="home-journal-link"><span data-i18n="journal-cta">Découvrir l'édition</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
     </div>
     <div class="home-journal-visual">
-      <img src="images/journal-linen.jpg" alt="" loading="lazy" data-i18n-alt="journal-img-alt" />
+      <img src="images/journal-linen.jpg" alt="" width="1200" height="900" loading="lazy" decoding="async" data-i18n-alt="journal-img-alt" />
     </div>
   </div>
 </section>
@@ -220,16 +221,16 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script defer src="firebase-config.js"></script>
-<script defer src="md3-firebase.js?v=5"></script>
-<script defer src="md3-sizes.js?v=1"></script>
-<script defer src="md3-store.js?v=18"></script>
-<script defer src="md3-site-assets.js?v=7"></script>
+<script defer src="md3-firebase.js?v=8"></script>
+<script defer src="md3-sizes.js?v=2"></script>
+<script defer src="md3-store.js?v=27"></script>
+<script defer src="md3-site-assets.js?v=8"></script>
 <script defer src="md3-nav-icons.js"></script>
 <script defer src="md3-header.js?v=20"></script>
-<script defer src="md3-lang.js?v=30"></script>
+<script defer src="md3-lang.js?v=31"></script>
 <script defer src="md3-currency.js?v=4"></script>
 <script defer src="md3-hero-fit.js?v=14"></script>
-<script defer src="md3-shop-render.js?v=29"></script>
-<script defer src="md3-home-boot.js?v=1"></script>
+<script defer src="md3-shop-render.js?v=31"></script>
+<script defer src="md3-home-boot.js?v=5"></script>
 </body>
 </html>

@@ -368,6 +368,8 @@
       'th-status': 'Statut',
       'th-actions': 'Actions',
       'btn-modify': 'Modifier',
+      'admin-visibility-on': 'En ligne',
+      'admin-visibility-off': 'Hors ligne',
       'btn-supprimer': 'Supprimer',
       'stock-in': 'En stock',
       'stock-low-lbl': 'Faible',
@@ -390,6 +392,7 @@
       'size-shoes': 'Pointures (EU)',
       'size-clothes': 'Tailles vêtements',
       'size-pick': 'Choisissez une taille',
+      'size-sold-out': 'Épuisé',
       'size-total-stock': 'Stock total : %n',
       'cart-select-size': 'Choisissez une taille sur la fiche produit',
       'photo-hint': 'Appuyez sur une case ou glissez une photo. Jusqu’à 3 images — sélectionnez une vignette pour recadrer.',
@@ -815,6 +818,8 @@
       'th-status': 'Status',
       'th-actions': 'Actions',
       'btn-modify': 'Edit',
+      'admin-visibility-on': 'On site',
+      'admin-visibility-off': 'Off site',
       'btn-supprimer': 'Delete',
       'stock-in': 'In stock',
       'stock-low-lbl': 'Low',
@@ -837,6 +842,7 @@
       'size-shoes': 'Shoe sizes (EU)',
       'size-clothes': 'Clothing sizes',
       'size-pick': 'Choose a size',
+      'size-sold-out': 'Sold out',
       'size-total-stock': 'Total stock: %n',
       'cart-select-size': 'Choose a size on the product page',
       'photo-hint': 'Tap a box or drag a photo in. Up to 3 images — select a thumbnail to crop.',
@@ -1261,6 +1267,8 @@
       'th-status': 'الحالة',
       'th-actions': 'إجراءات',
       'btn-modify': 'تعديل',
+      'admin-visibility-on': 'ظاهر',
+      'admin-visibility-off': 'مخفي',
       'btn-supprimer': 'حذف',
       'stock-in': 'متوفر',
       'stock-low-lbl': 'منخفض',
@@ -1283,6 +1291,7 @@
       'size-shoes': 'مقاسات الأحذية (EU)',
       'size-clothes': 'مقاسات الملابس',
       'size-pick': 'اختر مقاساً',
+      'size-sold-out': 'نفد',
       'size-total-stock': 'إجمالي المخزون: %n',
       'cart-select-size': 'اختر المقاس في صفحة المنتج',
       'photo-hint': 'اضغطي على مربع أو اسحبي صورة. حتى 3 صور — اختاري صورة مصغّرة للقص.',
@@ -1554,7 +1563,9 @@
     if (lang === 'ar' && p.nameAr) return p.nameAr;
     const entry = productLocaleEntry(p);
     if (entry && entry.name) return entry.name;
-    return p.name || '';
+    const raw = p.name || '';
+    // Placeholder "." names — let MD3Store.productDisplayName / shop cards fall back
+    return raw;
   }
 
   function productDesc(p) {

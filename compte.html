@@ -9,9 +9,9 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="md3-header.css?v=20" />
-<link rel="stylesheet" href="md3-responsive.css?v=19" />
-<link rel="stylesheet" href="md3-admin.css?v=16" />
+<link rel="stylesheet" href="md3-header.css?v=21" />
+<link rel="stylesheet" href="md3-responsive.css?v=21" />
+<link rel="stylesheet" href="md3-admin.css?v=22" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" crossorigin="anonymous" />
 <style>
   :root {
@@ -1196,6 +1196,7 @@
             <div class="admin-crop-wrap">
               <img id="cropImage" alt="" />
             </div>
+            <p class="admin-crop-hint">Aperçu boutique (3:4). Glisser ou zoom pour cadrer — les miniatures et la boutique montrent exactement ce cadre.</p>
             <div class="admin-crop-toolbar" id="cropToolbar" style="display:none">
               <button type="button" onclick="cropZoom(0.1)" data-i18n="zoom-in">Zoom +</button>
               <button type="button" onclick="cropZoom(-0.1)" data-i18n="zoom-out">Zoom −</button>
@@ -1299,16 +1300,16 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-<script src="md3-firebase.js?v=5"></script>
-<script src="md3-sizes.js?v=1"></script>
-<script src="md3-store.js?v=18"></script>
-<script src="md3-auth.js?v=3"></script>
+<script src="md3-firebase.js?v=9"></script>
+<script src="md3-sizes.js?v=2"></script>
+<script src="md3-store.js?v=28"></script>
+<script src="md3-auth.js?v=4"></script>
 <script src="md3-nav-icons.js"></script>
 <script src="md3-header.js?v=20"></script>
 <script src="ai-config.js?v=3" onerror="window.MD3_AI_CONFIG=window.MD3_AI_CONFIG||{}"></script><!-- generated from .env via scripts/sync-ai-config.mjs -->
 <script src="md3-site-assets.js?v=7"></script>
-<script src="md3-admin-ai.js?v=22"></script>
-<script src="md3-lang.js?v=30"></script>
+<script src="md3-admin-ai.js?v=23"></script>
+<script src="md3-lang.js?v=34"></script>
 <script src="md3-taxonomy.js?v=2"></script>
 <script src="md3-currency.js?v=4"></script>
 <script src="email-config.js?v=3"></script>
@@ -1320,11 +1321,13 @@ let adminFilter = 'Tous';
 let adminSearch = '';
 let adminTabActive = 'overview';
 let adminEditingId = null;
-const MAX_PRODUCT_IMAGES = 3;
+const MAX_PRODUCT_IMAGES = 5;
 const PRODUCT_IMAGE_MAX_BYTES = 20 * 1024 * 1024;
-const PRODUCT_IMAGE_EXPORT = { width: 1600, height: 2133, quality: 0.95 };
+const PRODUCT_IMAGE_EXPORT = { width: 900, height: 1200, quality: 0.78 };
 let productCropper = null;
 let productImages = [];
+/** Full originals for re-framing during this edit session (falls back to cropped). */
+let productImageSources = [];
 let activeProductImageIndex = 0;
 
 function destroyProductCropper() {
@@ -1337,6 +1340,7 @@ function destroyProductCropper() {
 function resetProductImageUI() {
   destroyProductCropper();
   productImages = [];
+  productImageSources = [];
   activeProductImageIndex = 0;
   const img = document.getElementById('cropImage');
   if (img) img.src = '';
@@ -1365,6 +1369,15 @@ function saveActiveProductImageCrop() {
   const cropped = getCroppedProductImage();
   if (cropped) productImages[activeProductImageIndex] = cropped;
   renderProductPhotoSlots();
+}
+
+let cropPreviewTimer = null;
+function scheduleCropPreviewSave() {
+  if (cropPreviewTimer) clearTimeout(cropPreviewTimer);
+  cropPreviewTimer = setTimeout(() => {
+    cropPreviewTimer = null;
+    saveActiveProductImageCrop();
+  }, 120);
 }
 
 function productImageLabel(index) {
@@ -1476,13 +1489,16 @@ function processProductImageFile(file) {
   const reader = new FileReader();
   reader.onload = function () {
     saveActiveProductImageCrop();
+    const src = reader.result;
     if (activeProductImageIndex >= productImages.length) {
-      productImages.push(reader.result);
+      productImages.push(src);
+      productImageSources.push(src);
       activeProductImageIndex = productImages.length - 1;
     } else {
-      productImages[activeProductImageIndex] = reader.result;
+      productImages[activeProductImageIndex] = src;
+      productImageSources[activeProductImageIndex] = src;
     }
-    loadImageIntoCropper(reader.result);
+    loadImageIntoCropper(src);
     renderProductPhotoSlots();
   };
   reader.readAsDataURL(file);
@@ -1491,8 +1507,8 @@ function processProductImageFile(file) {
 function selectProductImageSlot(index) {
   saveActiveProductImageCrop();
   activeProductImageIndex = Math.max(0, Math.min(MAX_PRODUCT_IMAGES - 1, index));
-  const img = productImages[activeProductImageIndex];
-  if (img) loadImageIntoCropper(img);
+  const src = productImageSources[activeProductImageIndex] || productImages[activeProductImageIndex];
+  if (src) loadImageIntoCropper(src);
   else {
     destroyProductCropper();
     const cropImg = document.getElementById('cropImage');
@@ -1509,25 +1525,47 @@ function loadImageIntoCropper(src) {
   const section = document.getElementById('cropSection');
   const toolbar = document.getElementById('cropToolbar');
   const img = document.getElementById('cropImage');
+  if (!section || !toolbar || !img || !src) return;
   section.style.display = 'block';
   toolbar.style.display = 'flex';
   destroyProductCropper();
-  img.src = src;
   img.onload = function () {
     destroyProductCropper();
+    if (typeof Cropper === 'undefined') return;
+    // viewMode 2: image fills the 3:4 box (no checkerboard gutters).
+    // Crop frame = what boutique / product / featured show.
     productCropper = new Cropper(img, {
       aspectRatio: 3 / 4,
-      viewMode: 1,
+      viewMode: 2,
       dragMode: 'move',
       autoCropArea: 1,
       responsive: true,
       background: false,
+      modal: true,
       guides: true,
+      center: true,
+      highlight: false,
       movable: true,
-      cropBoxMovable: true,
-      cropBoxResizable: true,
+      zoomable: true,
+      zoomOnWheel: true,
+      zoomOnTouch: true,
+      rotatable: true,
+      scalable: false,
+      cropBoxMovable: false,
+      cropBoxResizable: false,
+      toggleDragModeOnDblclick: false,
+      ready() {
+        saveActiveProductImageCrop();
+      },
+      cropend() {
+        saveActiveProductImageCrop();
+      },
+      zoom() {
+        scheduleCropPreviewSave();
+      },
     });
   };
+  img.src = src;
 }
 
 function onProductImagePick(e) {
@@ -1538,7 +1576,15 @@ function onProductImagePick(e) {
 
 function getProductImagesFromEditor() {
   saveActiveProductImageCrop();
-  productImages = productImages.filter(Boolean).slice(0, MAX_PRODUCT_IMAGES);
+  const nextImages = [];
+  const nextSources = [];
+  for (let i = 0; i < productImages.length; i++) {
+    if (!productImages[i]) continue;
+    nextImages.push(productImages[i]);
+    nextSources.push(productImageSources[i] || productImages[i]);
+  }
+  productImages = nextImages.slice(0, MAX_PRODUCT_IMAGES);
+  productImageSources = nextSources.slice(0, MAX_PRODUCT_IMAGES);
   activeProductImageIndex = Math.min(activeProductImageIndex, Math.max(0, productImages.length - 1));
   renderProductPhotoSlots();
   return productImages;
@@ -1547,10 +1593,11 @@ function getProductImagesFromEditor() {
 function removeProductImage() {
   saveActiveProductImageCrop();
   productImages.splice(activeProductImageIndex, 1);
+  productImageSources.splice(activeProductImageIndex, 1);
   if (activeProductImageIndex >= productImages.length) {
     activeProductImageIndex = Math.max(0, productImages.length - 1);
   }
-  const next = productImages[activeProductImageIndex];
+  const next = productImageSources[activeProductImageIndex] || productImages[activeProductImageIndex];
   if (next) loadImageIntoCropper(next);
   else {
     destroyProductCropper();
@@ -1565,15 +1612,21 @@ function removeProductImage() {
 }
 
 function cropZoom(ratio) {
-  if (productCropper) productCropper.zoom(ratio);
+  if (!productCropper) return;
+  productCropper.zoom(ratio);
+  scheduleCropPreviewSave();
 }
 
 function cropRotate() {
-  if (productCropper) productCropper.rotate(90);
+  if (!productCropper) return;
+  productCropper.rotate(90);
+  saveActiveProductImageCrop();
 }
 
 function cropReset() {
-  if (productCropper) productCropper.reset();
+  if (!productCropper) return;
+  productCropper.reset();
+  saveActiveProductImageCrop();
 }
 
 function showPage(name) {
@@ -2230,7 +2283,7 @@ function renderAdminOverview() {
   const products = S.getProducts();
   const total = products.length;
   const inStock = products.filter(p => p.stock > 0).length;
-  const featured = products.filter(p => p.featured).length;
+  const featured = products.filter((p) => (S.isProductFeatured ? S.isProductFeatured(p) : !!p.featured)).length;
   document.getElementById('adminContent').innerHTML = `
     <h1>${L('admin-panel-title')}</h1>
     <p class="admin-sub">${L('admin-panel-sub')}</p>
@@ -2526,10 +2579,6 @@ function paintAdminProductsList() {
   if (window.MD3AdminAI && window.MD3AdminAI.setAdminListContext) {
     MD3AdminAI.setAdminListContext({ visibleIds: filtered.map((p) => p.id) });
   }
-  const fmtPrice = (n) =>
-    typeof MD3Currency !== 'undefined' && MD3Currency.formatPriceInSiteLang
-      ? MD3Currency.formatPriceInSiteLang(n)
-      : `${n} €`;
   const catBtnLabel = (c) => c === 'Tous' ? L('shop-all') : MD3Lang.translateCategory(c);
   const searchVal = esc(adminSearch);
   const focusId = window.MD3AdminAI && MD3AdminAI.getFocusedProductId ? MD3AdminAI.getFocusedProductId() : null;
@@ -2549,66 +2598,103 @@ function paintAdminProductsList() {
     <div class="category-filter">
       ${cats.map(c => `<button type="button" class="filter-btn ${c === adminFilter ? 'active' : ''}" onclick="setAdminFilter('${esc(c).replace(/'/g, "\\'")}')">${esc(catBtnLabel(c))}</button>`).join('')}
     </div>
-    <div class="admin-table-wrap">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>${L('th-product')}</th>
-            <th>${L('th-category')}</th>
-            <th>${L('th-price')}</th>
-            <th>${L('th-stock')}</th>
-            <th>${L('th-status')}</th>
-            <th>${L('th-actions')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${filtered.length ? filtered.map(p => {
-            const thumb = productImagesFor(p)[0];
-            const aiFocus = focusId === p.id;
-            const status = p.stock === 0
-              ? `<span class="admin-badge admin-badge--out">${L('stock-out-lbl')}</span>`
-              : `<span class="admin-badge admin-badge--in">${L('stock-in')}</span>`;
-            const feat = p.featured
-              ? ` <button type="button" class="admin-star admin-star--on" title="${esc(L('stat-featured'))}" aria-label="${esc(L('stat-featured'))}" onclick="event.stopPropagation();toggleFeatured(${p.id}, false)">★</button>`
-              : ` <button type="button" class="admin-star" title="${esc(L('label-featured') || 'En vedette')}" aria-label="Star" onclick="event.stopPropagation();toggleFeatured(${p.id}, true)">☆</button>`;
-            const thumbHtml = thumb
-              ? `<img class="admin-table-thumb" src="${esc(thumb)}" alt="" />`
-              : `<span class="admin-table-thumb-placeholder">${esc(p.emoji || '✦')}</span>`;
-            return `<tr class="${aiFocus ? 'admin-row--focus' : ''}" onclick="adminFocusProduct(${p.id});openEditProduct(${p.id})">
-              <td>
-                <div class="admin-table-product">
-                  ${thumbHtml}
-                  <div>
-                    <div class="admin-table-name">${esc(p.name)}${feat}</div>
-                    <div class="admin-table-meta">${esc(MD3Lang.translateSub(p.sub))}</div>
-                  </div>
-                </div>
-              </td>
-              <td>${esc(MD3Lang.translateCategory(p.category))}</td>
-              <td>${fmtPrice(p.price)}</td>
-              <td>${p.stock}</td>
-              <td><div class="admin-status-cell">${status}</div></td>
-              <td><button type="button" class="admin-btn-outline admin-btn-sm" onclick="event.stopPropagation();openEditProduct(${p.id})">${L('btn-modify')}</button></td>
-            </tr>`;
-          }).join('') : `<tr><td colspan="6"><p class="admin-sub" style="padding:1.25rem 0">${L('admin-no-results')}</p></td></tr>`}
-        </tbody>
-      </table>
+    <div class="admin-product-grid">
+      ${filtered.length ? filtered.map(p => {
+        const thumb = productImagesFor(p)[0];
+        const aiFocus = focusId === p.id;
+        const isFeat = S.isProductFeatured ? S.isProductFeatured(p) : !!p.featured;
+        const isVisible = S.isProductVisible ? S.isProductVisible(p) : !p.hidden;
+        const label = esc(S.productDisplayName ? S.productDisplayName(p) : p.name);
+        const priceHtml =
+          typeof MD3Currency !== 'undefined' && MD3Currency.formatPrice
+            ? MD3Currency.formatPrice(p.price)
+            : `${p.price} €`;
+        const feat = isFeat
+          ? `<button type="button" class="admin-star admin-star--on" title="${esc(L('stat-featured'))}" aria-label="${esc(L('stat-featured'))}" onclick="event.stopPropagation();toggleFeatured(${p.id}, false)">★</button>`
+          : `<button type="button" class="admin-star" title="${esc(L('label-featured') || 'En vedette')}" aria-label="Star" onclick="event.stopPropagation();toggleFeatured(${p.id}, true)">☆</button>`;
+        const thumbHtml = thumb
+          ? `<img class="admin-product-card-img" src="${esc(thumb)}" alt="${label}" />`
+          : `<span class="admin-product-card-placeholder">${esc(p.emoji || '✦')}</span>`;
+        const visLabel = isVisible ? L('admin-visibility-on') : L('admin-visibility-off');
+        return `<article class="admin-product-card${aiFocus ? ' admin-product-card--focus' : ''}${isVisible ? '' : ' admin-product-card--hidden'}">
+          <div class="admin-product-card-media" onclick="adminFocusProduct(${p.id});openEditProduct(${p.id})">
+            ${thumbHtml}
+            ${feat}
+          </div>
+          <div class="admin-product-card-meta">
+            <div class="admin-product-card-price">${esc(priceHtml)}</div>
+            <div class="admin-product-card-actions">
+              <button type="button" class="admin-btn-outline admin-btn-sm admin-product-card-edit" onclick="adminFocusProduct(${p.id});openEditProduct(${p.id})">${L('btn-modify')}</button>
+              <label class="admin-visibility" title="${esc(visLabel)}" onclick="event.stopPropagation()">
+                <input type="checkbox" ${isVisible ? 'checked' : ''} onchange="toggleProductVisibility(${p.id}, this.checked)" aria-label="${esc(visLabel)}" />
+                <span class="admin-visibility-track" aria-hidden="true"></span>
+                <span class="admin-visibility-label">${esc(visLabel)}</span>
+              </label>
+            </div>
+          </div>
+        </article>`;
+      }).join('') : `<p class="admin-sub admin-product-grid-empty">${L('admin-no-results')}</p>`}
     </div>`;
 }
 
 function setAdminFilter(cat) { adminFilter = cat; paintAdminProductsList(); }
+
+async function toggleProductVisibility(id, showOnSite) {
+  const wantId = Number(id);
+  const products = S.getProducts();
+  const idx = products.findIndex((p) => Number(p.id) === wantId);
+  if (idx === -1) return;
+  const nextHidden = !showOnSite;
+  products[idx] = {
+    ...products[idx],
+    hidden: nextHidden,
+    updatedAt: Date.now(),
+    createdAt: products[idx].createdAt || Date.now(),
+  };
+  if (S.guardProductVisibility) S.guardProductVisibility(wantId, nextHidden, 15000);
+  paintAdminProductsList();
+  try {
+    await S.saveProducts(products, { onlyIds: [wantId], skipImages: true });
+  } catch (e) {
+    console.error('toggleProductVisibility', e);
+  }
+  try {
+    const again = S.getProducts();
+    const j = again.findIndex((p) => Number(p.id) === wantId);
+    if (j !== -1) {
+      const stillHidden = S.isProductHidden ? S.isProductHidden(again[j]) : !!again[j].hidden;
+      if (stillHidden !== nextHidden) {
+        again[j] = { ...again[j], hidden: nextHidden };
+        if (S.guardProductVisibility) S.guardProductVisibility(wantId, nextHidden, 15000);
+        await S.saveProducts(again, { onlyIds: [wantId], skipImages: true });
+      }
+    }
+  } catch (e) {
+    console.error('toggleProductVisibility confirm', e);
+  }
+  paintAdminProductsList();
+}
 
 async function toggleFeatured(id, checked) {
   const products = S.getProducts();
   const wantId = Number(id);
   const idx = products.findIndex((p) => Number(p.id) === wantId);
   if (idx === -1) return;
-  products[idx] = { ...products[idx], featured: !!checked };
+  products[idx] = { ...products[idx], featured: !!checked, updatedAt: Date.now() };
+  paintAdminProductsList();
   try {
-    await S.saveProducts(products, { onlyIds: [wantId] });
+    await S.saveProducts(products, { onlyIds: [wantId], skipImages: true });
   } catch (e) {
     console.error('toggleFeatured', e);
   }
+  try {
+    const again = S.getProducts();
+    const j = again.findIndex((p) => Number(p.id) === wantId);
+    if (j !== -1 && !!again[j].featured !== !!checked) {
+      again[j] = { ...again[j], featured: !!checked };
+      await S.saveProducts(again, { onlyIds: [wantId], skipImages: true });
+    }
+  } catch (_) {}
   paintAdminProductsList();
   try {
     window.dispatchEvent(new CustomEvent('md3-products-updated'));
@@ -2685,6 +2771,7 @@ function openEditProduct(id) {
   if (featEl) featEl.checked = !!p.featured;
   resetProductImageUI();
   productImages = productImagesFor(p).slice();
+  productImageSources = productImages.slice();
   activeProductImageIndex = 0;
   renderProductPhotoSlots();
   if (productImages[0]) loadImageIntoCropper(productImages[0]);
@@ -2834,6 +2921,8 @@ async function saveProduct() {
       name, category, sub, price, stock, desc, featured,
       emoji: prev.emoji || '✦',
       sizeType,
+      createdAt: prev.createdAt || Date.now(),
+      updatedAt: Date.now(),
     };
     if (sizeStock) next.sizeStock = sizeStock;
     else {
@@ -2942,6 +3031,8 @@ window.closeAdminProductEdit = closeAdminProductEdit;
 window.updateAdminSizeTotalNote = updateAdminSizeTotalNote;
 window.refreshAdminProducts = refreshAdminProducts;
 window.renderAdminProducts = refreshAdminProducts;
+window.toggleProductVisibility = toggleProductVisibility;
+window.toggleFeatured = toggleFeatured;
 window.replaceSiteImage = replaceSiteImage;
 window.resetSiteImage = resetSiteImage;
 window.renderAdminSiteImages = renderAdminSiteImages;

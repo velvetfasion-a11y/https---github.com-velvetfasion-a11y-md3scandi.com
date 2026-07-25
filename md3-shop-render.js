@@ -8,18 +8,24 @@
     return d.innerHTML;
   }
 
-  function productImageBlock(p) {
+  function productImageBlock(p, opts) {
     const image =
       global.MD3Store && global.MD3Store.normalizeProductImages
         ? global.MD3Store.normalizeProductImages(p)[0]
         : p && p.image;
     if (image) {
-      return `<img src="${esc(image)}" alt="" class="product-photo" loading="lazy" />`;
+      const fallback = categoryFallbackImage(p);
+      const eager = opts && opts.eager;
+      const prio = eager ? ' fetchpriority="high"' : '';
+      return `<img src="${esc(image)}" alt="" class="product-photo" width="600" height="800" loading="${eager ? 'eager' : 'lazy'}" decoding="async"${prio} onerror="this.onerror=null;this.src='${esc(fallback)}'" />`;
     }
     return `<div class="cemoji">${esc((p && p.emoji) || '✦')}</div>`;
   }
 
   function localizedName(p) {
+    if (global.MD3Store && typeof global.MD3Store.productDisplayName === 'function') {
+      return global.MD3Store.productDisplayName(p);
+    }
     return global.MD3Lang && global.MD3Lang.productName ? global.MD3Lang.productName(p) : (p && p.name) || '';
   }
 
@@ -42,12 +48,13 @@
             ? [p.image]
             : [];
     const list = (imgs || []).map((s) => String(s || '')).filter(Boolean);
-    const local = list.find(
-      (s) => s.startsWith('images/') || s.startsWith('/') || s.startsWith('data:image')
-    );
-    if (local) return local;
+    // Prefer real network/local files — never prefer huge data: URLs for storefront
     const remote = list.find((s) => /^https?:\/\//i.test(s));
     if (remote) return remote;
+    const local = list.find((s) => s.startsWith('images/') || s.startsWith('/'));
+    if (local) return local;
+    const data = list.find((s) => s.startsWith('data:image'));
+    if (data) return data;
     return fallback;
   }
 
@@ -63,7 +70,7 @@
       : '';
     const eager = opts && opts.eager;
     const imgHtml = image
-      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="${eager ? 'eager' : 'lazy'}" decoding="async" draggable="false" onerror="this.onerror=null;this.src='${fallback}'" />`
+      ? `<img src="${esc(image)}" alt="${esc(name)}" width="600" height="800" loading="${eager ? 'eager' : 'lazy'}" decoding="async"${eager ? ' fetchpriority="high"' : ''} draggable="false" onerror="this.onerror=null;this.src='${esc(fallback)}'" />`
       : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
     return `
       <a href="${href}" class="home-product-card">
@@ -76,15 +83,14 @@
       </a>`;
   }
 
-  function storeCardMinimalHtml(p, labels) {
+  function storeCardMinimalHtml(p, labels, opts) {
     const href = global.MD3Store.productHref(p.id);
     const name = localizedName(p);
-    const image =
-      global.MD3Store && global.MD3Store.normalizeProductImages
-        ? global.MD3Store.normalizeProductImages(p)[0]
-        : p && p.image;
+    const fallback = categoryFallbackImage(p);
+    const image = pickHomeImage(p);
+    const eager = opts && opts.eager;
     const imgHtml = image
-      ? `<img src="${esc(image)}" alt="${esc(name)}" loading="lazy" />`
+      ? `<img src="${esc(image)}" alt="${esc(name)}" width="600" height="800" loading="${eager ? 'eager' : 'lazy'}" decoding="async"${eager ? ' fetchpriority="high"' : ''} onerror="this.onerror=null;this.src='${esc(fallback)}'" />`
       : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
     return `
       <a href="${href}" class="product-card">
@@ -108,7 +114,7 @@
     return `
       <article class="scard" onclick="location.href='${href}'" role="link" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();location.href='${href}'}">
         <div class="cimgw">
-          ${productImageBlock(p)}
+          ${productImageBlock(p, labels && labels.eagerFirst ? { eager: true } : null)}
           ${out ? `<div class="otag">${esc(labels.out)}</div>` : ''}
         </div>
         <div class="cinf">
@@ -213,11 +219,18 @@
   function renderHomeGrid(container, products, labels) {
     if (!container) return;
     const lbl = labels || homeLabels();
+    const key = (products || [])
+      .map((p) => String(p.id) + ':' + String((p.images && p.images[0]) || p.image || '').slice(-24))
+      .join('|');
+    if (container.dataset.md3ShopKey === key && container.childElementCount) return;
+    container.dataset.md3ShopKey = key;
     if (!products.length) {
       container.innerHTML = '';
       return;
     }
-    container.innerHTML = products.map((p) => storeCardHomeHtml(p, lbl)).join('');
+    container.innerHTML = products
+      .map((p, i) => storeCardHomeHtml(p, lbl, { eager: i === 0 }))
+      .join('');
   }
 
   /**
@@ -274,6 +287,12 @@
     if (groups.length < 2) {
       const clone = group.cloneNode(true);
       clone.setAttribute('aria-hidden', 'true');
+      // Clones must not compete for bandwidth with the live cards
+      clone.querySelectorAll('img').forEach((img) => {
+        img.loading = 'lazy';
+        img.removeAttribute('fetchpriority');
+        img.setAttribute('fetchpriority', 'low');
+      });
       track.appendChild(clone);
     }
 
@@ -388,7 +407,9 @@
     }
 
     const favourites = list.slice();
-    const key = favourites.map((p) => String(p.id)).join(',');
+    const key = favourites
+      .map((p) => String(p.id) + ':' + String((p.images && p.images[0]) || p.image || '').slice(-32))
+      .join(',');
     if (key === featuredLastKey && container.querySelector('.home-featured-group')) {
       return;
     }
@@ -398,15 +419,11 @@
     while (list.length < 3) list = list.concat(favourites);
     list = list.slice(0, Math.max(favourites.length, 3));
 
+    // Only the first visible card is eager — avoids 4× parallel multi-MB downloads
     const cards = list
-      .map((p, i) => storeCardHomeHtml(p, lbl, { eager: i < 2 }))
+      .map((p, i) => storeCardHomeHtml(p, lbl, { eager: i === 0 }))
       .join('');
-    container.innerHTML =
-      '<div class="home-featured-group">' +
-      cards +
-      '</div><div class="home-featured-group" aria-hidden="true">' +
-      cards +
-      '</div>';
+    container.innerHTML = '<div class="home-featured-group">' + cards + '</div>';
     container.classList.add('is-ready');
 
     requestAnimationFrame(function () {
@@ -417,12 +434,24 @@
   function renderGrid(container, products, labels) {
     if (!container) return;
     const lbl = labels || defaultLabels();
+    const key = (products || [])
+      .map((p) => String(p.id) + ':' + String((p.images && p.images[0]) || p.image || '').slice(-24) + ':' + (p.stock || 0))
+      .join('|');
+    if (container.dataset.md3ShopKey === key && container.childElementCount) return;
+    container.dataset.md3ShopKey = key;
     if (!products.length) {
       container.innerHTML = '';
       return;
     }
     const render = lbl.homeStyle ? storeCardHomeHtml : lbl.minimal ? storeCardMinimalHtml : storeCardHtml;
-    container.innerHTML = products.map((p) => render(p, lbl)).join('');
+    container.innerHTML = products
+      .map((p, i) => {
+        if (render === storeCardHtml && i === 0) {
+          return storeCardHtml(p, { ...lbl, eagerFirst: true });
+        }
+        return render(p, lbl, i === 0 ? { eager: true } : null);
+      })
+      .join('');
   }
 
   global.MD3Shop = {

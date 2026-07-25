@@ -279,9 +279,14 @@ body.home-page .site-header--solid {
   transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-.link-underline:hover::after {
+.link-underline:hover::after,
+.site-header .header-nav a.is-active.link-underline::after {
   transform: scaleX(1);
   transform-origin: left;
+}
+
+.site-header .header-nav a.is-active {
+  color: var(--md3-gold);
 }
 
 .site-header .logo {

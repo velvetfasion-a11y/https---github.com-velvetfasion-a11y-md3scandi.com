@@ -3,7 +3,7 @@
  */
 (function (global) {
   const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
-  const CLOTHING_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+  const CLOTHING_SIZES = ['XS', 'S', 'M', 'L', 'XL'];
 
   function getProductSizeType(p) {
     if (!p) return 'none';

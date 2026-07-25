@@ -11,8 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="md3-header.css?v=20" />
-<link rel="stylesheet" href="md3-responsive.css?v=19" />
+<link rel="stylesheet" href="md3-header.css?v=21" />
+<link rel="stylesheet" href="md3-responsive.css?v=22" />
 <style>
   :root {
     --cream: #f5f0e8;
@@ -136,12 +136,62 @@
   .summary-line {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     gap: 12px;
-    padding: 11px 0;
+    padding: 12px 0;
     border-bottom: 1px solid rgba(184, 147, 90, 0.14);
     font-size: 14px;
   }
+  .summary-line-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .summary-thumb {
+    flex: 0 0 52px;
+    width: 52px;
+    height: 68px;
+    overflow: hidden;
+    background: #ebe3d5;
+  }
+  .summary-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .summary-thumb .product-emoji-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 1.25rem;
+  }
+  .summary-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .summary-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem;
+    font-weight: 400;
+    line-height: 1.25;
+    color: var(--ink);
+  }
+  .summary-size {
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
   .summary-line small { color: var(--ink-soft); }
+  .summary-line-total {
+    flex: 0 0 auto;
+    font-size: 14px;
+    font-weight: 500;
+  }
   .summary-total {
     display: flex;
     justify-content: space-between;
@@ -334,17 +384,18 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script defer src="firebase-config.js"></script>
-<script defer src="md3-firebase.js?v=5"></script>
-<script defer src="md3-sizes.js?v=1"></script>
-<script defer src="md3-store.js?v=18"></script>
-<script defer src="md3-auth.js?v=3"></script>
+<script defer src="md3-firebase.js?v=8"></script>
+<script defer src="md3-sizes.js?v=2"></script>
+<script defer src="md3-store.js?v=27"></script>
+<script defer src="md3-auth.js?v=4"></script>
 <script defer src="md3-nav-icons.js"></script>
 <script defer src="md3-header.js?v=20"></script>
-<script defer src="md3-lang.js?v=30"></script>
+<script defer src="md3-lang.js?v=31"></script>
 <script defer src="md3-currency.js?v=4"></script>
 <script src="email-config.js?v=3"></script>
 <script defer src="md3-email.js?v=4"></script>
 <script>
+document.addEventListener('DOMContentLoaded', function () {
 (function () {
   const S = MD3Store;
   const t = (k) => MD3Lang.t(k);
@@ -375,10 +426,26 @@
     let total = 0;
     const summary = lines.map(({ product: p, qty, size }) => {
       total += p.price * qty;
-      const sizeLine = size ? ` · ${esc(t('label-size'))}: ${esc(size)}` : '';
+      const name =
+        S.productDisplayName
+          ? S.productDisplayName(p)
+          : MD3Lang.productName
+            ? MD3Lang.productName(p)
+            : p.name || '';
+      const sizeLine = size ? `<span class="summary-size">${esc(t('label-size'))}: ${esc(size)}</span>` : '';
+      const thumb = S.productThumbInner
+        ? S.productThumbInner(p)
+        : '';
       return `<div class="summary-line">
-        <div>${esc(MD3Lang.productName ? MD3Lang.productName(p) : p.name)}${sizeLine}<br><small>${qty} x ${MD3Currency.formatPrice(p.price)}</small></div>
-        <strong>${MD3Currency.formatPrice(p.price * qty)}</strong>
+        <div class="summary-line-main">
+          <div class="summary-thumb">${thumb}</div>
+          <div class="summary-copy">
+            <strong class="summary-name">${esc(name)}</strong>
+            ${sizeLine}
+            <small>${qty} × ${MD3Currency.formatPrice(p.price)}</small>
+          </div>
+        </div>
+        <strong class="summary-line-total">${MD3Currency.formatPrice(p.price * qty)}</strong>
       </div>`;
     }).join('');
 
@@ -718,6 +785,7 @@
   window.addEventListener('md3-carts-updated', boot);
   window.addEventListener('md3-products-updated', renderCheckout);
 })();
+});
 </script>
 </body>
 </html>

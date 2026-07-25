@@ -68,11 +68,7 @@
         products = [];
       }
 
-      products = products.filter((p) => {
-        const name = String((p && p.name) || '').trim();
-        return !!(name && name !== '.' && name.length >= 2);
-      });
-
+      // Drop empty / placeholder names only (getHomeFeaturedProducts already filters)
       if (!products.length) {
         grid.innerHTML = '';
         grid.classList.remove('is-ready');
@@ -104,7 +100,18 @@
 
   function scheduleFeaturedRender() {
     clearTimeout(featuredTimer);
-    featuredTimer = setTimeout(renderFeatured, 50);
+    featuredTimer = setTimeout(renderFeatured, 40);
+  }
+
+  let assetsApplied = false;
+  function applySiteAssetsOnce() {
+    if (assetsApplied) return;
+    try {
+      if (window.MD3SiteAssets) {
+        MD3SiteAssets.applyToDocument();
+        assetsApplied = true;
+      }
+    } catch (e) {}
   }
 
   function updateNavAuth() {
@@ -120,9 +127,7 @@
     try {
       updateCartBadge();
     } catch (e) {}
-    try {
-      if (window.MD3SiteAssets) MD3SiteAssets.applyToDocument();
-    } catch (e) {}
+    applySiteAssetsOnce();
     scheduleFeaturedRender();
   }
 
@@ -162,10 +167,19 @@
       bootShop();
       return;
     }
+    try {
+      if (MD3Store.ensureCaches) MD3Store.ensureCaches();
+    } catch (e) {}
+    bootShop();
     MD3Store.init()
       .then(function () {
         try {
-          if (window.MD3SiteAssets) MD3SiteAssets.init();
+          if (window.MD3SiteAssets) {
+            MD3SiteAssets.init().then(function () {
+              assetsApplied = false;
+              applySiteAssetsOnce();
+            });
+          }
         } catch (e) {}
         bootShop();
       })

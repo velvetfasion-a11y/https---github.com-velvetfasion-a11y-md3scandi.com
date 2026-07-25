@@ -4,14 +4,15 @@
 <meta charset="UTF-8" />
 <script defer src="md3-lang-boot.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>MD3 Scandi — Boutique</title>
+<title>MD3 Scandi</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500;600&family=Noto+Sans+Arabic:wght@300;400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="md3-header.css?v=20" />
-<link rel="stylesheet" href="md3-responsive.css?v=19" />
-<link rel="stylesheet" href="md3-shop.css?v=14" />
+<link rel="stylesheet" href="md3-header.css?v=21" />
+<link rel="stylesheet" href="md3-responsive.css?v=21" />
+<link rel="stylesheet" href="md3-shop.css?v=24" />
 <style>
   body { font-family: 'Jost', sans-serif; background: #fff; color: #1a1816; min-height: 100vh; }
 </style>
@@ -23,7 +24,7 @@
 
 <section class="boutique-page">
   <div class="boutique-hero">
-    <h1 id="boutiqueTitle">Boutique</h1>
+    <h1 id="boutiqueTitle"></h1>
   </div>
   <div class="boutique-filters" id="boutiqueFilters" hidden></div>
   <div class="sgrid" id="boutiqueGrid"></div>
@@ -33,113 +34,15 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script defer src="firebase-config.js"></script>
-<script defer src="md3-firebase.js?v=5"></script>
-<script defer src="md3-sizes.js?v=1"></script>
-<script defer src="md3-store.js?v=18"></script>
-<script defer src="md3-auth.js?v=3"></script>
+<script defer src="md3-firebase.js?v=8"></script>
+<script defer src="md3-sizes.js?v=2"></script>
+<script defer src="md3-store.js?v=27"></script>
+<script defer src="md3-auth.js?v=4"></script>
 <script defer src="md3-nav-icons.js"></script>
-<script defer src="md3-header.js?v=20"></script>
-<script defer src="md3-lang.js?v=30"></script>
+<script defer src="md3-header.js?v=21"></script>
+<script defer src="md3-lang.js?v=31"></script>
 <script defer src="md3-currency.js?v=4"></script>
-<script defer src="md3-shop-render.js?v=29"></script>
-<script>
-  const L = (k) => MD3Lang.t(k);
-  let catFilter = null;
-  let subFilter = null;
-
-  function readParams() {
-    const params = new URLSearchParams(location.search);
-    catFilter = params.get('cat') || null;
-    subFilter = params.get('sub') || null;
-  }
-
-  function setSub(sub) {
-    subFilter = sub || null;
-    const url = new URL(location.href);
-    if (subFilter) url.searchParams.set('sub', subFilter);
-    else url.searchParams.delete('sub');
-    history.replaceState(null, '', url.pathname + url.search);
-    renderBoutique();
-  }
-
-  function renderBoutique() {
-    readParams();
-    const canonicalCat = (cat) =>
-      MD3Store.canonicalCategory ? MD3Store.canonicalCategory(cat) : cat;
-    const activeCat = catFilter ? canonicalCat(catFilter) : null;
-    let products = MD3Store.getProducts();
-    if (activeCat) products = products.filter((p) => canonicalCat(p.category) === activeCat);
-    if (subFilter) products = products.filter((p) => p.sub === subFilter);
-
-    const titleEl = document.getElementById('boutiqueTitle');
-    const grid = document.getElementById('boutiqueGrid');
-    const empty = document.getElementById('boutiqueEmpty');
-    const filtersEl = document.getElementById('boutiqueFilters');
-
-    if (activeCat) {
-      titleEl.textContent = MD3Lang.translateCategory(activeCat);
-      document.title = 'MD3 Scandi — ' + titleEl.textContent;
-    } else {
-      titleEl.textContent = L('shop-eyebrow');
-      document.title = 'MD3 Scandi — Boutique';
-    }
-
-    const n = products.length;
-
-    if (activeCat && !subFilter) {
-      const subs = [...new Set(MD3Store.getProducts().filter((p) => canonicalCat(p.category) === activeCat).map((p) => p.sub))].filter(Boolean);
-      if (subs.length > 1) {
-        filtersEl.hidden = false;
-        filtersEl.innerHTML = [
-          `<button type="button" class="boutique-filter active" onclick="setSub(null)">${L('shop-all')}</button>`,
-          ...subs.map((s) => `<button type="button" class="boutique-filter" onclick="setSub('${s.replace(/'/g, "\\'")}')">${MD3Shop.esc(MD3Lang.translateSub(s))}</button>`),
-        ].join('');
-      } else {
-        filtersEl.hidden = true;
-        filtersEl.innerHTML = '';
-      }
-    } else if (activeCat && subFilter) {
-      filtersEl.hidden = false;
-      const subs = [...new Set(MD3Store.getProducts().filter((p) => canonicalCat(p.category) === activeCat).map((p) => p.sub))].filter(Boolean);
-      filtersEl.innerHTML = [
-        `<button type="button" class="boutique-filter" onclick="setSub(null)">${L('shop-all')}</button>`,
-        ...subs.map((s) => {
-          const active = s === subFilter ? ' active' : '';
-          return `<button type="button" class="boutique-filter${active}" onclick="setSub('${s.replace(/'/g, "\\'")}')">${MD3Shop.esc(MD3Lang.translateSub(s))}</button>`;
-        }),
-      ].join('');
-    } else {
-      filtersEl.hidden = true;
-      filtersEl.innerHTML = '';
-    }
-
-    if (!n) {
-      grid.innerHTML = '';
-      empty.hidden = false;
-      empty.textContent = L('shop-empty-filter');
-      return;
-    }
-    empty.hidden = true;
-    MD3Shop.renderGrid(grid, products);
-  }
-
-  function boot() {
-    renderBoutique();
-    MD3Header.updateCartBadge();
-    MD3Header.updateAuth();
-  }
-
-  window.setSub = setSub;
-  MD3Lang.init({
-    onChange() {
-      if (typeof MD3Currency !== 'undefined') MD3Currency.refreshCurrency();
-      MD3Lang.refreshUI();
-      boot();
-    },
-  });
-  MD3Store.init().then(boot).catch(boot);
-  window.addEventListener('md3-products-updated', renderBoutique);
-  window.addEventListener('md3-carts-updated', () => MD3Header.updateCartBadge());
-</script>
+<script defer src="md3-shop-render.js?v=31"></script>
+<script defer src="md3-boutique-boot.js?v=5"></script>
 </body>
 </html>

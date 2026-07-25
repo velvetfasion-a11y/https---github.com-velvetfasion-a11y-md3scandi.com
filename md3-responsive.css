@@ -19,8 +19,11 @@
 
 /* Safe areas (iPhone notch / home bar) — keep on chrome, not body (avoids 100vw overflow) */
 html, body {
+  margin: 0;
+  padding: 0;
   max-width: 100%;
   overflow-x: clip;
+  background: #fff;
 }
 
 @supports (padding: max(0px)) {
@@ -93,9 +96,14 @@ html.is-mobile #md3-hero.home-hero,
 html[data-viewport='mobile'] #md3-hero.home-hero--cinema,
 html.is-mobile #md3-hero.home-hero--cinema {
   aspect-ratio: auto;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
   min-height: 100svh;
   min-height: 100dvh;
+  height: auto;
   max-height: none;
+  border-radius: 0;
 }
 
 html[data-viewport='mobile'] .home-hero-heading.only-mobile,
@@ -299,6 +307,14 @@ html.is-mobile .product-page-wrap {
   padding: 1.25rem var(--md3-page-pad-mobile) 2.5rem;
 }
 
+/* Versace-style sticky gallery + sliding sheet on product phones */
+html[data-viewport='mobile'] body.product-page .product-page-wrap,
+html.is-mobile body.product-page .product-page-wrap {
+  display: block;
+  padding: 0 0 4rem;
+  max-width: 100%;
+}
+
 html[data-viewport='mobile'] .md3-shop-toast,
 html.is-mobile .md3-shop-toast {
   bottom: max(1.25rem, env(safe-area-inset-bottom));
@@ -369,12 +385,31 @@ html.is-mobile .md3-shop-toast {
   }
 
   .cart-item {
-    grid-template-columns: 72px 1fr !important;
-    gap: 12px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    gap: 12px 14px !important;
+    grid-template-columns: none !important;
   }
 
+  .cart-item-visual {
+    flex: 0 0 72px !important;
+    width: 72px !important;
+    height: 96px !important;
+  }
+
+  .cart-item-body {
+    flex: 1 1 calc(100% - 90px) !important;
+    min-width: 0 !important;
+  }
+
+  .cart-item-actions,
   .cart-item > :last-child {
-    grid-column: 1 / -1;
+    grid-column: auto !important;
+    flex: 1 1 100% !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
   }
 
   .product-page-wrap {
