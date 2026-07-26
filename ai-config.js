@@ -1,11 +1,10 @@
 /**
  * Public AI settings only — NO API keys.
- * Gemini runs on Cloud Functions / local API (scripts/dev-admin-ai.mjs).
- * Keys: .env GEMINI_API_KEY → Functions secrets / local server only.
+ * Gemini: Cloud Functions / node scripts/dev-admin-ai.mjs (key only in .env).
  */
 window.MD3_AI_CONFIG = {
   "provider": "gemini",
-  "adminAiBaseUrl": "http://127.0.0.1:8787",
+  "adminAiBaseUrl": "https://europe-west1-md3scadi.cloudfunctions.net",
   "geminiModel": "gemini-3-flash-preview",
   "geminiImageModel": "gemini-2.5-flash-image",
   "geminiImageSize": "1K",

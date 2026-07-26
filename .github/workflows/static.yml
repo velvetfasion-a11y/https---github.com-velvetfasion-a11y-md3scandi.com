@@ -76,6 +76,7 @@ jobs:
           rm -f storefront-full-bundle.txt md3-hero-stickers.js
           rm -rf functions/node_modules exports
           rm -f ai-secrets.js
+          # firebase-config.js is generated in the previous step from GitHub secrets (not in git)
           echo "Pruned unused deploy bloat"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

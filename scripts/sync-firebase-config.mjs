@@ -59,9 +59,7 @@ if (missing.length) {
   }
   console.error('Error: ' + msg);
   if (isCI()) {
-    console.error(
-      'Add FIREBASE_* secrets in GitHub → Settings → Secrets → Actions, or commit a valid firebase-config.js.'
-    );
+    console.error('Add FIREBASE_* secrets in GitHub → Settings → Secrets → Actions.');
   } else {
     console.error('Set FIREBASE_* in .env and re-run this script.');
   }
@@ -69,8 +67,8 @@ if (missing.length) {
 }
 
 const body = `/**
- * AUTO-GENERATED — do not edit. All values belong in .env only.
- * Run: node scripts/sync-firebase-config.mjs
+ * AUTO-GENERATED from .env — DO NOT COMMIT.
+ * Source of truth: .env (FIREBASE_*). Regenerate: node scripts/sync-firebase-config.mjs
  */
 window.MD3_FIREBASE_CONFIG = ${JSON.stringify(config, null, 2)};
 `;

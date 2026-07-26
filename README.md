@@ -32,7 +32,7 @@ Puis : [http://localhost:8080](http://localhost:8080)
 | `compte.html` | Compte, profil, admin |
 | `md3-store.js` | Boutique (cache local + sync Firebase) |
 | `md3-firebase.js` | Sync cloud Firestore + Storage |
-| `firebase-config.js` | Auto-generated Firebase config (gitignored — from `.env`) |
+| `firebase-config.js` | **Gitignored** — generated from `.env` only (`node scripts/sync-firebase-config.mjs`) |
 | `md3-email.js` | Envoi du code de confirmation (EmailJS) |
 | `email-config.js` | Clés EmailJS (à remplir) |
 | `.env` | **All secrets** (Firebase, reCAPTCHA, Gemini, OAuth) — copy from `.env.example` |
@@ -50,7 +50,7 @@ cp .env.example .env
 node scripts/sync-config.mjs
 ```
 
-Do **not** commit `.env`, `firebase-config.js`, or `ai-secrets.js`.
+Do **not** commit `.env`, `firebase-config.js`, or `ai-secrets.js`. Real API keys must exist only in `.env` (and GitHub/Functions secrets for deploy).
 
 ### Admin AI (Gemini)
 
