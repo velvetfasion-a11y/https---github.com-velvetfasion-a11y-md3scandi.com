@@ -345,6 +345,7 @@
         : [];
     return `You are MD3 Scandi admin assistant — full control over the MD3 Scandi website (homepage, shop, products).
 You remember the full conversation. Use prior messages to resolve "this product", "change this", "it", "them", follow-ups, and multi-step requests.
+REPLY FIELD: always set "reply" to "" (empty). The UI shows short status lines only — never narrate, never list prompts, never write French/English paragraphs.
 
 You can change ANYTHING on the site:
 - Site images (attach photo + say which section): hero, fashion/mode card, maison card, lifestyle card, limited edition card, manifesto background
@@ -672,17 +673,16 @@ Never reuse or overwrite an existing product id.`;
     );
   }
 
-  function cleanCloudReply(reply) {
+  function cleanCloudReply(reply, opts) {
+    // Status lines only — never show Gemini chat fluff in the admin UI
+    if (opts && opts.suppress) return '';
     let s = String(reply == null ? '' : reply).trim();
     if (!s) return '';
-    // Drop anything that looks like action JSON / gallery prompts
     if (/[\[{]\s*"?(?:type|actions|galleryShots|prompt|imageIndex)"?/i.test(s)) return '';
-    if (/flat lay|close-up|lifestyle|studio|photorealistic|catalog shot/i.test(s) && s.length > 120) {
-      return '';
-    }
-    // One short sentence max
+    if (/j.?ai (?:ajout|génér|mis|créé)|c.?est fait|je (?:m.?en occupe|génère|vais)/i.test(s)) return '';
+    if (/flat lay|close-up|lifestyle|studio|photorealistic|catalog shot|mannequin|portant/i.test(s)) return '';
     s = s.replace(/\s+/g, ' ');
-    if (s.length > 140) s = s.slice(0, 137).trim() + '…';
+    if (s.length > 72) return '';
     return s;
   }
 
@@ -1024,18 +1024,26 @@ Never reuse or overwrite an existing product id.`;
 
   function buildImageGenerateAction(text, imgs) {
     const productRef =
-      sessionCtx.resolvedProductId != null || getActiveProduct()
+      sessionCtx.resolvedProductId != null || sessionCtx.focusedProductId != null || getActiveProduct()
         ? 'focused'
         : 'last';
-    const modelShot = /model|mannequin|portrait|wearing|background|studio/.test(normalizeUserIntentText(text).toLowerCase());
+    const modelShot = wantsModelWear(text);
+    if (modelShot) {
+      return {
+        type: 'generate_product_images',
+        match: productRef,
+        referenceImageIndex: 0,
+        replaceGallery: false,
+        galleryShots: modelWearGalleryShots(text),
+        useUploadedReference: !!(imgs && imgs.length),
+      };
+    }
     return {
       type: 'replace_product_image',
       match: productRef,
       prompt:
         buildImageEditPrompt(text) ||
-        (modelShot
-          ? 'Professional fashion model wearing the same garment from the reference photo, full-body e-commerce catalog shot, Scandinavian minimal styling, soft natural light'
-          : 'Fresh professional e-commerce catalog photo of the same product, new angle, lighting, and Scandinavian minimal styling'),
+        'Fresh professional e-commerce catalog photo of the same product, new angle, lighting, and Scandinavian minimal styling',
       referenceImageIndex: 0,
       catalogImageIndex: sessionCtx.resolvedImageIndex != null ? sessionCtx.resolvedImageIndex : 0,
       useUploadedReference: !!(imgs && imgs.length),
@@ -1202,9 +1210,17 @@ Never reuse or overwrite an existing product id.`;
   function updateFocusChip() {
     const el = $('adminAiFocus');
     if (!el) return;
-    const active = getActiveProduct();
-    const id = active ? active.id : sessionCtx.focusedProductId;
-    const name = active ? active.name : sessionCtx.focusedProductName;
+    // Prefer last AI-targeted product over whatever is open in the editor
+    let id = sessionCtx.focusedProductId;
+    let name = sessionCtx.focusedProductName;
+    if (id == null) {
+      const active = getActiveProduct();
+      id = active ? active.id : null;
+      name = active ? active.name : '';
+    } else if (!name) {
+      const hit = (S().getProducts() || []).find((p) => Number(p.id) === Number(id));
+      name = hit ? hit.name : '';
+    }
     if (id == null || !name) {
       el.hidden = true;
       el.textContent = '';
@@ -1323,6 +1339,7 @@ Never reuse or overwrite an existing product id.`;
     if (/\bnew products?\b/.test(t) || /\bnouveau produits?\b/.test(t) || /\bny(?:a)? produkter?\b/.test(t)) {
       return false;
     }
+    if (wantsModelWear(t) && !/(?:add|create|make|build).*(?:new\s+)?(?:products?|produits?)/.test(t)) return true;
     return (
       /\bthis\s+product\b/.test(t) ||
       /(?:den\s+här|denna)\s+produkten?\b/.test(t) ||
@@ -1332,7 +1349,8 @@ Never reuse or overwrite an existing product id.`;
       /(?:change|replace|swap|update)\s+(?:the\s+)?(?:existing\s+)?(?:product\s+)?(?:image|photo|picture|bild)\b/.test(t) &&
         /(?:this|existing|current|focused)\b/.test(t) ||
       /(?:delete|remove)\s+(?:this\s+)?(?:product|item|produit|produkt)\b/.test(t) ||
-      /(?:same|existing|current)\s+product\b/.test(t)
+      /(?:same|existing|current)\s+product\b/.test(t) ||
+      /(?:didn.?t|doesn.?t|not).*(?:model|mannequin|wear|image|photo)/.test(t)
     );
   }
 
@@ -1342,11 +1360,12 @@ Never reuse or overwrite an existing product id.`;
    */
   function userWantsAddProduct(text, files) {
     if (inferSiteImageSlot(text)) return false;
+    if (wantsModelWear(text) && !explicitWantsNewProduct(text)) return false;
     if (userExplicitlyWantsMutateExisting(text)) return false;
     if (explicitWantsNewProduct(text)) return true;
-    const imgs = getEffectiveFiles(files, text);
-    // Attached product photos default to NEW catalogue entries
-    if (imgs.length) return true;
+    // Only THIS message's fresh attachments default to add — not carried chat photos
+    const fresh = files && files.length ? files : [];
+    if (fresh.length) return true;
     const t = normalizeUserIntentText(text).toLowerCase().trim();
     if (!t) return false;
     return (
@@ -1389,7 +1408,40 @@ Never reuse or overwrite an existing product id.`;
 
   function sanitizeActionsForAddMode(actions, text, files) {
     if (!shouldForceAddProducts(text, files)) return actions || [];
-    const out = [];
+    const site = [];
+    const addsByKey = new Map();
+    const model = wantsModelWear(text);
+    const mergeAdd = (key, action) => {
+      if (!action) return;
+      const prev = addsByKey.get(key);
+      const next = {
+        ...(prev || {}),
+        ...action,
+        type: 'add_product',
+        name: preferProductName(action.name, prev && prev.name),
+        category: action.category || (prev && prev.category),
+        sub: action.sub || (prev && prev.sub),
+        price: action.price != null ? action.price : prev && prev.price,
+        stock: action.stock != null ? action.stock : prev && prev.stock,
+        desc: action.desc || action.description || (prev && (prev.desc || prev.description)) || '',
+        imageIndex: action.imageIndex != null ? action.imageIndex : prev && prev.imageIndex,
+        imageIndices: action.imageIndices || (prev && prev.imageIndices),
+      };
+      if (model || action.generateGallery || (action.galleryShots && action.galleryShots.length)) {
+        next.generateGallery = true;
+        next.galleryShots =
+          (model ? modelWearGalleryShots(text) : null) ||
+          action.galleryShots ||
+          action.shots ||
+          (prev && prev.galleryShots) ||
+          defaultGalleryShots(text);
+      } else {
+        next.generateGallery = false;
+        next.galleryShots = [];
+      }
+      addsByKey.set(key, next);
+    };
+
     (actions || []).forEach((action) => {
       if (!action || !action.type) return;
       const type = String(action.type);
@@ -1400,20 +1452,57 @@ Never reuse or overwrite an existing product id.`;
         type === 'set_fashion_image' ||
         type === 'set_featured'
       ) {
-        out.push(action);
+        site.push(action);
         return;
       }
       if (type === 'delete_product' || type === 'seed_defaults') return;
+
+      if (type === 'add_product') {
+        const key = action.imageIndex != null ? 'i' + action.imageIndex : 'solo';
+        mergeAdd(key, action);
+        return;
+      }
+
       if (
-        /^(add_product|update_product|replace_product_image|regenerate_product_image|generate_product_images|update_product_image|append_product_images)$/.test(
+        /^(update_product|replace_product_image|regenerate_product_image|generate_product_images|update_product_image|append_product_images)$/.test(
           type
         )
       ) {
-        out.push(type === 'add_product' ? { ...action, generateGallery: false } : actionToAddProduct(action));
-        return;
+        // Never spawn a second catalogue row — fold image work into the add
+        const idx =
+          action.imageIndex != null
+            ? action.imageIndex
+            : action.referenceImageIndex != null
+              ? action.referenceImageIndex
+              : 0;
+        const key = files && files.length > 1 ? 'i' + idx : 'solo';
+        const base = actionToAddProduct(action) || { type: 'add_product', imageIndex: idx };
+        if (type === 'generate_product_images' || type === 'replace_product_image' || type === 'regenerate_product_image') {
+          base.generateGallery = true;
+          base.galleryShots =
+            (model ? modelWearGalleryShots(text) : null) ||
+            action.galleryShots ||
+            action.shots ||
+            defaultGalleryShots(text);
+          if (type !== 'generate_product_images' && action.prompt) {
+            base.galleryShots = [action.prompt].concat(base.galleryShots || []).slice(0, MAX_GALLERY_SHOTS);
+          }
+        }
+        mergeAdd(key, base);
       }
     });
-    return out;
+
+    const adds = Array.from(addsByKey.values());
+    if (!adds.length && (files || []).length) {
+      return site.concat(buildAddProductActions(text, files, { generateGallery: model }));
+    }
+    if (model) {
+      adds.forEach((a) => {
+        a.generateGallery = true;
+        a.galleryShots = modelWearGalleryShots(text);
+      });
+    }
+    return site.concat(adds);
   }
 
   function refersExistingProduct(text, files) {
@@ -1428,7 +1517,8 @@ Never reuse or overwrite an existing product id.`;
     if (!t) return false;
     if (inferSiteImageSlot(text)) return false;
     // Never treat "make/add a new product" as editing the open product
-    if (explicitWantsNewProduct(text) || userWantsAddProduct(text, [])) return false;
+    if (explicitWantsNewProduct(text)) return false;
+    if (wantsModelWear(text)) return true;
     return (
       /^(?:the\s+)?(?:image|photo|picture|model|shot|clothes?|garment)\s*\.?$/.test(t) ||
       /(?:change|replace|swap|update|different|another)\s+(?:the\s+)?(?:model|mannequin|photo|image|picture|shot)/.test(t) ||
@@ -1438,21 +1528,69 @@ Never reuse or overwrite an existing product id.`;
       /(?:for|of)\s+(?:the\s+)?(?:clothes?|clothing|garment|outfit|product)/.test(t) ||
       /(?:clothes?|clothing|garment|outfit).*(?:model|image|photo)/.test(t) ||
       /(?:change|replace).*(?:clothes?|clothing|garment|model)/.test(t) ||
-      /\bthis\s+(?:model|image|photo|product)\b/.test(t)
+      /\bthis\s+(?:model|image|photo|product)\b/.test(t) ||
+      /(?:didn.?t|doesn.?t|not).*(?:model|mannequin|wear)/.test(t)
     );
   }
 
-  function defaultGalleryShots(text) {
-    const t = String(text || '').toLowerCase();
-    const clothing = /cloth|clothing|vetement|vêtement|robe|dress|wear|outfit|child|kid/.test(t);
-    const base = clothing
-      ? 'Same garment as reference, professional clothing catalog flat lay on cream linen'
-      : 'Same product as reference, professional Scandinavian e-commerce flat lay on neutral background';
+  function wantsModelWear(text) {
+    const t = normalizeUserIntentText(text).toLowerCase();
+    if (!t) return false;
+    return (
+      /(?:model|mannequin|modèle|modele)\b/.test(t) ||
+      /(?:wear(?:ing)?|worn|portant|porter|porte|habill)/.test(t) ||
+      /(?:on\s+(?:a\s+)?(?:model|mannequin)|with\s+(?:a\s+)?(?:model|mannequin))/.test(t) ||
+      /(?:full[\s-]?body|lookbook|editorial)/.test(t)
+    );
+  }
+
+  function modelWearPrompt(text) {
+    const extra = normalizeUserIntentText(text).trim();
+    const detail =
+      extra && !/^(?:yes|ok|okay|please|do it|go ahead)\b/i.test(extra)
+        ? ' User request: ' + extra.slice(0, 200) + '.'
+        : '';
+    return (
+      'Professional fashion model wearing the exact same garment/outfit from the reference photo. ' +
+      'Full-body e-commerce catalog shot, natural pose, Scandinavian minimal styling, soft daylight, ' +
+      'clean studio or bright interior, photorealistic, no text or watermarks.' +
+      detail
+    );
+  }
+
+  function modelWearGalleryShots(text) {
     return [
-      base + ', full item visible, soft natural light',
+      modelWearPrompt(text),
+      'Same garment on a fashion model, three-quarter angle, full outfit visible, soft Nordic light, catalog quality',
+    ].slice(0, MAX_GALLERY_SHOTS);
+  }
+
+  function isGenericProductName(name) {
+    const n = String(name || '').trim();
+    return !n || /^new product(\s+[\d\- :]+)?$/i.test(n) || /^product \d+$/i.test(n);
+  }
+
+  function preferProductName(a, b) {
+    if (!isGenericProductName(a) && isGenericProductName(b)) return a;
+    if (!isGenericProductName(b) && isGenericProductName(a)) return b;
+    if (a && b) return String(a).length >= String(b).length ? a : b;
+    return a || b || 'New product';
+  }
+
+  function defaultGalleryShots(text) {
+    if (wantsModelWear(text)) return modelWearGalleryShots(text);
+    const t = String(text || '').toLowerCase();
+    const clothing = /cloth|clothing|vetement|vêtement|robe|dress|ensemble|outfit|child|kid|mode|fashion/.test(t);
+    if (clothing) {
+      return [
+        modelWearPrompt(text),
+        'Same garment flat lay on cream linen, full item visible, soft natural light',
+      ].slice(0, MAX_GALLERY_SHOTS);
+    }
+    return [
+      'Same product as reference, professional Scandinavian e-commerce flat lay on neutral background, soft natural light',
       'Close-up detail shot of material texture, same product',
-      'Lifestyle Nordic minimalist interior scene featuring the same product',
-    ];
+    ].slice(0, MAX_GALLERY_SHOTS);
   }
 
   function convertAddToExistingActions(action, text, files, intent) {
@@ -1699,6 +1837,7 @@ Never reuse or overwrite an existing product id.`;
     const catMatch = text.match(/\b(mode|maison|lifestyle|fashion|home|édition limitée|edition limitee)\b/i);
     const wantsGallery =
       (opts && opts.generateGallery) ||
+      wantsModelWear(text) ||
       /(?:generate|make|create).*(?:gallery|display images|more images|extra images)|(?:ai|nano)\s+gallery/.test(t);
 
     const targets = imgs.length ? imgs : [null];
@@ -1710,14 +1849,8 @@ Never reuse or overwrite an existing product id.`;
       stock: 5,
       desc: '',
       imageIndex: imgs.length ? i : undefined,
-      generateGallery: wantsGallery && imgs.length === 1,
-      galleryShots: wantsGallery
-        ? [
-            'Flat lay catalog shot on neutral background',
-            'Detail close-up of material',
-            'Lifestyle Scandinavian interior',
-          ]
-        : [],
+      generateGallery: !!(wantsGallery && (imgs.length <= 1 || targets.length === 1)),
+      galleryShots: wantsGallery ? defaultGalleryShots(text) : [],
     }));
   }
 
@@ -2554,13 +2687,12 @@ Never reuse or overwrite an existing product id.`;
       if (!reference) return msg('admin-ai-need-image', 'Attach a reference image or add a product photo first.');
 
       const shots = (
-        action.galleryShots ||
-        action.shots ||
-        action.prompts || [
-          'Flat lay on neutral linen, full item visible, studio catalog shot',
-          'Close-up detail of material texture and craftsmanship',
-          'Lifestyle scene in a bright Nordic minimalist interior',
-        ]
+        wantsModelWear(sessionCtx.lastUserText || '')
+          ? modelWearGalleryShots(sessionCtx.lastUserText || '')
+          : action.galleryShots ||
+            action.shots ||
+            action.prompts ||
+            defaultGalleryShots(sessionCtx.lastUserText || '')
       ).slice(0, MAX_GALLERY_SHOTS);
 
       if (onProgress) {
@@ -2632,11 +2764,12 @@ Never reuse or overwrite an existing product id.`;
       const reference = action.useUploadedReference !== false ? uploadedRef || catalogRef : catalogRef || uploadedRef;
       if (!reference) return msg('admin-ai-need-image', 'Attach an image with + first.');
 
-      const prompt =
-        action.prompt ||
-        action.description ||
-        buildImageEditPrompt(sessionCtx.lastUserText || '') ||
-        'Same product as the reference, fresh professional e-commerce catalog photo with different angle, lighting, and Scandinavian minimal styling';
+      const prompt = wantsModelWear(sessionCtx.lastUserText || '')
+        ? modelWearPrompt(sessionCtx.lastUserText || '')
+        : action.prompt ||
+          action.description ||
+          buildImageEditPrompt(sessionCtx.lastUserText || '') ||
+          'Same product as the reference, fresh professional e-commerce catalog photo with different angle, lighting, and Scandinavian minimal styling';
 
       if (onProgress) {
         setLastBubble(photoProgressHtml(0, 1));
@@ -2691,8 +2824,11 @@ Never reuse or overwrite an existing product id.`;
           const idx = (resolveImageIndices(action, files)[0] || 0) + 1;
           name = 'Product ' + idx;
         } else {
-          name = 'New product ' + new Date().toISOString().slice(5, 16).replace('T', ' ');
+          name = extractNewProductName(sessionCtx.lastUserText || '', 0, 1) || 'New product';
         }
+      }
+      if (type === 'add_product' && isGenericProductName(name) && action.name && !isGenericProductName(action.name)) {
+        name = action.name;
       }
       if (!name) return msg('admin-ai-err-name', 'Product name missing.');
 
@@ -2740,9 +2876,7 @@ Never reuse or overwrite an existing product id.`;
         products.push(S().normalizeProductFields(item));
         await S().saveProducts(products, { onlyIds: [id] });
         S().syncHomeFeaturedFlags();
-        trackProduct(name);
-        sessionCtx.focusedProductId = id;
-        sessionCtx.focusedProductName = name;
+        setFocusedProduct(id, name);
         sessionCtx.resolvedProductId = null;
         const imgNote = productImages.length > 1 ? ' (' + productImages.length + ' images)' : '';
         return msg('admin-ai-done-add', 'Product added: ') + esc(name) + imgNote;
@@ -3165,6 +3299,9 @@ Never reuse or overwrite an existing product id.`;
     if (imgs.length && wantsMultipleDifferentProducts(text, imgs)) {
       return buildAddProductActions(text, imgs);
     }
+    if (wantsModelWear(text) && (getActiveProduct() || imgs.length)) {
+      return [buildImageGenerateAction(text, imgs)];
+    }
     if (userWantsAddProduct(text, imgs) || explicitWantsNewProduct(text)) {
       return buildAddProductActions(text, imgs);
     }
@@ -3403,15 +3540,27 @@ Never reuse or overwrite an existing product id.`;
       if (shouldForceAddProducts(text, workFiles)) {
         const hasAdd = (actions || []).some((a) => a && a.type === 'add_product');
         if (!hasAdd) {
-          actions = buildAddProductActions(text, workFiles);
+          actions = buildAddProductActions(text, workFiles, { generateGallery: wantsModelWear(text) });
         } else {
           actions = sanitizeActionsForAddMode(actions, text, workFiles);
+        }
+      } else if (wantsModelWear(text)) {
+        // Follow-ups like "make a model wear it" must edit the existing product, never add
+        const hasImageAction = (actions || []).some(
+          (a) =>
+            a &&
+            /^(replace_product_image|regenerate_product_image|generate_product_images|update_product_image)$/.test(
+              a.type
+            )
+        );
+        if (!hasImageAction) {
+          actions = [buildImageGenerateAction(text, workFiles)];
         }
       }
 
       if (!actions.length) {
         const intro = (() => {
-          const c = cleanCloudReply(parsed && parsed.reply);
+          const c = cleanCloudReply(parsed && parsed.reply, { suppress: false });
           return c ? esc(c) + '<br>' : '';
         })();
         let hint = '';
@@ -3450,9 +3599,8 @@ Never reuse or overwrite an existing product id.`;
       }
 
       const exec = await executeAll(actions, workFiles, true);
-      const cleanReply = cleanCloudReply(parsed && parsed.reply);
-      const intro = cleanReply ? esc(cleanReply) + '<br>' : '';
-      replyHtml = finalizeAssistantReply({ ...exec, html: intro + exec.html });
+      // Never prepend Gemini chatter — status lines are enough
+      replyHtml = finalizeAssistantReply({ ...exec, html: exec.html });
 
       if (!hasCloudAI() && !$('adminAiMessages').dataset.hinted) {
         replyHtml +=
@@ -3617,12 +3765,9 @@ Never reuse or overwrite an existing product id.`;
       el.textContent = cloudAISetupMessage();
       return;
     }
-    // Key works in the browser — warn that it is publicly readable without HTTP referrer restrictions
-    el.hidden = false;
-    el.textContent = msg(
-      'admin-ai-key-public-warn',
-      'Gemini key is loaded in the browser. Restrict it to md3scandi.com HTTP referrers in Google AI Studio / Cloud Console, and rotate if leaked.'
-    );
+    // Key works — keep the chat clean; referrer lockdown is documented in .env.example
+    el.hidden = true;
+    el.textContent = '';
   }
 
   function init() {
