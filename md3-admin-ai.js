@@ -2553,17 +2553,18 @@ Never reuse or overwrite an existing product id.`;
         target.image;
       if (!reference) return msg('admin-ai-need-image', 'Attach a reference image or add a product photo first.');
 
-      const shots =
+      const shots = (
         action.galleryShots ||
         action.shots ||
         action.prompts || [
           'Flat lay on neutral linen, full item visible, studio catalog shot',
           'Close-up detail of material texture and craftsmanship',
           'Lifestyle scene in a bright Nordic minimalist interior',
-        ];
+        ]
+      ).slice(0, MAX_GALLERY_SHOTS);
 
       if (onProgress) {
-        setLastBubble(photoProgressHtml(0, shots.length));
+        setLastBubble(photoProgressHtml(0, shots.length || 1));
       }
 
       const generated = await buildGalleryImages(reference, shots, (n, total) => {
