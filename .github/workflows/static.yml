@@ -58,13 +58,18 @@ jobs:
               process.exit(1);
             }
             const ai = fs.readFileSync('ai-config.js', 'utf8');
-            const g = (ai.match(/\"geminiApiKey\"\\s*:\\s*\"([^\"]*)\"/) || [])[1] || '';
-            const o = (ai.match(/\"openaiApiKey\"\\s*:\\s*\"([^\"]*)\"/) || [])[1] || '';
-            if (g.length < 8 && o.length < 8) {
-              console.error('ai-config.js is missing API keys — refusing broken deploy.');
+            if (/geminiApiKey|openaiApiKey/.test(ai)) {
+              console.error('ai-config.js must not contain API keys — refusing broken deploy.');
               process.exit(1);
             }
-            console.log('firebase-config.js + ai-config.js OK');
+            const sec = fs.readFileSync('ai-secrets.js', 'utf8');
+            const g = (sec.match(/\"geminiApiKey\"\\s*:\\s*\"([^\"]*)\"/) || [])[1] || '';
+            const o = (sec.match(/\"openaiApiKey\"\\s*:\\s*\"([^\"]*)\"/) || [])[1] || '';
+            if (g.length < 8 && o.length < 8) {
+              console.error('ai-secrets.js is missing API keys — refusing broken deploy.');
+              process.exit(1);
+            }
+            console.log('firebase-config.js + ai-config.js + ai-secrets.js OK');
           "
       - name: Setup Pages
         uses: actions/configure-pages@v5

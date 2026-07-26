@@ -68,7 +68,10 @@
   }
 
   function getCfg() {
-    return global.MD3_AI_CONFIG || {};
+    // Public settings (ai-config.js) + secrets (ai-secrets.js from .env / CI)
+    const pub = global.MD3_AI_CONFIG || {};
+    const sec = global.MD3_AI_SECRETS || {};
+    return Object.assign({}, pub, sec);
   }
 
   function geminiKey() {

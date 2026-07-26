@@ -36,7 +36,8 @@ Puis : [http://localhost:8080](http://localhost:8080)
 | `md3-email.js` | Envoi du code de confirmation (EmailJS) |
 | `email-config.js` | Clés EmailJS (à remplir) |
 | `.env` | **All secrets** (Firebase, reCAPTCHA, Gemini, OAuth) — copy from `.env.example` |
-| `ai-config.js` | Auto-generated admin AI (gitignored) |
+| `ai-config.js` | Public AI models/settings only (no API keys) |
+| `ai-secrets.js` | Auto-generated keys from `.env` / CI (gitignored) |
 
 ## Configuration (`.env`)
 
@@ -48,7 +49,7 @@ cp .env.example .env
 node scripts/sync-config.mjs
 ```
 
-Do **not** commit `.env`, `firebase-config.js`, or `ai-config.js`.
+Do **not** commit `.env`, `firebase-config.js`, or `ai-secrets.js`.
 
 **GitHub Pages:** add these Actions secrets (same values as `.env`):
 
