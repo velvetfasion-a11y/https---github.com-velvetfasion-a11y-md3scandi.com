@@ -60,6 +60,16 @@
     return CATEGORY_ALIASES[categoryKey(raw)] || raw;
   }
 
+  function publicAssetUrl(url) {
+    if (url == null) return '';
+    const s = String(url).trim();
+    if (!s) return '';
+    if (/^(https?:|data:|blob:)/i.test(s)) return s;
+    if (s.startsWith('//')) return s;
+    if (s.startsWith('/')) return s;
+    return '/' + s.replace(/^\.\//, '');
+  }
+
   function imageUrlRank(url) {
     const s = String(url || '');
     if (/^https?:\/\//i.test(s)) return 0;
@@ -73,6 +83,7 @@
     const list = Array.isArray(p.images) ? p.images : [];
     const images = [...list, p.image]
       .filter((img) => typeof img === 'string' && img.trim())
+      .map(publicAssetUrl)
       .filter((img, idx, arr) => arr.indexOf(img) === idx)
       // Prefer Storage/CDN https over huge data: URLs (data URLs freeze the main thread)
       .sort((a, b) => imageUrlRank(a) - imageUrlRank(b))

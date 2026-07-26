@@ -22,9 +22,15 @@
    */
   function progressiveImgHtml(src, opts) {
     const o = opts || {};
-    const fallback = o.fallback || '/images/cat-mode.jpg';
-    const real = String(src || fallback || '').trim() || fallback;
-    const ph = String(fallback || '/images/cat-mode.jpg');
+    function abs(u) {
+      const s = String(u || '').trim();
+      if (!s) return '';
+      if (/^(https?:|data:|blob:)/i.test(s) || s.startsWith('/') || s.startsWith('//')) return s;
+      return '/' + s.replace(/^\.\//, '');
+    }
+    const fallback = abs(o.fallback || '/images/cat-mode.jpg');
+    const real = abs(String(src || fallback || '').trim() || fallback);
+    const ph = abs(fallback || '/images/cat-mode.jpg');
     const same = real === ph;
     const eager = !!o.eager;
     const alt = o.alt || '';

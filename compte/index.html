@@ -1303,14 +1303,14 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="/md3-firebase.js?v=11"></script>
 <script src="/md3-sizes.js?v=2"></script>
-<script src="/md3-store.js?v=32"></script>
+<script src="/md3-store.js?v=33"></script>
 <script src="/md3-auth.js?v=4"></script>
 <script src="/md3-nav-icons.js"></script>
 <script src="/md3-currency.js?v=6"></script>
 <script src="/md3-header.js?v=26"></script>
 <script src="/ai-config.js?v=3" onerror="window.MD3_AI_CONFIG=window.MD3_AI_CONFIG||{}"></script><!-- generated from .env via scripts/sync-ai-config.mjs -->
 <script src="/contact-config.js?v=3"></script>
-<script src="/md3-site-assets.js?v=13"></script>
+<script src="/md3-site-assets.js?v=14"></script>
 <script src="/md3-admin-ai.js?v=23"></script>
 <script src="/md3-lang.js?v=44"></script>
 <script src="/md3-taxonomy.js?v=2"></script>
@@ -1395,7 +1395,7 @@ function renderProductPhotoSlots() {
     if (!img) continue;
     const active = i === activeProductImageIndex ? ' active' : '';
     html += `<button type="button" class="admin-image-thumb${active}" data-index="${i}">
-      <img src="/${esc(img)}" alt="" />
+      <img src="${esc(img)}" alt="" />
       ${i === 0 ? `<span class="admin-image-primary">${esc(L('photo-main'))}</span>` : ''}
       <span class="admin-image-remove" data-remove="${i}" role="button" aria-label="×">&times;</span>
     </button>`;
@@ -2470,7 +2470,7 @@ function renderAdminSiteImages() {
         return `
         <article class="admin-site-image-card" data-slot="${esc(item.slot)}">
           <button type="button" class="admin-site-image-preview" onclick="openSiteImageEditor('${esc(item.slot)}')">
-            ${preview ? `<img src="/${preview}" alt="${esc(label)}" />` : '<div class="admin-site-image-empty">—</div>'}
+            ${preview ? `<img src="${preview}" alt="${esc(label)}" />` : '<div class="admin-site-image-empty">—</div>'}
           </button>
           <div class="admin-site-image-body">
             <h2>${esc(label)}</h2>
@@ -2684,7 +2684,7 @@ function paintAdminProductsList() {
           ? `<button type="button" class="admin-star admin-star--on" title="${esc(L('stat-featured'))}" aria-label="${esc(L('stat-featured'))}" onclick="event.stopPropagation();toggleFeatured(${p.id}, false)">★</button>`
           : `<button type="button" class="admin-star" title="${esc(L('label-featured') || 'En vedette')}" aria-label="Star" onclick="event.stopPropagation();toggleFeatured(${p.id}, true)">☆</button>`;
         const thumbHtml = thumb
-          ? `<img class="admin-product-card-img" src="/${esc(thumb)}" alt="${label}" />`
+          ? `<img class="admin-product-card-img" src="${esc(thumb)}" alt="${label}" />`
           : `<span class="admin-product-card-placeholder">${esc(p.emoji || '✦')}</span>`;
         const visLabel = isVisible ? L('admin-visibility-on') : L('admin-visibility-off');
         return `<article class="admin-product-card${aiFocus ? ' admin-product-card--focus' : ''}${isVisible ? '' : ' admin-product-card--hidden'}">

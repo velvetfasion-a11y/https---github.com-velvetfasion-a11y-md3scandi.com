@@ -2,6 +2,17 @@
 (function (global) {
   const KEY = 'md3_site_assets';
 
+  /** Make local asset paths work from nested routes (/compte/, /boutique/, …). */
+  function publicUrl(url) {
+    if (url == null) return '';
+    const s = String(url).trim();
+    if (!s) return '';
+    if (/^(https?:|data:|blob:)/i.test(s)) return s;
+    if (s.startsWith('//')) return s;
+    if (s.startsWith('/')) return s;
+    return '/' + s.replace(/^\.\//, '');
+  }
+
   /** Non-product homepage images. `admin: true` = shown in Admin → Images. */
   const IMAGE_SLOTS = {
     hero: {
@@ -146,16 +157,17 @@
   }
 
   function getImage(slot) {
-    return getImages()[slot] || null;
+    const raw = getImages()[slot] || null;
+    return raw ? publicUrl(raw) : null;
   }
 
   function getDefaultSrc(slot) {
     const meta = IMAGE_SLOTS[slot];
-    return (meta && meta.defaultSrc) || '';
+    return publicUrl((meta && meta.defaultSrc) || '');
   }
 
   function getDisplayUrl(slot) {
-    return getImage(slot) || getDefaultSrc(slot) || '';
+    return publicUrl(getImage(slot) || getDefaultSrc(slot) || '');
   }
 
   function setImage(slot, url) {
@@ -167,7 +179,7 @@
     }
     const d = load();
     d.images = d.images || {};
-    d.images[slot] = url;
+    d.images[slot] = publicUrl(url);
     if (slot === 'hero') d.hero = url;
     if (slot === 'fashion') d.fashion = url;
     d.updatedAt = Date.now();
@@ -222,7 +234,7 @@
     const heroImg = root.querySelector('#md3-hero .hero-bg-img, .hero-bg-img');
     if (heroImg) {
       // Homepage hero is locked to NyZx3.jpg
-      const url = IMAGE_SLOTS.hero.defaultSrc;
+      const url = publicUrl(IMAGE_SLOTS.hero.defaultSrc);
       heroImg.src = url;
       heroImg.setAttribute('src', url);
       const pic = heroImg.closest('picture');
@@ -231,8 +243,8 @@
 
     Object.entries(IMAGE_SLOTS).forEach(([slot, meta]) => {
       if (slot === 'hero' || !meta.selector) return;
-      let url = images[slot] || meta.defaultSrc;
-      if (isHeavyDataUrl(url)) url = meta.defaultSrc || '';
+      let url = publicUrl(images[slot] || meta.defaultSrc);
+      if (isHeavyDataUrl(url)) url = publicUrl(meta.defaultSrc || '');
       if (!url) return;
       const el = root.querySelector(meta.selector);
       if (!el) return;
@@ -312,6 +324,7 @@
   global.MD3SiteAssets = {
     KEY,
     IMAGE_SLOTS,
+    publicUrl,
     load,
     save,
     getImages,

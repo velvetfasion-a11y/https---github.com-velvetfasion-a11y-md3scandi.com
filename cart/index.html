@@ -475,8 +475,8 @@
 <script defer src="/contact-config.js?v=3"></script>
 <script defer src="/md3-firebase.js?v=11"></script>
 <script defer src="/md3-sizes.js?v=2"></script>
-<script defer src="/md3-store.js?v=32"></script>
-<script defer src="/md3-site-assets.js?v=13"></script>
+<script defer src="/md3-store.js?v=33"></script>
+<script defer src="/md3-site-assets.js?v=14"></script>
 <script defer src="/md3-auth.js?v=4"></script>
 <script defer src="/md3-nav-icons.js"></script>
 <script defer src="/md3-currency.js?v=6"></script>
@@ -889,12 +889,12 @@ document.addEventListener('DOMContentLoaded', function () {
       const lineKey = esc(key);
       const thumb = S.productVisualInner
         ? S.productVisualInner(p)
-        : (p.image ? `<img src="/${esc(p.image)}" alt="" loading="lazy" />` : '<span>✦</span>');
+        : (p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" />` : '<span>✦</span>');
       return `<article class="cart-item" data-key="${lineKey}">
-        <div class="cart-item-visual"><a href="/${esc(href)}" aria-hidden="true" tabindex="-1">${thumb}</a></div>
+        <div class="cart-item-visual"><a href="${esc(href)}" aria-hidden="true" tabindex="-1">${thumb}</a></div>
         <div class="cart-item-body">
           <div class="cart-item-meta">${esc([cat, sub].filter(Boolean).join(' · '))}</div>
-          <h2 class="cart-item-name"><a href="/${esc(href)}">${esc(name)}</a></h2>
+          <h2 class="cart-item-name"><a href="${esc(href)}">${esc(name)}</a></h2>
           ${sizeLine}
           <p class="cart-item-price">${MD3Currency.formatPrice(p.price)}</p>
         </div>
