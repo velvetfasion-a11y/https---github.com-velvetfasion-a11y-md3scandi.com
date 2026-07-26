@@ -8,14 +8,14 @@
   /** Longest edge for images shown in chat + sent to the planner model. */
   const AI_ATTACH_MAX_EDGE = 1280;
   /** Longest edge for reference images sent to the image model. */
-  const AI_REF_MAX_EDGE = 1600;
+  const AI_REF_MAX_EDGE = 1280;
   /** Longest edge when saving AI-generated product photos (before Storage upload). */
-  const AI_STORE_MAX_EDGE = 2400;
+  const AI_STORE_MAX_EDGE = 1800;
   /** JPEG quality for stored AI product photos (0–1). */
   const AI_STORE_JPEG_QUALITY = 0.94;
   const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
   const MAX_HISTORY_TURNS = 24;
-  const MAX_GALLERY_SHOTS = 4;
+  const MAX_GALLERY_SHOTS = 2;
   const HISTORY_KEY = 'md3_admin_ai_session';
   const HISTORY_TTL_MS = 30 * 60 * 1000;
   const MAX_PERSISTED_SNAPSHOTS = 10;
@@ -215,15 +215,16 @@
   }
 
   function imageModels() {
-    const preferred = getCfg().geminiImageModel || 'gemini-3-pro-image';
-    return [
-      preferred,
-      'gemini-3-pro-image',
-      'gemini-3-pro-image-preview',
+    // Prefer flash image models for speed; only one fallback.
+    const preferred = getCfg().geminiImageModel || 'gemini-2.5-flash-image';
+    const fallbacks = [
+      'gemini-2.5-flash-image',
       'gemini-3.1-flash-image',
       'gemini-3.1-flash-image-preview',
-      'gemini-2.5-flash-image',
-    ].filter((m, i, a) => a.indexOf(m) === i);
+      'gemini-3-pro-image',
+    ];
+    const list = [preferred].concat(fallbacks.filter((m) => m !== preferred));
+    return list.slice(0, 2);
   }
 
   function dataUrlToGeminiPart(dataUrl) {
@@ -295,13 +296,14 @@ You can change ANYTHING on the site:
 - Products: add, update, delete, images, gallery, prices, featured
 - Restore default product catalogue (seed_defaults)
 
-CRITICAL — read user intent before choosing actions:
-- "change / replace / different image for this product" → UPDATE existing product (never add_product).
-- User attaches a photo of an existing product (or shop screenshot) → identify that product and UPDATE it. Never ask the admin to click a product card.
-- "this product" / "change this" / "update it" → product from attached photo, last product in chat, or product open in the editor.
-- add_product ONLY when user clearly asks to ADD/CREATE a NEW product for the catalogue.
-- "change hero / header / mode section / maison image" → set_site_image with the right slot (not a product action).
-- "change headline / title / text / description on homepage" → set_site_text with the i18n key.
+CRITICAL — safety rules (never violate):
+- DEFAULT for attached product photos = add_product (NEW catalogue items). Do NOT update or replace existing products.
+- ONLY use update_product / replace_product_image / delete_product when the user CLEARLY says so ("change this product", "update the image", "replace photo", "delete product", "for this product").
+- NEVER rewrite an add into an update because a photo looks similar to something already in the shop.
+- NEVER delete or overwrite products that were not named / clearly targeted.
+- "this product" / "change this" / "update it" → update that existing product only.
+- "change hero / header / mode section / maison image" → set_site_image (not a product action).
+- "change headline / title / text on homepage" → set_site_text.
 
 MULTIPLE ATTACHMENTS — choose ONE mode per message:
 
@@ -354,7 +356,8 @@ Action types (every action MUST include "type"):
 - When user wants AI images + title/description for an EXISTING product, return:
   update_product { match:"focused", name, desc, price } AND generate_product_images { match:"focused", galleryShots:[...] }
   OR replace_product_image if they want to replace the main photo only.
-- NEVER return add_product when user says "this product", "for this product", "change this", "change image", "make/generate images", or chat already targets a product.
+- NEVER return add_product when user says "this product", "for this product", "change this product", or "replace this product image".
+- When user attaches photos to ADD/SELL/LIST items (or does not clearly ask to change an existing one) → always add_product.
 
 Example — user: "for this product make display images and add description and title"
 → actions: [
@@ -391,13 +394,11 @@ ${focused ? 'Active product for "this product" / match:"focused" (photo match, l
 When the user attaches a product/catalog photo, identify which catalog product and which gallery image index (0=main) it matches — even if they say "this model" or "this image" without naming the product. Use replace_product_image with catalogImageIndex for that slot.
 User may write Swedish, French, English, or Arabic.
 Always return actions when the user wants products created/updated — never reply with only text if work can be done.
-NEVER default to add_product just because the user attached an image.
-An image alone is NOT a request to add a product — infer intent from words + chat context + photo match.
-If intent is unclear AND you cannot infer any action from chat + images, return {"reply":"short clarifying question","actions":[]} — do NOT guess add_product.
-NEVER return empty actions when the user asks to create/generate/make a new image (with or without the word "product") and an image is attached or was attached in the previous message — use replace_product_image or generate_product_images with match:"focused" after identifying the product from the photo.
-When user says "create a new image" / "generate image" / "make a new photo" → replace_product_image or generate_product_images on the product shown in the attached image.
-When user says "change this product" / "update this" / "change the image" with a photo → identify the product from the photo and update it (never require a card click).
-Product screenshots / admin UI shots → update existing product, never add_product.`;
+DEFAULT: attached product photos without clear "change this product" language → add_product (one per item/photo as appropriate).
+If intent is unclear with photos of items → prefer add_product over update.
+When user says "change this product" / "update this" / "replace the image" → update/replace that existing product only.
+Only use replace_product_image when the user asks to change/replace an existing product's photo — not when listing a new item.
+Never delete products unless the user says delete/remove.`;
   }
 
   function parseAiJson(raw) {
@@ -899,17 +900,11 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   function refersAttachedImageEdit(text, files) {
     const imgs = files && files.length ? files : getRecentChatFiles();
     if (!imgs.length) return false;
+    if (userWantsAddProduct(text, imgs)) return false;
     if (wantsMultipleDifferentProducts(text, imgs)) return false;
-    if (wantsCreateOrGenerateImage(text)) return true;
-    if (explicitWantsNewProduct(text) && !refersExistingProduct(text, imgs)) return false;
     if (inferSiteImageSlot(text)) return false;
-    const t = normalizeUserIntentText(text).toLowerCase();
-    return (
-      /(?:change|replace|swap|update|edit|modify|make|create|generate|retouch|recolor|fix)\b/.test(t) ||
-      /\bthis\s+(?:model|image|photo|picture|shot|one)\b/.test(t) ||
-      /(?:model|background|studio|mannequin|portrait)/.test(t) ||
-      !t
-    );
+    // Only true for clear edit-of-existing-image language
+    return userExplicitlyWantsMutateExisting(text);
   }
 
   function buildImageEditPrompt(text) {
@@ -1168,10 +1163,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       return true;
     }
 
-    if (getActiveProduct()) {
-      return true;
-    }
-
+    // Do NOT treat "last touched product" as gallery-on-one — that hijacks new adds.
     return false;
   }
 
@@ -1206,40 +1198,69 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       return true;
     }
 
-    if (
-      n > 1 &&
-      !getActiveProduct() &&
-      /^(?:add|upload|import|publish|lägg till|ajouter)?\s*(?:these|those|all|them|photos?|images?|bilder)?\s*[!.]*$/i.test(
-        t.trim()
-      )
-    ) {
+    if (n > 1 && !userExplicitlyWantsMutateExisting(text)) {
+      // Several photos without "this product" language → separate new listings
       return true;
     }
 
     return wantsCreateMultipleProducts(text, files);
   }
 
-  function refersExistingProduct(text, files) {
-    if (wantsCreateOrGenerateImage(text)) return true;
-    const imgs = getEffectiveFiles(files, text);
-    if (imgs.length && refersAttachedImageEdit(text, imgs)) return true;
-    if (wantsMultipleDifferentProducts(text, files)) return false;
-    if (wantsImagesOnOneProduct(text, files)) return true;
-
-    const t = String(text || '').toLowerCase();
+  /** True only when user clearly asks to change/replace/update/delete an EXISTING product. */
+  function userExplicitlyWantsMutateExisting(text) {
+    const t = normalizeUserIntentText(text).toLowerCase().trim();
+    if (!t) return false;
+    if (inferSiteImageSlot(text)) return false;
     if (
-      /\bthis\s+product\b/.test(t) ||
-      /(?:change|update|edit|modify)\s+this\b/.test(t) ||
-      /(?:for|on|to|of)\s+(?:this|the|that)\s+product/.test(t) ||
-      /(?:den\s+här|denna|det\s+här|ce\s+produit|cette\s+produit|le\s+produit|same\s+product)/.test(t) ||
-      /(?:change|replace|swap|update)\s+(?:the\s+)?(?:product\s+)?(?:image|photo|picture|bild)/.test(t) ||
-      /(?:make|generate|create)\s+(?:other|more|extra|new|ai|display|additional)\s+(?:images?|photos?|pictures?)/.test(t) ||
-      /(?:other|more|extra|display|additional)\s+(?:images?|photos?).*(?:product|produit|produkt)/.test(t) ||
-      (getActiveProduct() && wantsFocusedProductImageEdit(text))
+      /(?:add|create|lägg till|ajouter|créer)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:products?|produits?|produkter?|items?)/.test(
+        t
+      ) ||
+      /\bnew products?\b/.test(t)
     ) {
-      return true;
+      // "add new product" wins over vague wording unless they also say "this product"
+      if (!/\bthis\s+product\b/.test(t) && !/(?:existing|current)\s+product/.test(t)) return false;
     }
-    return false;
+    return (
+      /\bthis\s+product\b/.test(t) ||
+      /(?:for|on|to|of)\s+(?:this|the|that)\s+product\b/.test(t) ||
+      /(?:change|update|edit|modify|fix|replace|swap)\s+(?:this|the|that|existing)\b/.test(t) ||
+      /(?:change|replace|swap|update)\s+(?:the\s+)?(?:main\s+)?(?:image|photo|picture|bild)\b/.test(t) ||
+      /(?:delete|remove)\s+(?:this\s+)?(?:product|item|produit|produkt)\b/.test(t) ||
+      /(?:den\s+här|denna|det\s+här)\s+produkten?\b/.test(t) ||
+      /(?:ce|cette|le)\s+produit\b/.test(t) ||
+      /(?:same|existing|current)\s+product\b/.test(t) ||
+      /(?:make|generate|create)\s+(?:other|more|extra|display|additional)\s+(?:images?|photos?).*(?:for|on|to)\s+(?:this|the)\s+product/.test(
+        t
+      )
+    );
+  }
+
+  /** Default for attached product photos: ADD. Never treat as update unless mutate language is clear. */
+  function userWantsAddProduct(text, files) {
+    if (inferSiteImageSlot(text)) return false;
+    if (explicitWantsNewProduct(text)) return true;
+    if (wantsMultipleDifferentProducts(text, files)) return true;
+    if (userExplicitlyWantsMutateExisting(text)) return false;
+    const imgs = getEffectiveFiles(files, text);
+    if (!imgs.length) {
+      return /(?:add|create|lägg till|ajouter|créer)\s+(?:a\s+)?(?:new\s+)?(?:products?|produits?|produkter?|items?)/.test(
+        normalizeUserIntentText(text).toLowerCase()
+      );
+    }
+    const t = normalizeUserIntentText(text).toLowerCase().trim();
+    // Photo(s) alone, or photo + non-mutate wording → new catalogue entry
+    if (!t) return true;
+    if (/(?:add|create|new|lägg|ajouter|créer|publish|list|shop|catalog|boutique|sortiment)/.test(t)) return true;
+    if (/(?:change|replace|update|edit|modify|delete|remove|this product|hero|header|manifesto)/.test(t)) {
+      return false;
+    }
+    return true;
+  }
+
+  function refersExistingProduct(text, files) {
+    // Strict: only existing-product language counts. Never because a photo "looks similar".
+    if (userWantsAddProduct(text, files)) return false;
+    return userExplicitlyWantsMutateExisting(text);
   }
 
   function wantsFocusedProductImageEdit(text) {
@@ -1273,12 +1294,14 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   }
 
   function convertAddToExistingActions(action, text, files, intent) {
+    // Never rewrite add → update/replace unless the user clearly asked to change an existing product.
+    if (userWantsAddProduct(text, files)) return null;
     if (wantsMultipleDifferentProducts(text, files)) return null;
-    if (explicitWantsNewProduct(text) && !refersExistingProduct(text, files)) return null;
+    if (!userExplicitlyWantsMutateExisting(text)) return null;
 
     const match =
       action.match ||
-      (refersExistingProduct(text, files) || getActiveProduct() ? 'focused' : action.name || 'last');
+      (refersExistingProduct(text, files) ? 'focused' : action.name || 'last');
     const refIdx = action.imageIndex != null ? action.imageIndex : 0;
     const out = [];
     const tl = String(text || '').toLowerCase();
@@ -1342,7 +1365,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       return out;
     }
 
-    if (refersExistingProduct(text, files) || findProductFromContext(match, text) || getActiveProduct()) {
+    if (userExplicitlyWantsMutateExisting(text)) {
       if (files && files.length) {
         out.push({
           type: 'update_product_image',
@@ -1360,20 +1383,23 @@ Product screenshots / admin UI shots → update existing product, never add_prod
           price: action.price,
         });
       }
-      return out.length ? out : [{ type: 'update_product_image', match, imageIndex: refIdx }];
+      return out.length ? out : null;
     }
 
     return null;
   }
 
   function explicitWantsNewProduct(text) {
-    if (wantsCreateOrGenerateImage(text)) return false;
     const t = normalizeUserIntentText(text).toLowerCase().trim();
     if (!t) return false;
+    // Image-only generate phrasing without product words is not "new product"
+    if (wantsCreateOrGenerateImage(text) && !/(?:products?|produits?|produkter?|items?|listings?)/.test(t)) {
+      return false;
+    }
+    if (userExplicitlyWantsMutateExisting(text)) return false;
     if (
-      /(?:update|change|replace|swap|modify|edit|fix|delete|remove|hero|header|site|section|manifesto|headline|title|text|price|featured|fashion card|mode card|maison|lifestyle|gallery|display image|andra bild|fler bild)/.test(
-        t
-      )
+      /(?:hero|header|site|section|manifesto|fashion card|mode card)/.test(t) &&
+      !/(?:products?|produits?|produkter?|items?)/.test(t)
     ) {
       return false;
     }
@@ -1423,12 +1449,23 @@ Product screenshots / admin UI shots → update existing product, never add_prod
           });
           return;
         }
+        if (userWantsAddProduct(text, files)) {
+          out.push(action);
+          return;
+        }
         const converted = convertAddToExistingActions(action, text, files, intent);
         if (converted) {
           converted.forEach((a) => out.push(a));
           return;
         }
-        if (!explicitWantsNewProduct(text)) return;
+        // Prefer keeping a new product over silently dropping the action
+        out.push(action);
+        return;
+      }
+
+      // Never invent deletes
+      if (action.type === 'delete_product' && !/(?:delete|remove|ta bort|supprimer)/i.test(String(text || ''))) {
+        return;
       }
 
       out.push(action);
@@ -1477,7 +1514,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     const catMatch = text.match(/\b(mode|maison|lifestyle|fashion|home|édition limitée|edition limitee)\b/i);
     const wantsGallery =
       (opts && opts.generateGallery) ||
-      /gallery|display|bilder|images|description|title|titre|namn|listing|fiche/.test(t);
+      /(?:generate|make|create).*(?:gallery|display images|more images|extra images)|(?:ai|nano)\s+gallery/.test(t);
 
     return imgs.map((_, i) => ({
       type: 'add_product',
@@ -1512,6 +1549,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     const wantsNewImage = wantsCreateOrGenerateImage(text);
 
     const wantsAdd =
+      userWantsAddProduct(text, imgs) ||
       explicitWantsNewProduct(text) ||
       wantsMultipleDifferentProducts(text, imgs) ||
       wantsCreateMultipleProducts(text, imgs);
@@ -1533,19 +1571,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     const wantsUpdateExisting =
       !wantsAddMultiple &&
       !wantsAdd &&
-      (wantsNewImage ||
-        /(?:change|replace|swap|update|edit|modify|fix|ändra|byt|remplacer|changer|modifier|mettre à jour)/.test(t) ||
-        /(?:different|another|new)\s+(?:image|photo|picture|bild|model|mannequin)/.test(t) ||
-        /create\s+(?:a\s+)?different\s+(?:image|photo|picture|bild)/.test(t) ||
-        (hasImages && /\bthis\s+(?:model|image|photo|picture|shot)\b/.test(t)) ||
-        (hasImages && /(?:change|replace|make)\s+this\b/.test(t)) ||
-        /(?:for|of|on|to)\s+(?:this|the|that)\s+product/.test(t) ||
-        /\bthis\s+product\b/.test(t) ||
-        /(?:den\s+här|denna|det\s+här|ce\s+produit|cette\s+produit|le\s+produit)/.test(t) ||
-        wantsAppendToOne ||
-        (hasImages && !t.trim()) ||
-        (/(?:generate|create|make).*(?:image|photo|bild)/.test(t) &&
-          /(?:for|this|product|produit|produkt)/.test(t)));
+      userExplicitlyWantsMutateExisting(text);
 
     const wantsAiGenerate =
       wantsNewImage ||
@@ -1558,10 +1584,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       /(?:gallery|more\s+images|fler\s+bilder|extra\s+images|display\s+images|andra\s+bilder|make other images|other images|product images)/.test(
         t
       ) &&
-      (refersExistingProduct(text, files) ||
-        wantsImagesOnOneProduct(text, files) ||
-        /(?:product|produit|produkt|this|focused|den här|ce produit)/.test(t) ||
-        !!getActiveProduct());
+      (userExplicitlyWantsMutateExisting(text) || wantsImagesOnOneProduct(text, files));
 
     const wantsUseUpload =
       hasImages &&
@@ -1594,14 +1617,39 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   function normalizeActions(actions, text, files) {
     const intent = classifyIntent(text, files);
     const flat = [];
+    const preferAdd = userWantsAddProduct(text, files) || wantsMultipleDifferentProducts(text, files);
 
     (actions || []).forEach((action) => {
       let a = { ...action };
-      if (!a.type && a.match) a.type = 'update_product';
+      if (!a.type && a.match) a.type = preferAdd ? 'add_product' : 'update_product';
       if (!a.type) return;
 
+      // Hard safety: when the user is adding, never accept update/replace/delete from the model
+      if (
+        preferAdd &&
+        /^(update_product|replace_product_image|regenerate_product_image|generate_product_images|update_product_image|append_product_images|delete_product)$/.test(
+          a.type
+        )
+      ) {
+        if (a.type === 'delete_product') return;
+        flat.push({
+          type: 'add_product',
+          name: a.name && !/^new product/i.test(String(a.name)) ? a.name : undefined,
+          category: a.category,
+          sub: a.sub,
+          price: a.price,
+          stock: a.stock,
+          desc: a.desc || a.description,
+          featured: a.featured,
+          imageIndex: a.imageIndex != null ? a.imageIndex : a.referenceImageIndex != null ? a.referenceImageIndex : 0,
+          imageIndices: a.imageIndices,
+          generateGallery: false,
+        });
+        return;
+      }
+
       if (a.type === 'add_product') {
-        if (wantsMultipleDifferentProducts(text, files)) {
+        if (preferAdd) {
           flat.push(a);
           return;
         }
@@ -1610,6 +1658,11 @@ Product screenshots / admin UI shots → update existing product, never add_prod
           converted.forEach((c) => flat.push(c));
           return;
         }
+      }
+
+      // Never delete unless clearly asked
+      if (a.type === 'delete_product' && !/(?:delete|remove|ta bort|supprimer)/i.test(String(text || ''))) {
+        return;
       }
 
       flat.push(a);
@@ -1726,9 +1779,9 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   }
 
   function normalizeGeminiImageSize(size) {
-    const s = String(size || '2K').trim().toUpperCase();
+    const s = String(size || '1K').trim().toUpperCase();
     if (s === '512' || s === '1K' || s === '2K' || s === '4K') return s;
-    return '2K';
+    return '1K';
   }
 
   function normalizeGeminiAspectRatio(ratio) {
@@ -1754,7 +1807,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     const key = geminiKey();
     if (!key) throw new Error(cloudAISetupMessage());
     const models = imageModels();
-    const imageSize = normalizeGeminiImageSize(getCfg().geminiImageSize || '2K');
+    const imageSize = normalizeGeminiImageSize(getCfg().geminiImageSize || '1K');
     const aspectRatio = getCfg().geminiImageAspect || '3:4';
     const fullPrompt =
       brandPrefix() +
@@ -1840,18 +1893,24 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
   async function buildGalleryImages(referenceDataUrl, shots, onProgress) {
     const prompts = (shots || []).slice(0, MAX_GALLERY_SHOTS);
-    const out = [];
-    let lastErr = null;
-    for (let i = 0; i < prompts.length; i++) {
-      if (onProgress) onProgress(i + 1, prompts.length);
-      try {
-        const img = await generateProductImage(prompts[i], referenceDataUrl, null);
-        if (img) out.push(img);
-      } catch (e) {
-        lastErr = e;
-        console.warn('gallery shot failed', i, e);
-      }
-    }
+    if (!prompts.length) return [];
+    if (onProgress) onProgress(0, prompts.length);
+    // Run gallery shots in parallel for speed (cap already small).
+    const results = await Promise.all(
+      prompts.map(async (prompt, i) => {
+        try {
+          const img = await generateProductImage(prompt, referenceDataUrl, null);
+          if (onProgress) onProgress(i + 1, prompts.length);
+          return img || null;
+        } catch (e) {
+          console.warn('gallery shot failed', i, e);
+          if (onProgress) onProgress(i + 1, prompts.length);
+          return e;
+        }
+      })
+    );
+    const out = results.filter((r) => typeof r === 'string' && r);
+    const lastErr = results.find((r) => r && typeof r === 'object' && r.message);
     if (!out.length) {
       throw lastErr || new Error(msg('admin-ai-err-gen', 'Image generation failed. Try again in a moment.'));
     }
@@ -2338,29 +2397,6 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       }
 
       if (type === 'add_product' && !target) {
-        const existingCtx = findProductFromContext(action.match || action.name || 'focused', sessionCtx.lastUserText || '');
-        if (
-          (refersExistingProduct(sessionCtx.lastUserText || '', files) || getActiveProduct()) &&
-          existingCtx &&
-          !explicitWantsNewProduct(sessionCtx.lastUserText || '') &&
-          !wantsMultipleDifferentProducts(sessionCtx.lastUserText || '', files)
-        ) {
-          const redirect = convertAddToExistingActions(
-            action,
-            sessionCtx.lastUserText || '',
-            files,
-            classifyIntent(sessionCtx.lastUserText || '', files)
-          );
-          if (redirect && redirect.length) {
-            const lines = [];
-            for (const sub of redirect) {
-              const line = await executeAction(sub, files, onProgress);
-              if (line) lines.push(line);
-            }
-            return lines.join('<br>');
-          }
-        }
-
         const id = nextProductId(products);
         const item = {
           id,
@@ -2702,27 +2738,23 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       } catch (_) {}
     }
 
-    if (!actions.length && imgs.length && getActiveProduct() && !explicitWantsNewProduct(text)) {
+    if (!actions.length && imgs.length && userWantsAddProduct(text, imgs)) {
+      return buildAddProductActions(text, imgs);
+    }
+
+    if (!actions.length && imgs.length && userExplicitlyWantsMutateExisting(text)) {
       if (imgs.length > 1) {
         actions.push({
           type: 'append_product_images',
           match: 'focused',
           imageIndices: imgs.map((_, i) => i),
         });
-      } else if (wantsCreateOrGenerateImage(text) || intent.wantsAiGenerate || !t.trim()) {
+      } else if (wantsCreateOrGenerateImage(text) || intent.wantsAiGenerate) {
         actions.push(buildImageGenerateAction(text, imgs));
       } else {
         actions.push({ type: 'update_product_image', match: 'focused', imageIndex: 0 });
       }
       return actions;
-    }
-
-    if (!actions.length && imgs.length && (wantsCreateOrGenerateImage(text) || intent.wantsAiGenerate || (!t.trim() && imgs.length === 1))) {
-      return [buildImageGenerateAction(text, imgs)];
-    }
-
-    if (!actions.length && wantsCreateOrGenerateImage(text) && sessionCtx.resolvedProductId != null) {
-      return [buildImageGenerateAction(text, imgs)];
     }
 
     if (!actions.length && getActiveProduct() && wantsFocusedProductImageEdit(text)) {
@@ -2741,10 +2773,13 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     if (imgs.length && wantsMultipleDifferentProducts(text, imgs)) {
       return buildAddProductActions(text, imgs);
     }
-    if (imgs.length && (wantsCreateOrGenerateImage(text) || refersAttachedImageEdit(text, imgs))) {
+    if (imgs.length && userWantsAddProduct(text, imgs)) {
+      return buildAddProductActions(text, imgs);
+    }
+    if (imgs.length && userExplicitlyWantsMutateExisting(text) && (wantsCreateOrGenerateImage(text) || refersAttachedImageEdit(text, imgs))) {
       return [buildImageGenerateAction(text, imgs)];
     }
-    if (getActiveProduct() && wantsFocusedProductImageEdit(text)) {
+    if (userExplicitlyWantsMutateExisting(text) && getActiveProduct() && wantsFocusedProductImageEdit(text)) {
       const t = normalizeUserIntentText(text).toLowerCase().trim();
       const shortFollowUp = /^(?:the\s+)?(?:image|photo|picture|model|shot)\s*\.?$/.test(t);
       const promptText = shortFollowUp ? sessionCtx.lastUserText || text : text;
@@ -2916,12 +2951,9 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
     addBubble('assistant', '<span class="admin-ai-typing">' + msg('admin-ai-thinking', 'Working…') + '</span>');
 
-    if (
-      workFiles.length &&
-      (refersAttachedImageEdit(text, workFiles) ||
-        wantsCreateOrGenerateImage(text) ||
-        !normalizeUserIntentText(text))
-    ) {
+    // Only identify an existing catalog product when the user clearly asked to change one.
+    // Never run this on add/create flows — visual similarity was rewriting new products into replacements.
+    if (workFiles.length && userExplicitlyWantsMutateExisting(text) && !userWantsAddProduct(text, workFiles)) {
       setLastBubble(
         '<span class="admin-ai-typing">' + esc(msg('admin-ai-identifying', 'Identifying product from photo…')) + '</span>'
       );
@@ -2937,6 +2969,12 @@ Product screenshots / admin UI shots → update existing product, never add_prod
         console.warn('admin ai image resolve', e);
       }
       setLastBubble('<span class="admin-ai-typing">' + msg('admin-ai-thinking', 'Working…') + '</span>');
+    } else if (userWantsAddProduct(text, workFiles)) {
+      sessionCtx.resolvedProductId = null;
+      sessionCtx.resolvedImageIndex = null;
+      sessionCtx.resolvedMatchMethod = '';
+      sessionCtx.focusedProductId = null;
+      sessionCtx.focusedProductName = '';
     }
 
     try {
