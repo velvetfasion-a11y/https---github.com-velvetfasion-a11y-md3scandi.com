@@ -8,16 +8,66 @@
     return d.innerHTML;
   }
 
+  function categoryFallbackImage(p) {
+    const catKey = String((p && p.category) || '');
+    if (/maison|home/i.test(catKey)) return 'images/cat-maison.jpg';
+    if (/lifestyle/i.test(catKey)) return 'images/cat-lifestyle.jpg';
+    if (/édition|edition|limit/i.test(catKey)) return 'images/journal-linen.jpg';
+    return 'images/cat-mode.jpg';
+  }
+
+  /**
+   * Instant preview (local category shot as CSS background) + fade-in when the
+   * real product photo arrives — avoids empty beige boxes in the carousel.
+   */
+  function progressiveImgHtml(src, opts) {
+    const o = opts || {};
+    const fallback = o.fallback || 'images/cat-mode.jpg';
+    const real = String(src || fallback || '').trim() || fallback;
+    const ph = String(fallback || 'images/cat-mode.jpg');
+    const same = real === ph;
+    const eager = !!o.eager;
+    const alt = o.alt || '';
+    const width = o.width || 600;
+    const height = o.height || 800;
+    const extraClass = o.className ? ' ' + o.className : '';
+    const readyClass = same ? ' is-ready' : '';
+    const loading = eager ? 'eager' : 'lazy';
+    const prio = eager ? ' fetchpriority="high"' : '';
+    const phCss = esc(ph).replace(/'/g, '%27');
+    return (
+      `<span class="md3-img" style="background-image:url('${phCss}')">` +
+      `<img class="md3-img__full${readyClass}${extraClass}" src="${esc(real)}" alt="${esc(alt)}" width="${width}" height="${height}" ` +
+      `loading="${loading}" decoding="async"${prio} ` +
+      `onload="this.classList.add('is-ready')" ` +
+      `onerror="this.onerror=null;this.src='${esc(ph)}';this.classList.add('is-ready')" />` +
+      `</span>`
+    );
+  }
+
+  function hydrateProgressiveImages(root) {
+    const scope = root && root.querySelectorAll ? root : document;
+    try {
+      scope.querySelectorAll('.md3-img__full').forEach(function (img) {
+        if (img.complete && img.naturalWidth > 0) img.classList.add('is-ready');
+      });
+    } catch (_) {}
+  }
+
   function productImageBlock(p, opts) {
     const image =
       global.MD3Store && global.MD3Store.normalizeProductImages
         ? global.MD3Store.normalizeProductImages(p)[0]
         : p && p.image;
-    if (image) {
-      const fallback = categoryFallbackImage(p);
-      const eager = opts && opts.eager;
-      const prio = eager ? ' fetchpriority="high"' : '';
-      return `<img src="${esc(image)}" alt="" class="product-photo" width="600" height="800" loading="${eager ? 'eager' : 'lazy'}" decoding="async"${prio} onerror="this.onerror=null;this.src='${esc(fallback)}'" />`;
+    const fallback = categoryFallbackImage(p);
+    if (image || fallback) {
+      return progressiveImgHtml(image || fallback, {
+        fallback,
+        eager: opts && opts.eager,
+        className: 'product-photo-wrap',
+        width: 600,
+        height: 800,
+      });
     }
     return `<div class="cemoji">${esc((p && p.emoji) || '✦')}</div>`;
   }
@@ -27,14 +77,6 @@
       return global.MD3Store.productDisplayName(p);
     }
     return global.MD3Lang && global.MD3Lang.productName ? global.MD3Lang.productName(p) : (p && p.name) || '';
-  }
-
-  function categoryFallbackImage(p) {
-    const catKey = String((p && p.category) || '');
-    if (/maison|home/i.test(catKey)) return 'images/cat-maison.jpg';
-    if (/lifestyle/i.test(catKey)) return 'images/cat-lifestyle.jpg';
-    if (/édition|edition|limit/i.test(catKey)) return 'images/journal-linen.jpg';
-    return 'images/cat-mode.jpg';
   }
 
   function pickHomeImage(p) {
@@ -70,7 +112,13 @@
       : '';
     const eager = opts && opts.eager;
     const imgHtml = image
-      ? `<img src="${esc(image)}" alt="${esc(name)}" width="600" height="800" loading="${eager ? 'eager' : 'lazy'}" decoding="async"${eager ? ' fetchpriority="high"' : ''} draggable="false" onerror="this.onerror=null;this.src='${esc(fallback)}'" />`
+      ? progressiveImgHtml(image, {
+          fallback,
+          alt: name,
+          eager,
+          width: 600,
+          height: 800,
+        })
       : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
     return `
       <a href="${href}" class="home-product-card">
@@ -90,7 +138,13 @@
     const image = pickHomeImage(p);
     const eager = opts && opts.eager;
     const imgHtml = image
-      ? `<img src="${esc(image)}" alt="${esc(name)}" width="600" height="800" loading="${eager ? 'eager' : 'lazy'}" decoding="async"${eager ? ' fetchpriority="high"' : ''} onerror="this.onerror=null;this.src='${esc(fallback)}'" />`
+      ? progressiveImgHtml(image, {
+          fallback,
+          alt: name,
+          eager,
+          width: 600,
+          height: 800,
+        })
       : `<div class="featured-emoji-fallback">${esc((p && p.emoji) || '✦')}</div>`;
     return `
       <a href="${href}" class="product-card">
@@ -419,15 +473,17 @@
     while (list.length < 3) list = list.concat(favourites);
     list = list.slice(0, Math.max(favourites.length, 3));
 
-    // Only the first visible card is eager — avoids 4× parallel multi-MB downloads
+    // Eager-load the first few visible cards; placeholders cover the rest until ready
     const cards = list
-      .map((p, i) => storeCardHomeHtml(p, lbl, { eager: i === 0 }))
+      .map((p, i) => storeCardHomeHtml(p, lbl, { eager: i < 3 }))
       .join('');
     container.innerHTML = '<div class="home-featured-group">' + cards + '</div>';
     container.classList.add('is-ready');
+    hydrateProgressiveImages(container);
 
     requestAnimationFrame(function () {
       startFeaturedAutoplay(carousel);
+      hydrateProgressiveImages(carousel);
     });
   }
 
@@ -449,9 +505,10 @@
         if (render === storeCardHtml && i === 0) {
           return storeCardHtml(p, { ...lbl, eagerFirst: true });
         }
-        return render(p, lbl, i === 0 ? { eager: true } : null);
+        return render(p, lbl, i < 2 ? { eager: true } : null);
       })
       .join('');
+    hydrateProgressiveImages(container);
   }
 
   global.MD3Shop = {
@@ -459,6 +516,9 @@
     storeCardHtml,
     storeCardHomeHtml,
     productImageBlock,
+    progressiveImgHtml,
+    hydrateProgressiveImages,
+    categoryFallbackImage,
     addToCart,
     showToast,
     defaultLabels,

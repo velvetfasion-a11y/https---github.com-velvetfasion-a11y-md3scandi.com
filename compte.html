@@ -9,8 +9,8 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="md3-header.css?v=21" />
-<link rel="stylesheet" href="md3-responsive.css?v=21" />
+<link rel="stylesheet" href="md3-header.css?v=26" />
+<link rel="stylesheet" href="md3-responsive.css?v=26" />
 <link rel="stylesheet" href="md3-admin.css?v=22" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" crossorigin="anonymous" />
 <style>
@@ -842,6 +842,7 @@
   }
   .filter-btn {
     background: none; border: 1px solid var(--mist);
+    border-radius: 999px;
     padding: 0.4rem 1rem; font-family: 'Jost', sans-serif;
     font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
     color: var(--stone); cursor: pointer; transition: all 0.15s;
@@ -1300,19 +1301,19 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-<script src="md3-firebase.js?v=9"></script>
+<script src="md3-firebase.js?v=11"></script>
 <script src="md3-sizes.js?v=2"></script>
-<script src="md3-store.js?v=28"></script>
+<script src="md3-store.js?v=31"></script>
 <script src="md3-auth.js?v=4"></script>
 <script src="md3-nav-icons.js"></script>
-<script src="md3-header.js?v=20"></script>
+<script src="md3-currency.js?v=6"></script>
+<script src="md3-header.js?v=25"></script>
 <script src="ai-config.js?v=3" onerror="window.MD3_AI_CONFIG=window.MD3_AI_CONFIG||{}"></script><!-- generated from .env via scripts/sync-ai-config.mjs -->
-<script src="contact-config.js?v=2"></script>
+<script src="contact-config.js?v=3"></script>
 <script src="md3-site-assets.js?v=12"></script>
 <script src="md3-admin-ai.js?v=23"></script>
-<script src="md3-lang.js?v=36"></script>
+<script src="md3-lang.js?v=43"></script>
 <script src="md3-taxonomy.js?v=2"></script>
-<script src="md3-currency.js?v=4"></script>
 <script src="email-config.js?v=3"></script>
 <script src="md3-email.js?v=5"></script>
 <script>
@@ -2210,6 +2211,7 @@ function adminTab(tab) {
   if (tabsNav) tabsNav.hidden = false;
   if (tab === 'overview') renderAdminOverview();
   else if (tab === 'images') renderAdminSiteImages();
+  else if (tab === 'contact') renderAdminContact();
   else paintAdminProductsList();
 }
 
@@ -2228,6 +2230,14 @@ function bindAdminPageNav() {
     if (imagesNav) {
       e.preventDefault();
       adminTab('images');
+      const content = document.getElementById('adminContent');
+      if (content) content.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    const contactNav = e.target.closest('[data-admin-go="contact"]');
+    if (contactNav) {
+      e.preventDefault();
+      adminTab('contact');
       const content = document.getElementById('adminContent');
       if (content) content.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
@@ -2275,6 +2285,7 @@ function closeAdminProductEdit(refreshList) {
   if (refreshList !== false) {
     if (adminTabActive === 'overview') renderAdminOverview();
     else if (adminTabActive === 'images') renderAdminSiteImages();
+    else if (adminTabActive === 'contact') renderAdminContact();
     else paintAdminProductsList();
   }
 }
@@ -2303,30 +2314,41 @@ function renderAdminOverview() {
       </div>
     </div>
     <div class="admin-panel">
-      <h2>${L('admin-contact-title')}</h2>
-      <p class="admin-sub" style="margin-bottom:1rem">${L('admin-contact-note')}</p>
-      <div class="field">
-        <label for="adminContactPhone">${L('admin-contact-phone')}</label>
-        <input type="tel" id="adminContactPhone" inputmode="numeric" placeholder="33612345678" value="${escAttr((window.MD3Contact && MD3Contact.get().phone) || '')}" />
-      </div>
-      <div class="field">
-        <label for="adminContactWhatsApp">${L('admin-contact-whatsapp')}</label>
-        <input type="tel" id="adminContactWhatsApp" inputmode="numeric" placeholder="33612345678" value="${escAttr((window.MD3Contact && MD3Contact.get().whatsappPhone) || '')}" />
-      </div>
-      <div class="field">
-        <label for="adminContactTikTok">${L('admin-contact-tiktok')}</label>
-        <input type="text" id="adminContactTikTok" placeholder="md3scandi" value="${escAttr((window.MD3Contact && MD3Contact.get().tiktokHandle) || '')}" />
-      </div>
-      <button type="button" class="btn-primary" onclick="saveAdminContact()">${L('admin-contact-save')}</button>
-      <p class="success-msg" id="adminContactSaved" hidden>${L('admin-contact-saved')}</p>
-    </div>
-    <div class="admin-panel">
       <h2>${L('admin-quick-links')}</h2>
       <ul class="admin-list">
         <li><button type="button" class="admin-list-btn" data-admin-go="products">${L('admin-products-table')} <span aria-hidden="true">→</span></button></li>
         <li><button type="button" class="admin-list-btn" data-admin-go="images">${L('admin-images')} <span aria-hidden="true">→</span></button></li>
+        <li><button type="button" class="admin-list-btn" data-admin-go="contact">${L('admin-contact-settings')} <span aria-hidden="true">→</span></button></li>
         <li><a href="index.html#boutique" target="_blank" rel="noopener">${L('admin-view-boutique')} <span>→</span></a></li>
       </ul>
+    </div>`;
+}
+
+function renderAdminContact() {
+  setSiteImageEditorVisible(false);
+  setAdminEditorVisible(false);
+  const host = document.getElementById('adminContent');
+  if (!host) return;
+  const c = (window.MD3Contact && MD3Contact.get()) || {};
+  host.innerHTML = `
+    <button type="button" class="admin-back" onclick="adminTab('overview')" data-i18n="admin-contact-back">${L('admin-contact-back')}</button>
+    <h1>${L('admin-contact-settings')}</h1>
+    <p class="admin-sub" style="margin-bottom:1rem">${L('admin-contact-note')}</p>
+    <div class="admin-panel">
+      <div class="field">
+        <label for="adminContactPhone">${L('admin-contact-phone')}</label>
+        <input type="tel" id="adminContactPhone" inputmode="numeric" placeholder="33612345678" value="${escAttr(c.phone || '')}" />
+      </div>
+      <div class="field">
+        <label for="adminContactWhatsApp">${L('admin-contact-whatsapp')}</label>
+        <input type="tel" id="adminContactWhatsApp" inputmode="numeric" placeholder="33612345678" value="${escAttr(c.whatsappPhone || '')}" />
+      </div>
+      <div class="field">
+        <label for="adminContactTikTok">${L('admin-contact-tiktok')}</label>
+        <input type="text" id="adminContactTikTok" placeholder="md3scandi" value="${escAttr(c.tiktokHandle || '')}" />
+      </div>
+      <button type="button" class="btn-primary" onclick="saveAdminContact()">${L('admin-contact-save')}</button>
+      <p class="success-msg" id="adminContactSaved" hidden>${L('admin-contact-saved')}</p>
     </div>`;
 }
 
@@ -2653,9 +2675,11 @@ function paintAdminProductsList() {
         const isVisible = S.isProductVisible ? S.isProductVisible(p) : !p.hidden;
         const label = esc(S.productDisplayName ? S.productDisplayName(p) : p.name);
         const priceHtml =
-          typeof MD3Currency !== 'undefined' && MD3Currency.formatPrice
-            ? MD3Currency.formatPrice(p.price)
-            : `${p.price} €`;
+          typeof MD3Currency !== 'undefined' && MD3Currency.formatPriceInSiteLang
+            ? MD3Currency.formatPriceInSiteLang(p.price)
+            : typeof MD3Currency !== 'undefined' && MD3Currency.formatPrice
+              ? MD3Currency.formatPrice(p.price)
+              : `${p.price} €`;
         const feat = isFeat
           ? `<button type="button" class="admin-star admin-star--on" title="${esc(L('stat-featured'))}" aria-label="${esc(L('stat-featured'))}" onclick="event.stopPropagation();toggleFeatured(${p.id}, false)">★</button>`
           : `<button type="button" class="admin-star" title="${esc(L('label-featured') || 'En vedette')}" aria-label="Star" onclick="event.stopPropagation();toggleFeatured(${p.id}, true)">☆</button>`;
@@ -2698,7 +2722,8 @@ async function toggleProductVisibility(id, showOnSite) {
     updatedAt: Date.now(),
     createdAt: products[idx].createdAt || Date.now(),
   };
-  if (S.guardProductVisibility) S.guardProductVisibility(wantId, nextHidden, 15000);
+  if (S.rememberProductHidden) S.rememberProductHidden(wantId, nextHidden);
+  else if (S.guardProductVisibility) S.guardProductVisibility(wantId, nextHidden, 60000);
   paintAdminProductsList();
   try {
     await S.saveProducts(products, { onlyIds: [wantId], skipImages: true });
@@ -2711,8 +2736,9 @@ async function toggleProductVisibility(id, showOnSite) {
     if (j !== -1) {
       const stillHidden = S.isProductHidden ? S.isProductHidden(again[j]) : !!again[j].hidden;
       if (stillHidden !== nextHidden) {
-        again[j] = { ...again[j], hidden: nextHidden };
-        if (S.guardProductVisibility) S.guardProductVisibility(wantId, nextHidden, 15000);
+        again[j] = { ...again[j], hidden: nextHidden, updatedAt: Date.now() };
+        if (S.rememberProductHidden) S.rememberProductHidden(wantId, nextHidden);
+        else if (S.guardProductVisibility) S.guardProductVisibility(wantId, nextHidden, 60000);
         await S.saveProducts(again, { onlyIds: [wantId], skipImages: true });
       }
     }
@@ -2720,6 +2746,9 @@ async function toggleProductVisibility(id, showOnSite) {
     console.error('toggleProductVisibility confirm', e);
   }
   paintAdminProductsList();
+  try {
+    window.dispatchEvent(new CustomEvent('md3-products-updated'));
+  } catch (_) {}
 }
 
 async function toggleFeatured(id, checked) {
@@ -3095,6 +3124,7 @@ window.siteCropReset = siteCropReset;
   bindAdminPageNav();
   initProductPhotoSlotEvents();
   MD3Lang.init({ onChange: refreshCompteView });
+  window.addEventListener('md3-currency-changed', refreshCompteView);
   if (window.MD3SiteAssets && MD3SiteAssets.init) {
     MD3SiteAssets.init().catch(function (e) { console.error('MD3SiteAssets.init', e); });
   }

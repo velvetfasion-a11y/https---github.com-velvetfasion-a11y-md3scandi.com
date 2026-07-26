@@ -79,7 +79,43 @@
         global.MD3Lang.refreshUI();
       }
     }
+    if (global.MD3Currency && typeof global.MD3Currency.mountSelectors === 'function') {
+      global.MD3Currency.mountSelectors(root);
+    }
+    mountMobileLocaleBar();
     return root;
+  }
+
+  /** On phones, pages without the home footer still need FR/EN/AR (+ currency) at the bottom. */
+  function mountMobileLocaleBar() {
+    if (document.querySelector('.site-footer-locale') || document.getElementById('md3MobileLocale')) {
+      return;
+    }
+    const bar = document.createElement('div');
+    bar.id = 'md3MobileLocale';
+    bar.className = 'site-mobile-locale';
+    bar.innerHTML =
+      '<div class="lang lang-compact" role="group" data-i18n-aria="nav-lang" aria-label="Langue">' +
+      '<button type="button" class="lang-btn active" data-lang="fr">FR</button>' +
+      '<button type="button" class="lang-btn" data-lang="en">EN</button>' +
+      '<button type="button" class="lang-btn" data-lang="ar">AR</button>' +
+      '</div>' +
+      '<label class="currency-select-wrap">' +
+      '<span class="visually-hidden" data-i18n="nav-currency">Currency</span>' +
+      '<select class="currency-select currency-select--footer" data-md3-currency data-i18n-aria="nav-currency" aria-label="Currency"></select>' +
+      '</label>';
+    document.body.appendChild(bar);
+    if (global.MD3Lang) {
+      if (typeof global.MD3Lang.bindLangButtons === 'function') {
+        global.MD3Lang.bindLangButtons(bar);
+      }
+      if (typeof global.MD3Lang.refreshUI === 'function') {
+        global.MD3Lang.refreshUI();
+      }
+    }
+    if (global.MD3Currency && typeof global.MD3Currency.mountSelectors === 'function') {
+      global.MD3Currency.mountSelectors(bar);
+    }
   }
 
   function initIcons() {

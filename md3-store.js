@@ -6,6 +6,7 @@
 
   const PRODUCTS_KEY = 'md3_products';
   const PENDING_PRODUCTS_KEY = 'md3_products_pending_cloud';
+  const PRODUCT_HIDDEN_KEY = 'md3_product_hidden';
   const USERS_KEY = 'md3_users';
   const CARTS_KEY = 'md3_carts';
   const SESSION_KEY = 'md3_session';
@@ -256,7 +257,9 @@
 
   function setProductsCache(p) {
     const prevSnap = productsSnapshot(productsCache);
-    const list = Array.isArray(p) ? p.map(normalizeProductFields) : [];
+    const list = Array.isArray(p)
+      ? p.map((item) => applyRememberedHidden(normalizeProductFields(item)))
+      : [];
     productsCache = list;
     try {
       localStorage.setItem(PRODUCTS_KEY, JSON.stringify(list));
@@ -280,10 +283,35 @@
   /** Brief lock so a late Firestore snapshot can't undo an admin visibility toggle. */
   const visibilityGuard = new Map();
 
+  function readHiddenMap() {
+    try {
+      const raw = localStorage.getItem(PRODUCT_HIDDEN_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function writeHiddenMap(map) {
+    try {
+      localStorage.setItem(PRODUCT_HIDDEN_KEY, JSON.stringify(map || {}));
+    } catch (_) {}
+  }
+
+  function rememberProductHidden(id, hidden) {
+    if (id == null) return;
+    const map = readHiddenMap();
+    map[String(id)] = !!hidden;
+    writeHiddenMap(map);
+    guardProductVisibility(id, hidden, 60000);
+  }
+
   function guardProductVisibility(id, hidden, ms) {
     visibilityGuard.set(String(id), {
       hidden: !!hidden,
-      until: Date.now() + (ms || 12000),
+      until: Date.now() + (ms || 60000),
     });
   }
 
@@ -295,7 +323,21 @@
       visibilityGuard.delete(String(p.id));
       return p;
     }
-    return normalizeProductFields({ ...p, hidden: g.hidden });
+    // Do not re-enter normalizeProductFields — keep the guarded flag intact
+    return { ...p, hidden: !!g.hidden };
+  }
+
+  /** Apply durable off-site memory only when no live guard is active. */
+  function applyRememberedHidden(p) {
+    if (!p || p.id == null) return p;
+    const id = String(p.id);
+    const g = visibilityGuard.get(id);
+    if (g && Date.now() <= g.until) {
+      return { ...p, hidden: !!g.hidden };
+    }
+    const map = readHiddenMap();
+    if (!Object.prototype.hasOwnProperty.call(map, id)) return p;
+    return { ...p, hidden: !!map[id] };
   }
 
   function isProductHidden(p) {
@@ -421,6 +463,7 @@
     const merged = Array.from(byId.values()).sort((a, b) => a.id - b.id);
     await global.MD3Firebase.saveProducts(merged, {
       onlyIds: toSave.map((p) => p.id),
+      skipImages: true,
     });
     clearProductsPendingCloud();
     setProductsCache(merged);
@@ -430,6 +473,26 @@
   async function saveProducts(p, opts) {
     ensureCaches();
     const list = p.map((x) => ({ ...x }));
+    // Persist off-site flags in a tiny key so they survive quota failures on the full catalog
+    try {
+      const map = readHiddenMap();
+      let changed = false;
+      const touchIds =
+        opts && opts.onlyIds && opts.onlyIds.length
+          ? new Set(opts.onlyIds.map(String))
+          : null;
+      list.forEach((item) => {
+        if (!item || item.id == null) return;
+        if (touchIds && !touchIds.has(String(item.id))) return;
+        const next = !!item.hidden;
+        if (map[String(item.id)] !== next) {
+          map[String(item.id)] = next;
+          changed = true;
+        }
+        guardProductVisibility(item.id, next, 60000);
+      });
+      if (changed) writeHiddenMap(map);
+    } catch (_) {}
     setProductsCache(list);
     const ok = await ensureCloudReady();
     if (!ok || !global.MD3Firebase.isEnabled()) {
@@ -464,6 +527,19 @@
 
   function productVisualInner(p) {
     const image = p && normalizeProductImages(p)[0];
+    const cat = String((p && p.category) || '');
+    let fallback = 'images/cat-mode.jpg';
+    if (/maison|home/i.test(cat)) fallback = 'images/cat-maison.jpg';
+    else if (/lifestyle/i.test(cat)) fallback = 'images/cat-lifestyle.jpg';
+    else if (/édition|edition|limit/i.test(cat)) fallback = 'images/journal-linen.jpg';
+    if (global.MD3Shop && typeof global.MD3Shop.progressiveImgHtml === 'function') {
+      return global.MD3Shop.progressiveImgHtml(image || fallback, {
+        fallback,
+        width: 168,
+        height: 224,
+        eager: false,
+      });
+    }
     if (image) {
       const safe = String(image)
         .replace(/&/g, '&amp;')
@@ -1043,7 +1119,7 @@
   function mergeRemoteProduct(remote) {
     if (!remote || remote.id == null) return false;
     ensureCaches();
-    const normalized = applyVisibilityGuard(normalizeProductFields(remote));
+    const normalized = normalizeProductFields(remote);
     const id = String(normalized.id);
     const idx = productsCache.findIndex((p) => String(p.id) === id);
     if (idx >= 0) {
@@ -1053,15 +1129,24 @@
       if (isProductFeatured(local) && !isProductFeatured(normalized)) {
         merged.featured = true;
       }
-      // Never let a stale cloud doc wipe an admin hide/show toggle
-      if (isProductHidden(local) !== isProductHidden(normalized)) {
-        merged.hidden = isProductHidden(local);
-      }
       const g = visibilityGuard.get(id);
-      if (g && Date.now() <= g.until) merged.hidden = g.hidden;
-      productsCache[idx] = normalizeProductFields(merged);
+      if (g && Date.now() <= g.until) {
+        merged.hidden = g.hidden;
+      } else {
+        const localTs = Number(local.updatedAt) || 0;
+        const remoteTs = Number(normalized.updatedAt) || 0;
+        if (localTs > remoteTs && isProductHidden(local) !== isProductHidden(normalized)) {
+          merged.hidden = isProductHidden(local);
+        } else {
+          merged.hidden = isProductHidden(normalized);
+          const map = readHiddenMap();
+          map[id] = !!merged.hidden;
+          writeHiddenMap(map);
+        }
+      }
+      productsCache[idx] = applyVisibilityGuard(normalizeProductFields(merged));
     } else {
-      productsCache.push(normalized);
+      productsCache.push(applyVisibilityGuard(applyRememberedHidden(normalized)));
       productsCache.sort((a, b) => a.id - b.id);
     }
     setProductsCache(productsCache);
@@ -1094,13 +1179,18 @@
   function reconcileRemoteWithLocalFeatured(remoteProducts) {
     ensureCaches();
     const localById = new Map((productsCache || []).map((p) => [String(p.id), p]));
+    const hiddenMap = readHiddenMap();
     const featuredPushIds = [];
     const merged = (remoteProducts || []).map((r) => {
       const local = localById.get(String(r.id));
       const remoteFeat = isProductFeatured(r);
       const localFeat = isProductFeatured(local);
-      const remoteHidden = isProductHidden(r);
-      const localHidden = isProductHidden(local);
+      const remoteHidden = !!(r && (r.hidden === true || r.hidden === 1 || r.hidden === '1' || r.hidden === 'true'));
+      const id = String(r.id);
+      const g = visibilityGuard.get(id);
+      const guardActive = !!(g && Date.now() <= g.until);
+      const remembered = Object.prototype.hasOwnProperty.call(hiddenMap, id) ? !!hiddenMap[id] : null;
+      const localHidden = local ? isProductHidden(local) : remoteHidden;
       let featured = remoteFeat;
       let hidden = remoteHidden;
       if (localFeat && !remoteFeat) {
@@ -1111,15 +1201,39 @@
       } else if (local) {
         featured = localFeat;
       }
-      if (local && localHidden !== remoteHidden) {
-        featuredPushIds.push(r.id);
-        hidden = localHidden;
+
+      if (guardActive) {
+        hidden = g.hidden;
+        if (hidden !== remoteHidden) featuredPushIds.push(r.id);
+        hiddenMap[id] = !!hidden;
+      } else {
+        const localTs = Number(local && local.updatedAt) || 0;
+        const remoteTs = Number(r && r.updatedAt) || 0;
+        // Prefer the newer write; only push local/map when it is strictly newer than cloud
+        if (local && localHidden !== remoteHidden && localTs > remoteTs) {
+          hidden = localHidden;
+          featuredPushIds.push(r.id);
+          hiddenMap[id] = !!hidden;
+        } else if (
+          remembered != null &&
+          remembered !== remoteHidden &&
+          localTs > remoteTs
+        ) {
+          hidden = remembered;
+          featuredPushIds.push(r.id);
+          hiddenMap[id] = !!hidden;
+        } else {
+          hidden = remoteHidden;
+          hiddenMap[id] = !!remoteHidden;
+        }
       }
-      if (local) {
-        return applyVisibilityGuard(normalizeProductFields({ ...local, ...r, featured, hidden }));
-      }
-      return applyVisibilityGuard(normalizeProductFields({ ...r, featured, hidden }));
+
+      const base = local
+        ? normalizeProductFields({ ...local, ...r, featured, hidden })
+        : normalizeProductFields({ ...r, featured, hidden });
+      return applyVisibilityGuard(base);
     });
+    writeHiddenMap(hiddenMap);
     return { merged, featuredPushIds };
   }
 
@@ -1143,13 +1257,14 @@
     // Always try to push local-only products on admin; featured ★ from any surface
     const idsToPush = [...new Set(pushIds.map(String))];
     if (ok && FB && FB.saveProducts && idsToPush.length) {
-      FB.saveProducts(next, { onlyIds: idsToPush }).catch((e) =>
+      FB.saveProducts(next, { onlyIds: idsToPush, skipImages: true }).catch((e) =>
         console.error('syncCloud push featured/local-only', e)
       );
     } else if (ok && liveWatch && localOnly.length && FB && FB.saveProducts) {
-      FB.saveProducts(next, { onlyIds: localOnly.map((p) => p.id) }).catch((e) =>
-        console.error('syncCloud push local-only products', e)
-      );
+      FB.saveProducts(next, {
+        onlyIds: localOnly.map((p) => p.id),
+        skipImages: true,
+      }).catch((e) => console.error('syncCloud push local-only products', e));
     }
     return true;
   }
@@ -1399,6 +1514,7 @@
     isProductHidden,
     isProductVisible,
     guardProductVisibility,
+    rememberProductHidden,
     getVisibleProducts,
     sortProductsNewestFirst,
     productRecency,

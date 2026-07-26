@@ -139,4 +139,5 @@
     .catch(boot);
   window.addEventListener('md3-products-updated', renderBoutique);
   window.addEventListener('md3-carts-updated', () => MD3Header.updateCartBadge());
+  window.addEventListener('md3-currency-changed', renderBoutique);
 })();

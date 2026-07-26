@@ -197,6 +197,10 @@
   });
 
   window.addEventListener('md3-products-updated', scheduleFeaturedRender);
+
+  window.addEventListener('md3-currency-changed', function () {
+    scheduleFeaturedRender();
+  });
   window.addEventListener('md3-carts-updated', updateCartBadge);
   window.addEventListener('md3-session-changed', updateNavAuth);
   window.addEventListener('md3-site-assets-updated', function () {

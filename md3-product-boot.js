@@ -216,7 +216,19 @@
                   .map(
                     (src, idx) => `
                   <figure class="product-gallery-frame" role="listitem" data-index="${idx}">
-                    <img
+                    ${
+                      MD3Shop.progressiveImgHtml
+                        ? MD3Shop.progressiveImgHtml(src, {
+                            fallback:
+                              (MD3Shop.categoryFallbackImage && MD3Shop.categoryFallbackImage(p)) ||
+                              'images/cat-mode.jpg',
+                            alt: displayName + (multi ? ' — ' + (idx + 1) : ''),
+                            className: 'product-photo' + (idx === 0 ? ' product-photo--hero' : ''),
+                            eager: idx === 0,
+                            width: 900,
+                            height: 1200,
+                          })
+                        : `<img
                       src="${MD3Shop.esc(src)}"
                       alt="${MD3Shop.esc(displayName)}${multi ? ' — ' + (idx + 1) : ''}"
                       class="product-photo${idx === 0 ? ' product-photo--hero' : ''}"
@@ -224,7 +236,8 @@
                       height="1200"
                       ${idx === 0 ? 'fetchpriority="high" decoding="async"' : 'loading="lazy" decoding="async"'}
                       draggable="false"
-                    />
+                    />`
+                    }
                   </figure>`
                   )
                   .join('')}
@@ -306,6 +319,7 @@
     productPaintedId = p.id;
     productPaintedImageKey = nextImageKey;
     bindProductGallerySwipe();
+    if (MD3Shop.hydrateProgressiveImages) MD3Shop.hydrateProgressiveImages(wrap);
     if (prevSize && currentProductNeedsSize && SZ) {
       const avail = SZ.getSizeStock(p, prevSize);
       if (avail > 0) {
@@ -445,6 +459,8 @@
       forceRenderProduct();
     },
   });
+
+  window.addEventListener('md3-currency-changed', forceRenderProduct);
 
   try {
     if (MD3Store.ensureCaches) MD3Store.ensureCaches();

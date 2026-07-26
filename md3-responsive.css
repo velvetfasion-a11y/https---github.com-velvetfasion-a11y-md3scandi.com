@@ -76,9 +76,9 @@ html.is-mobile .site-header .logo {
 
 html[data-viewport='mobile'] .header-util,
 html.is-mobile .header-util {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.4rem;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
 }
 
 html[data-viewport='mobile'] .header-icons,
@@ -86,9 +86,10 @@ html.is-mobile .header-icons {
   gap: 0.35rem;
 }
 
+/* Language lives in the footer on phones — beside currency */
 html[data-viewport='mobile'] .header-util > .lang.lang-compact,
 html.is-mobile .header-util > .lang.lang-compact {
-  display: none;
+  display: none !important;
 }
 
 html[data-viewport='mobile'] #md3-hero.home-hero,

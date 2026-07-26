@@ -32,9 +32,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet" /></noscript>
-<link rel="stylesheet" href="md3-header.css?v=21" />
-<link rel="stylesheet" href="md3-responsive.css?v=21" />
-<link rel="stylesheet" href="md3-home.css?v=51" />
+<link rel="stylesheet" href="md3-header.css?v=26" />
+<link rel="stylesheet" href="md3-responsive.css?v=26" />
+<link rel="stylesheet" href="md3-home.css?v=53" />
 </head>
 <body class="home-page">
 <script src="md3-viewport.js"></script>
@@ -73,11 +73,11 @@
     <div class="home-hero-foot">
       <p class="home-hero-tagline" data-i18n="hero-tagline">Une sélection éditoriale de pièces intemporelles — du dressing au salon. Matières nobles, façonnées pour durer.</p>
       <div class="home-hero-ctas">
-        <a href="#boutique" class="home-btn home-btn--luxury-primary">
-          <span data-i18n="hero-cta-shop">Découvrir la collection</span>
+        <a href="boutique.html" class="home-btn home-btn--luxury-primary">
+          <span data-i18n="hero-cta-shop">Shop all</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </a>
-        <a href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" class="home-btn home-btn--luxury-secondary" data-i18n="hero-cta-limited">Édition limitée</a>
+        <a href="boutique.html?cat=Mode" class="home-btn home-btn--luxury-secondary" data-i18n="hero-cta-limited">Shop fashion</a>
       </div>
     </div>
   </div>
@@ -158,7 +158,7 @@
         <span data-i18n="journal-title-a">Le lin européen,</span>
         <em data-i18n="journal-title-b">un geste artisan</em>.
       </h2>
-      <p class="home-journal-text" data-i18n="journal-text">Cultivé en Normandie, filé au Portugal, lavé en pierre pour révéler sa matière vivante. Notre édition limitée célèbre une filière courte et un savoir-faire retrouvé, pensé pour traverser les saisons.</p>
+      <p class="home-journal-text" data-i18n="journal-text">Lavé en pierre pour révéler sa matière vivante. Notre édition limitée célèbre une filière courte et un savoir-faire retrouvé, pensé pour traverser les saisons.</p>
       <a href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" class="home-journal-link"><span data-i18n="journal-cta">Découvrir l'édition</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
     </div>
     <div class="home-journal-visual">
@@ -212,7 +212,17 @@
       <span data-i18n="copyright">© 2026 MD3 Scandi — Tous droits réservés</span>
       <div class="site-footer-meta">
         <span data-i18n="footer-location">Paris · Stockholm</span>
-        <span>EUR €</span>
+        <div class="site-footer-locale">
+          <div class="lang lang-compact site-footer-lang" role="group" data-i18n-aria="nav-lang" aria-label="Langue">
+            <button type="button" class="lang-btn active" data-lang="fr">FR</button>
+            <button type="button" class="lang-btn" data-lang="en">EN</button>
+            <button type="button" class="lang-btn" data-lang="ar">AR</button>
+          </div>
+          <label class="currency-select-wrap currency-select-wrap--footer">
+            <span class="visually-hidden" data-i18n="nav-currency">Currency</span>
+            <select class="currency-select currency-select--footer" data-md3-currency data-i18n-aria="nav-currency" aria-label="Currency"></select>
+          </label>
+        </div>
       </div>
     </div>
   </div>
@@ -221,16 +231,17 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script defer src="firebase-config.js"></script>
-<script defer src="md3-firebase.js?v=8"></script>
+<script defer src="md3-firebase.js?v=11"></script>
 <script defer src="md3-sizes.js?v=2"></script>
-<script defer src="md3-store.js?v=27"></script>
+<script defer src="md3-store.js?v=31"></script>
 <script defer src="md3-site-assets.js?v=8"></script>
 <script defer src="md3-nav-icons.js"></script>
-<script defer src="md3-header.js?v=20"></script>
-<script defer src="md3-lang.js?v=31"></script>
-<script defer src="md3-currency.js?v=4"></script>
+<script defer src="md3-currency.js?v=6"></script>
+<script defer src="md3-header.js?v=25"></script>
+<script defer src="md3-lang.js?v=43"></script>
+
 <script defer src="md3-hero-fit.js?v=14"></script>
-<script defer src="md3-shop-render.js?v=31"></script>
-<script defer src="md3-home-boot.js?v=5"></script>
+<script defer src="md3-shop-render.js?v=32"></script>
+<script defer src="md3-home-boot.js?v=6"></script>
 </body>
 </html>

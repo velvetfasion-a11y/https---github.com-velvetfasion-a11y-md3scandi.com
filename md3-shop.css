@@ -64,6 +64,7 @@
   contain: layout paint style;
 }
 
+.cimgw .md3-img,
 .cimgw img,
 .cimgw .product-photo {
   width: 100%;
@@ -71,12 +72,41 @@
   object-fit: cover;
   object-position: center center;
   display: block;
-  transition: transform 0.5s;
 }
 
+.cimgw .md3-img__full {
+  transition: opacity 0.4s ease, transform 0.5s;
+}
+
+.scard:hover .cimgw .md3-img__full.is-ready,
 .scard:hover .cimgw img,
 .scard:hover .cimgw .product-photo {
   transform: scale(1.03);
+}
+
+/* Instant photo preview until the real image fades in */
+.md3-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background-color: #ebe6dc;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+.md3-img__full {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.md3-img__full.is-ready {
+  opacity: 1;
 }
 
 .cemoji {
@@ -213,7 +243,8 @@
 .boutique-filter {
   background: transparent;
   border: 1px solid rgba(184, 154, 90, 0.25);
-  padding: 8px 16px;
+  border-radius: 999px;
+  padding: 8px 18px;
   font-family: 'Jost', sans-serif;
   font-size: 10px;
   letter-spacing: 0.15em;
@@ -296,7 +327,9 @@
 }
 
 .product-gallery-frame img,
-.product-gallery-frame .product-photo {
+.product-gallery-frame .product-photo,
+.product-gallery-frame .md3-img,
+.product-gallery-frame .md3-img__full {
   width: 100%;
   height: auto;
   max-width: 100%;
@@ -304,6 +337,15 @@
   object-fit: unset;
   -webkit-user-drag: none;
   user-select: none;
+}
+
+.product-gallery-frame .md3-img {
+  min-height: 240px;
+  background-color: #ebe6dc;
+}
+
+.product-gallery-frame .md3-img__full.is-ready {
+  height: auto;
 }
 
 /* Circular chevrons — appear on hover (mouse), always soft on touch */

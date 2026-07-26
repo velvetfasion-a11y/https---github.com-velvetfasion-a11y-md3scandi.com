@@ -210,6 +210,7 @@
     data.featured = !!p.featured;
     if (raw.createdAt) data.createdAt = Number(raw.createdAt) || raw.createdAt;
     if (raw.updatedAt) data.updatedAt = Number(raw.updatedAt) || raw.updatedAt;
+    else data.updatedAt = Date.now();
     if (imageUrls.length) {
       data.images = imageUrls;
       data.image = imageUrls[0];
@@ -218,7 +219,34 @@
       delete data.image;
     }
 
-    await productDoc(p.id).set(data);
+    if (skipImages) {
+      // Metadata-only: merge so we never wipe Storage image URLs or fail on data: blobs.
+      // Full .set() was dropping `hidden` on the next catalog reload when image rewrite failed.
+      const meta = {
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        sub: p.sub,
+        price: p.price,
+        stock: p.stock,
+        emoji: p.emoji,
+        featured: !!p.featured,
+        hidden: !!p.hidden,
+        desc: p.desc,
+        updatedAt: data.updatedAt,
+      };
+      if (raw.createdAt) meta.createdAt = Number(raw.createdAt) || raw.createdAt;
+      if (p.sizeType) meta.sizeType = p.sizeType;
+      if (p.sizeStock) meta.sizeStock = p.sizeStock;
+      // Keep https image refs if we still have them locally; never delete images on skip
+      if (imageUrls.length) {
+        meta.images = imageUrls;
+        meta.image = imageUrls[0];
+      }
+      await productDoc(p.id).set(meta, { merge: true });
+    } else {
+      await productDoc(p.id).set(data);
+    }
 
     if (opts && opts.clearImage) {
       await deleteProductImageFile(p.id);

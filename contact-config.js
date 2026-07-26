@@ -84,17 +84,10 @@
 
   function applyRemoteSiteAssets(remote) {
     if (!remote || !remote.contact) return;
+    // Remote admin save is source of truth (including cleared empty fields)
     const clean = normalize(remote.contact);
-    const cur = get();
-    // Prefer non-empty remote fields when local file defaults are empty
-    const merged = normalize({
-      phone: clean.phone || cur.phone,
-      whatsappPhone: clean.whatsappPhone || cur.whatsappPhone,
-      tiktokHandle: clean.tiktokHandle || cur.tiktokHandle,
-      siteName: clean.siteName || cur.siteName,
-    });
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
     } catch (_) {}
   }
 
