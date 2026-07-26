@@ -68,15 +68,43 @@
   }
 
   function getCfg() {
-    // Public settings (ai-config.js) + secrets (ai-secrets.js from .env / CI)
     const pub = global.MD3_AI_CONFIG || {};
     const sec = global.MD3_AI_SECRETS || {};
     return Object.assign({}, pub, sec);
   }
 
+  function adminAiBaseUrl() {
+    // Prefer local API when developing on this machine
+    try {
+      if (/^(localhost|127\.0\.0\.1)$/i.test(location.hostname)) {
+        return 'http://127.0.0.1:8787';
+      }
+    } catch (_) {}
+    const cfg = getCfg().adminAiBaseUrl || '';
+    return cfg ? String(cfg).replace(/\/$/, '') : '';
+  }
+
+  function adminAiAuthHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    const secret = getCfg().adminAiSecret || (global.MD3_AI_SECRETS && global.MD3_AI_SECRETS.adminAiSecret);
+    if (secret) headers['x-md3-admin-secret'] = String(secret);
+    // MD3 admin session uses a local password gate — same gate the Functions verify
+    try {
+      const user = S() && S().getCurrentUser && S().getCurrentUser();
+      if (user && user.isAdmin) {
+        headers.Authorization = 'Bearer md3-admin:1111';
+      }
+    } catch (_) {}
+    return headers;
+  }
+
   function geminiKey() {
-    const k = getCfg().geminiApiKey;
-    return k && !String(k).includes('YOUR_') ? String(k).trim() : '';
+    // Keys must not live in the browser — always empty here
+    return '';
+  }
+
+  function hasAdminAiBackend() {
+    return !!adminAiBaseUrl();
   }
 
   function geminiModelUrl(model, method) {
@@ -152,42 +180,25 @@
   }
 
   function hasGemini() {
-    return !!geminiKey() && !geminiKeyIssue();
+    return hasAdminAiBackend();
   }
 
   function openaiKey() {
-    const k = getCfg().openaiApiKey;
-    return k && !String(k).includes('YOUR_') ? k : '';
+    return '';
   }
 
   function hasOpenAI() {
-    return !!openaiKey();
+    return false;
   }
 
   function hasCloudAI() {
-    const p = (getCfg().provider || 'gemini').toLowerCase();
-    if (p === 'openai') return hasOpenAI();
-    if (p === 'gemini') return hasGemini() || (!!geminiKey() && !hasOpenAI());
-    return hasGemini() || hasOpenAI();
+    return hasAdminAiBackend();
   }
 
   function cloudAISetupMessage() {
-    const issue = geminiKeyIssue();
-    if (issue === 'oauth_not_api_key') {
-      return msg(
-        'admin-ai-err-bad-key-type',
-        'Wrong key type in GEMINI_API_KEY. Use an API key from aistudio.google.com/apikey (AQ.… or AIza…), not a Google sign-in OAuth token (ya29.…). Update .env, run node scripts/sync-ai-config.mjs, and add the same key to GitHub Actions secrets for the live site.'
-      );
-    }
-    if (issue === 'bad_format') {
-      return msg(
-        'admin-ai-err-bad-key-format',
-        'GEMINI_API_KEY does not look valid. Create a key at aistudio.google.com/apikey (AQ.… or AIza…), put it in .env, then run node scripts/sync-ai-config.mjs.'
-      );
-    }
     return msg(
-      'admin-ai-err-no-key',
-      'Gemini API key missing. Locally: set GEMINI_API_KEY in .env, then run node scripts/sync-ai-config.mjs. Live site: add GEMINI_API_KEY in GitHub → Settings → Secrets → Actions.'
+      'admin-ai-err-no-backend',
+      'Admin AI backend offline. Locally: set GEMINI_API_KEY in .env, run node scripts/dev-admin-ai.mjs, and set ADMIN_AI_BASE_URL=http://127.0.0.1:8787. Production: deploy Cloud Functions with GEMINI_API_KEY secret.'
     );
   }
 
@@ -2122,17 +2133,9 @@ Never reuse or overwrite an existing product id.`;
   }
 
   async function generateProductImage(prompt, referenceDataUrl, onProgress) {
-    const key = geminiKey();
-    if (!key) throw new Error(cloudAISetupMessage());
-    const models = imageModels();
-    const imageSize = normalizeGeminiImageSize(getCfg().geminiImageSize || '1K');
-    const aspectRatio = getCfg().geminiImageAspect || '3:4';
-    const fullPrompt =
-      brandPrefix() +
-      prompt +
-      ' Photorealistic, sharp high-resolution catalog quality, crisp detail, no pixelation, no blur, no text or watermarks.';
-
-    const parts = [{ text: fullPrompt }];
+    if (!hasAdminAiBackend()) throw new Error(cloudAISetupMessage());
+    if (onProgress) onProgress();
+    let reference = null;
     if (referenceDataUrl) {
       const asData = await ensureDataUrl(referenceDataUrl);
       if (!asData) {
@@ -2143,71 +2146,14 @@ Never reuse or overwrite an existing product id.`;
           )
         );
       }
-      const modestRef = await compressImage(asData, AI_REF_MAX_EDGE, 0.92);
-      const ref = dataUrlToGeminiPart(modestRef);
-      if (!ref) {
-        throw new Error(
-          msg('admin-ai-err-ref', 'Could not prepare the reference image for AI. Attach a photo with + and try again.')
-        );
-      }
-      parts.push(ref);
+      reference = await compressImage(asData, AI_REF_MAX_EDGE, 0.92);
     }
-
-    let lastErr = null;
-    for (const model of models) {
-      const url = geminiModelUrl(model);
-      // Prefer configured size (2K+). Only drop to 1K when the API rejects the size.
-      const sizesToTry = imageSize === '4K' ? ['4K', '2K'] : [imageSize];
-
-      for (let si = 0; si < sizesToTry.length; si++) {
-        const size = sizesToTry[si];
-        const body = buildGeminiImageRequest(parts, aspectRatio, size);
-
-        if (onProgress) onProgress();
-        try {
-          throwIfCancelled();
-          const res = await fetch(url, geminiFetchOptions(key, body, activeAbort && activeAbort.signal));
-
-          if (!res.ok) {
-            const err = await res.text();
-            lastErr = new Error('Image model (' + model + '): ' + err.slice(0, 240));
-            if (res.status === 404 || /not found|invalid model/i.test(err)) break;
-            if (
-              res.status === 400 &&
-              /image_size|imageSize|aspect/i.test(err) &&
-              size !== '1K' &&
-              size !== '512'
-            ) {
-              if (!sizesToTry.includes('1K')) sizesToTry.push('1K');
-              continue;
-            }
-            if (res.status === 400 && /request_format|aspect_ratio/i.test(err)) break;
-            if (res.status === 429 || res.status >= 500) continue;
-            throw lastErr;
-          }
-
-          const data = await res.json();
-          const candidate = data.candidates && data.candidates[0];
-          const respParts = (candidate && candidate.content && candidate.content.parts) || [];
-          for (const part of respParts) {
-            const dataUrl = geminiPartToDataUrl(part);
-            if (dataUrl) return compressImage(dataUrl, AI_STORE_MAX_EDGE, AI_STORE_JPEG_QUALITY);
-          }
-          lastErr = new Error('No image returned from ' + model);
-          // Don't fall back to a smaller size on empty responses — that looks soft/pixelated.
-          break;
-        } catch (e) {
-          lastErr = e;
-          if (/404|not found|invalid model/i.test(String(e && e.message))) break;
-          if (/image_size|imageSize/i.test(String(e && e.message)) && size !== '1K' && size !== '512') {
-            if (!sizesToTry.includes('1K')) sizesToTry.push('1K');
-            continue;
-          }
-          throw e;
-        }
-      }
-    }
-    throw lastErr || new Error('Image generation failed');
+    const data = await postAdminAi('/adminAiImage', {
+      prompt: String(prompt || '').slice(0, 2500),
+      referenceDataUrl: reference || undefined,
+    });
+    if (!data || !data.dataUrl) throw new Error(msg('admin-ai-err-gen', 'Image generation failed. Try again in a moment.'));
+    return compressImage(data.dataUrl, AI_STORE_MAX_EDGE, AI_STORE_JPEG_QUALITY);
   }
 
   async function buildGalleryImages(referenceDataUrl, shots, onProgress) {
@@ -3323,54 +3269,103 @@ Never reuse or overwrite an existing product id.`;
     return actions;
   }
 
-  async function callGemini(text, files) {
-    const key = geminiKey();
-    const system = buildSystemPrompt();
-    const contents = buildGeminiContents();
-    let lastErr = null;
-
-    for (const model of chatModels()) {
-      const url = geminiModelUrl(model);
-      try {
-        throwIfCancelled();
-        const res = await fetch(
-          url,
-          geminiFetchOptions(
-            key,
-            {
-              systemInstruction: { parts: [{ text: system }] },
-              contents,
-              generationConfig: {
-                temperature: 0.35,
-                responseMimeType: 'application/json',
-              },
-            },
-            activeAbort && activeAbort.signal
-          )
-        );
-
-        if (!res.ok) {
-          const err = await res.text();
-          lastErr = new Error('Gemini (' + model + '): ' + err.slice(0, 280));
-          if (res.status === 404 || /not found|invalid model/i.test(err)) continue;
-          throw lastErr;
-        }
-
-        const data = await res.json();
-        const raw =
-          data.candidates &&
-          data.candidates[0] &&
-          data.candidates[0].content &&
-          data.candidates[0].content.parts &&
-          data.candidates[0].content.parts.map((p) => p.text).join('');
-        return parseAiJson(raw);
-      } catch (e) {
-        lastErr = e;
-        if (/404|not found|invalid model/i.test(String(e.message))) continue;
-        throw e;
+  function mapServerActions(actions) {
+    return (actions || []).map((a) => {
+      if (!a || !a.type) return a;
+      const type = String(a.type);
+      if (type === 'create_product') {
+        return {
+          type: 'add_product',
+          name: a.name,
+          category: a.category,
+          sub: a.sub,
+          price: a.price,
+          stock: a.stock,
+          desc: a.description || a.desc,
+          featured: a.featured,
+          imageIndex: Array.isArray(a.attachmentIndices) ? a.attachmentIndices[0] : a.attachmentIndex,
+          imageIndices: a.attachmentIndices,
+          generateGallery: !!(a.generateImagePrompts && a.generateImagePrompts.length),
+          galleryShots: a.generateImagePrompts || a.galleryShots || [],
+        };
       }
+      if (type === 'update_product') {
+        const changes = a.changes || {};
+        return {
+          type: 'update_product',
+          match: a.target || a.match || a.name || 'focused',
+          name: changes.name,
+          category: changes.category,
+          sub: changes.sub,
+          price: changes.price,
+          stock: changes.stock,
+          desc: changes.description || changes.desc,
+          featured: changes.featured,
+        };
+      }
+      if (type === 'delete_product') {
+        return { type: 'delete_product', match: a.target || a.match || a.name || 'focused' };
+      }
+      if (type === 'generate_product_images') {
+        return {
+          type: 'generate_product_images',
+          match: a.target || a.match || 'focused',
+          galleryShots: a.prompts || a.galleryShots || [],
+          referenceImageIndex: a.referenceAttachmentIndex != null ? a.referenceAttachmentIndex : 0,
+          replaceGallery: !!a.replaceMain,
+        };
+      }
+      if (type === 'set_site_image') {
+        return {
+          type: 'set_site_image',
+          slot: a.slot,
+          imageIndex: a.attachmentIndex != null ? a.attachmentIndex : 0,
+        };
+      }
+      return a;
+    }).filter(Boolean);
+  }
+
+  async function postAdminAi(path, body) {
+    const base = adminAiBaseUrl();
+    if (!base) throw new Error(cloudAISetupMessage());
+    throwIfCancelled();
+    const res = await fetch(base + path, {
+      method: 'POST',
+      headers: adminAiAuthHeaders(),
+      body: JSON.stringify(body || {}),
+      signal: activeAbort && activeAbort.signal,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(data.error || data.message || 'Admin AI HTTP ' + res.status);
+      err.status = res.status;
+      throw err;
     }
-    throw lastErr || new Error('No Gemini model available');
+    return data;
+  }
+
+  async function callGemini(text, files) {
+    const active = getActiveProduct();
+    const focusedProduct = active
+      ? { id: active.id, name: active.name, category: active.category, sub: active.sub, price: active.price }
+      : sessionCtx.focusedProductId != null
+        ? { id: sessionCtx.focusedProductId, name: sessionCtx.focusedProductName }
+        : null;
+    const attachments = (files || []).slice(0, 4).map((f, i) => ({
+      name: (f && f.name) || 'image-' + i,
+      dataUrl: f && f.dataUrl,
+    }));
+    const data = await postAdminAi('/adminAiPrompt', {
+      prompt: text || '(see attachments)',
+      products: S().getProducts(),
+      focusedProduct,
+      attachments,
+    });
+    return {
+      reply: data.reply || '',
+      actions: mapServerActions(data.actions || []),
+    };
   }
 
   async function callOpenAI(text, files) {
@@ -3415,11 +3410,8 @@ Never reuse or overwrite an existing product id.`;
   }
 
   async function callCloudAI(text, files) {
-    const provider = (getCfg().provider || 'gemini').toLowerCase();
-    if (provider === 'openai' && hasOpenAI()) return callOpenAI(text, files);
-    if (hasGemini()) return callGemini(text, files);
-    if (hasOpenAI()) return callOpenAI(text, files);
-    return null;
+    if (!hasAdminAiBackend()) throw new Error(cloudAISetupMessage());
+    return callGemini(text, files);
   }
 
   function pushHistoryTurn(turn) {
@@ -3762,15 +3754,13 @@ Never reuse or overwrite an existing product id.`;
   function showKeyWarningIfNeeded() {
     const el = $('adminAiKeyWarn');
     if (!el) return;
-    const issue = geminiKeyIssue();
-    if (issue || !hasGemini()) {
-      el.hidden = false;
-      el.textContent = cloudAISetupMessage();
+    if (hasAdminAiBackend()) {
+      el.hidden = true;
+      el.textContent = '';
       return;
     }
-    // Key works — keep the chat clean; referrer lockdown is documented in .env.example
-    el.hidden = true;
-    el.textContent = '';
+    el.hidden = false;
+    el.textContent = cloudAISetupMessage();
   }
 
   function init() {

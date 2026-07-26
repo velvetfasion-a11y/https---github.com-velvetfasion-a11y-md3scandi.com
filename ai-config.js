@@ -1,10 +1,11 @@
 /**
  * Public AI settings only — NO API keys.
- * Keys live in .env (local) / GitHub Actions secrets (CI) and are written to
- * gitignored ai-secrets.js by: node scripts/sync-ai-config.mjs
+ * Gemini runs on Cloud Functions / local API (scripts/dev-admin-ai.mjs).
+ * Keys: .env GEMINI_API_KEY → Functions secrets / local server only.
  */
 window.MD3_AI_CONFIG = {
   "provider": "gemini",
+  "adminAiBaseUrl": "http://127.0.0.1:8787",
   "geminiModel": "gemini-3-flash-preview",
   "geminiImageModel": "gemini-2.5-flash-image",
   "geminiImageSize": "1K",

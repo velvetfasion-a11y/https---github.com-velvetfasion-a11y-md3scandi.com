@@ -36,8 +36,9 @@ Puis : [http://localhost:8080](http://localhost:8080)
 | `md3-email.js` | Envoi du code de confirmation (EmailJS) |
 | `email-config.js` | Clés EmailJS (à remplir) |
 | `.env` | **All secrets** (Firebase, reCAPTCHA, Gemini, OAuth) — copy from `.env.example` |
-| `ai-config.js` | Public AI models/settings only (no API keys) |
-| `ai-secrets.js` | Auto-generated keys from `.env` / CI (gitignored) |
+| `ai-config.js` | Public AI endpoint URL + models (no API keys) |
+| `functions/` | Cloud Functions admin AI (Gemini keys server-side) |
+| `scripts/dev-admin-ai.mjs` | Local admin AI API (`http://127.0.0.1:8787`) |
 
 ## Configuration (`.env`)
 
@@ -50,6 +51,20 @@ node scripts/sync-config.mjs
 ```
 
 Do **not** commit `.env`, `firebase-config.js`, or `ai-secrets.js`.
+
+### Admin AI (Gemini)
+
+1. Put `GEMINI_API_KEY` in `.env` only.
+2. Local: `node scripts/dev-admin-ai.mjs` then open Compte (uses `http://127.0.0.1:8787`).
+3. Production: set Functions secrets and deploy:
+
+```bash
+cd functions && npm install
+firebase functions:secrets:set GEMINI_API_KEY
+firebase deploy --only functions
+```
+
+The browser never receives the Gemini key — it calls `adminAiPrompt` / `adminAiImage` only.
 
 **GitHub Pages:** add these Actions secrets (same values as `.env`):
 

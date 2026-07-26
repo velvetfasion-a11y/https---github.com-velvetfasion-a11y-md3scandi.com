@@ -62,14 +62,11 @@ jobs:
               console.error('ai-config.js must not contain API keys — refusing broken deploy.');
               process.exit(1);
             }
-            const sec = fs.readFileSync('ai-secrets.js', 'utf8');
-            const g = (sec.match(/\"geminiApiKey\"\\s*:\\s*\"([^\"]*)\"/) || [])[1] || '';
-            const o = (sec.match(/\"openaiApiKey\"\\s*:\\s*\"([^\"]*)\"/) || [])[1] || '';
-            if (g.length < 8 && o.length < 8) {
-              console.error('ai-secrets.js is missing API keys — refusing broken deploy.');
+            if (!/adminAiBaseUrl/.test(ai)) {
+              console.error('ai-config.js missing adminAiBaseUrl — refusing broken deploy.');
               process.exit(1);
             }
-            console.log('firebase-config.js + ai-config.js + ai-secrets.js OK');
+            console.log('firebase-config.js + ai-config.js OK (keys stay on Cloud Functions)');
           "
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -77,6 +74,8 @@ jobs:
         run: |
           rm -f images/hero-bg.jpeg images/hero-bg.webp images/hero-bg.png
           rm -f storefront-full-bundle.txt md3-hero-stickers.js
+          rm -rf functions/node_modules exports
+          rm -f ai-secrets.js
           echo "Pruned unused deploy bloat"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
