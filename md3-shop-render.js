@@ -349,15 +349,19 @@
     let paused = false;
 
     function layoutCards() {
-      const styles = window.getComputedStyle(group);
-      const gap = parseFloat(styles.columnGap || styles.gap) || 0;
       const visible = visibleCardCount(carousel);
+      const styles = window.getComputedStyle(group);
+      // One card on phone: zero gap so the next slide never peeks at the edge
+      let gap = visible === 1 ? 0 : parseFloat(styles.columnGap || styles.gap) || 0;
       const gutters = Math.max(0, visible - 1);
-      const w = Math.max(140, (carousel.clientWidth - gap * gutters) / visible);
-      track.style.setProperty('--featured-card-w', w.toFixed(2) + 'px');
-      track.style.setProperty('--featured-gap', gap.toFixed(2) + 'px');
+      const cw = Math.max(1, Math.round(carousel.clientWidth));
+      const w = Math.max(140, Math.floor((cw - gap * gutters) / visible));
+      track.style.setProperty('--featured-card-w', w + 'px');
+      track.style.setProperty('--featured-gap', gap + 'px');
       void group.offsetWidth;
-      stepPx = count > 0 ? group.offsetWidth / count : 0;
+      const card = baseCards[0];
+      const cardW = card ? Math.round(card.getBoundingClientRect().width) : w;
+      stepPx = Math.max(1, cardW + gap);
     }
 
     function apply(animate) {

@@ -279,6 +279,8 @@
 
 .product-gallery-stage {
   position: relative;
+  overflow: hidden;
+  width: 100%;
 }
 
 .product-gallery-track {
@@ -287,6 +289,7 @@
   gap: 0;
   margin: 0;
   padding: 0;
+  width: 100%;
   list-style: none;
   overflow-x: auto;
   overflow-y: hidden;
@@ -306,13 +309,15 @@
   margin: 0;
   flex: 0 0 100%;
   width: 100%;
+  min-width: 100%;
   max-width: 100%;
   height: auto;
   aspect-ratio: auto;
   background: #f3efe8;
-  overflow: visible;
+  overflow: hidden;
   scroll-snap-align: start;
   scroll-snap-stop: always;
+  box-sizing: border-box;
 }
 
 .product-gallery-frame--empty {
@@ -723,7 +728,8 @@
     max-height: none;
     border-radius: 0;
     background: #f3efe8;
-    overflow: visible;
+    overflow: hidden;
+    min-width: 100%;
   }
 
   .product-gallery-frame img,

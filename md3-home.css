@@ -692,12 +692,16 @@ html.is-mobile #md3-hero .hero-bg-img {
 
 .home-featured-carousel {
   overflow: hidden;
+  overflow-x: clip;
   width: 100%;
   max-width: 100%;
   min-height: 300px;
   touch-action: pan-y;
   mask-image: none;
   -webkit-mask-image: none;
+  /* Create a hard clip for transformed children (iOS Safari) */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 @media (min-width: 768px) {
@@ -770,7 +774,8 @@ html.is-mobile #md3-hero .hero-bg-img {
 
 @media (max-width: 767px) {
   .home-featured-track {
-    --featured-gap: 0.85rem;
+    --featured-gap: 0px;
+    padding: 0.35rem 0 1rem;
   }
 
   .home-featured-carousel {
@@ -778,6 +783,8 @@ html.is-mobile #md3-hero .hero-bg-img {
     margin: 0;
     padding: 0 0 0.35rem;
     display: block !important;
+    overflow: hidden;
+    overflow-x: clip;
   }
 
   .home-featured-carousel[hidden] {
@@ -795,8 +802,13 @@ html.is-mobile #md3-hero .hero-bg-img {
 
   .home-featured-group {
     display: flex !important;
-    gap: var(--featured-gap);
-    padding-inline-end: var(--featured-gap);
+    gap: 0 !important;
+    padding-inline-end: 0 !important;
+  }
+
+  .home-featured .home-product-card {
+    /* JS sets --featured-card-w to the carousel width; keep no side peek */
+    overflow: hidden;
   }
 
   .home-featured .home-product-visual {
