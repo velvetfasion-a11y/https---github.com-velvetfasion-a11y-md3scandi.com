@@ -15,7 +15,9 @@ import { loadEnv } from './lib/load-env.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
-loadEnv(root);
+const env = loadEnv(root);
+// Make .env available to CommonJS handlers via process.env
+Object.assign(process.env, env);
 
 const require = createRequire(import.meta.url);
 const { handleAdminAiPrompt, handleAdminAiImage } = require('../functions/admin-ai.js');

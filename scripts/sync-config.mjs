@@ -10,7 +10,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 
-for (const script of ['sync-firebase-config.mjs', 'sync-ai-config.mjs']) {
+for (const script of ['sync-firebase-config.mjs', 'sync-ai-config.mjs', 'sync-recaptcha-config.mjs']) {
   const res = spawnSync(process.execPath, [path.join(__dirname, script)], {
     cwd: root,
     stdio: 'inherit',
