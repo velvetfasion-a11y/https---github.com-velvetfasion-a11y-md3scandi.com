@@ -391,14 +391,10 @@ Subs: Vêtements, Canapés, Vaisselle, Déco, Textile, Sacs, Chaussures, Lampes.
 Current products: ${JSON.stringify(products)}.
 Recently touched in this chat: ${JSON.stringify(recent)}.
 ${focused ? 'Active product for "this product" / match:"focused" (photo match, last chat product, or open editor): ' + JSON.stringify(focused) + '.' : 'No active product yet — identify from attached photo, product name in the message, or recent chat.'}
-When the user attaches a product/catalog photo, identify which catalog product and which gallery image index (0=main) it matches — even if they say "this model" or "this image" without naming the product. Use replace_product_image with catalogImageIndex for that slot.
 User may write Swedish, French, English, or Arabic.
-Always return actions when the user wants products created/updated — never reply with only text if work can be done.
-DEFAULT: attached product photos without clear "change this product" language → add_product (one per item/photo as appropriate).
-If intent is unclear with photos of items → prefer add_product over update.
-When user says "change this product" / "update this" / "replace the image" → update/replace that existing product only.
-Only use replace_product_image when the user asks to change/replace an existing product's photo — not when listing a new item.
-Never delete products unless the user says delete/remove.`;
+CRITICAL DEFAULT: any attached product photo without the exact words "this product" / "change this product" / "replace this image" MUST become add_product with a NEW catalogue entry. Never update or replace an existing product because the photo looks similar.
+Never delete products unless the user says delete/remove.
+Never reuse or overwrite an existing product id.`;
   }
 
   function parseAiJson(raw) {
@@ -992,7 +988,13 @@ Never delete products unless the user says delete/remove.`;
   }
 
   function nextProductId(products) {
-    return products.length ? Math.max(...products.map((p) => p.id)) + 1 : 1;
+    const ids = (products || [])
+      .map((p) => Number(p && p.id))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    const maxId = ids.length ? Math.max.apply(null, ids) : 0;
+    // Timestamp-based floor so a stale/partial local cache cannot reuse an existing cloud id
+    const uniqueFloor = Math.floor(Date.now() / 1000);
+    return Math.max(maxId + 1, uniqueFloor);
   }
 
   function findProductByName(name) {
@@ -1206,55 +1208,106 @@ Never delete products unless the user says delete/remove.`;
     return wantsCreateMultipleProducts(text, files);
   }
 
-  /** True only when user clearly asks to change/replace/update/delete an EXISTING product. */
+  /** True only for unmistakable edit/delete-of-existing wording. */
   function userExplicitlyWantsMutateExisting(text) {
     const t = normalizeUserIntentText(text).toLowerCase().trim();
     if (!t) return false;
     if (inferSiteImageSlot(text)) return false;
+    // Any clear "add/create new product" phrasing wins — never treat as mutate
     if (
-      /(?:add|create|lägg till|ajouter|créer)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:products?|produits?|produkter?|items?)/.test(
-        t
-      ) ||
-      /\bnew products?\b/.test(t)
+      /(?:add|create|ajoute|ajouter|lägg(?:\s+till)?|skapa|créer|cree|new)\b/.test(t) &&
+      /(?:products?|produits?|produkter?|items?|listings?|artikel|articles?)/.test(t)
     ) {
-      // "add new product" wins over vague wording unless they also say "this product"
-      if (!/\bthis\s+product\b/.test(t) && !/(?:existing|current)\s+product/.test(t)) return false;
+      return false;
+    }
+    if (/\bnew products?\b/.test(t) || /\bnouveau produits?\b/.test(t) || /\bny(?:a)? produkter?\b/.test(t)) {
+      return false;
     }
     return (
       /\bthis\s+product\b/.test(t) ||
-      /(?:for|on|to|of)\s+(?:this|the|that)\s+product\b/.test(t) ||
-      /(?:change|update|edit|modify|fix|replace|swap)\s+(?:this|the|that|existing)\b/.test(t) ||
-      /(?:change|replace|swap|update)\s+(?:the\s+)?(?:main\s+)?(?:image|photo|picture|bild)\b/.test(t) ||
+      /(?:den\s+här|denna)\s+produkten?\b/.test(t) ||
+      /(?:ce|cette)\s+produit\b/.test(t) ||
+      /(?:for|on|to)\s+this\s+product\b/.test(t) ||
+      /(?:change|update|edit|modify|fix|replace|swap)\s+this\s+product\b/.test(t) ||
+      /(?:change|replace|swap|update)\s+(?:the\s+)?(?:existing\s+)?(?:product\s+)?(?:image|photo|picture|bild)\b/.test(t) &&
+        /(?:this|existing|current|focused)\b/.test(t) ||
       /(?:delete|remove)\s+(?:this\s+)?(?:product|item|produit|produkt)\b/.test(t) ||
-      /(?:den\s+här|denna|det\s+här)\s+produkten?\b/.test(t) ||
-      /(?:ce|cette|le)\s+produit\b/.test(t) ||
-      /(?:same|existing|current)\s+product\b/.test(t) ||
-      /(?:make|generate|create)\s+(?:other|more|extra|display|additional)\s+(?:images?|photos?).*(?:for|on|to)\s+(?:this|the)\s+product/.test(
-        t
-      )
+      /(?:same|existing|current)\s+product\b/.test(t)
     );
   }
 
-  /** Default for attached product photos: ADD. Never treat as update unless mutate language is clear. */
+  /**
+   * Force ADD whenever photos are attached (unless user clearly edits an existing product).
+   * This is the primary safety switch against overwriting catalogue rows.
+   */
   function userWantsAddProduct(text, files) {
     if (inferSiteImageSlot(text)) return false;
-    if (explicitWantsNewProduct(text)) return true;
-    if (wantsMultipleDifferentProducts(text, files)) return true;
     if (userExplicitlyWantsMutateExisting(text)) return false;
     const imgs = getEffectiveFiles(files, text);
-    if (!imgs.length) {
-      return /(?:add|create|lägg till|ajouter|créer)\s+(?:a\s+)?(?:new\s+)?(?:products?|produits?|produkter?|items?)/.test(
-        normalizeUserIntentText(text).toLowerCase()
-      );
-    }
+    if (imgs.length) return true;
     const t = normalizeUserIntentText(text).toLowerCase().trim();
-    // Photo(s) alone, or photo + non-mutate wording → new catalogue entry
-    if (!t) return true;
-    if (/(?:add|create|new|lägg|ajouter|créer|publish|list|shop|catalog|boutique|sortiment)/.test(t)) return true;
-    if (/(?:change|replace|update|edit|modify|delete|remove|this product|hero|header|manifesto)/.test(t)) {
-      return false;
-    }
-    return true;
+    if (!t) return false;
+    return (
+      /(?:add|create|ajoute|ajouter|lägg(?:\s+till)?|skapa|créer|cree|publish|list)\b/.test(t) &&
+      /(?:products?|produits?|produkter?|items?|listings?)/.test(t)
+    );
+  }
+
+  function shouldForceAddProducts(text, files) {
+    return userWantsAddProduct(text, files) || wantsMultipleDifferentProducts(text, files);
+  }
+
+  function actionToAddProduct(action) {
+    if (!action) return null;
+    return {
+      type: 'add_product',
+      name: action.name && !/^new product/i.test(String(action.name)) ? action.name : undefined,
+      category: action.category,
+      sub: action.sub,
+      price: action.price,
+      stock: action.stock,
+      desc: action.desc || action.description,
+      featured: action.featured,
+      emoji: action.emoji,
+      imageIndex:
+        action.imageIndex != null
+          ? action.imageIndex
+          : action.referenceImageIndex != null
+            ? action.referenceImageIndex
+            : 0,
+      imageIndices: action.imageIndices,
+      generateGallery: false,
+      galleryShots: [],
+    };
+  }
+
+  function sanitizeActionsForAddMode(actions, text, files) {
+    if (!shouldForceAddProducts(text, files)) return actions || [];
+    const out = [];
+    (actions || []).forEach((action) => {
+      if (!action || !action.type) return;
+      const type = String(action.type);
+      if (
+        type === 'set_site_image' ||
+        type === 'set_site_text' ||
+        type === 'set_hero_image' ||
+        type === 'set_fashion_image' ||
+        type === 'set_featured'
+      ) {
+        out.push(action);
+        return;
+      }
+      if (type === 'delete_product' || type === 'seed_defaults') return;
+      if (
+        /^(add_product|update_product|replace_product_image|regenerate_product_image|generate_product_images|update_product_image|append_product_images)$/.test(
+          type
+        )
+      ) {
+        out.push(type === 'add_product' ? { ...action, generateGallery: false } : actionToAddProduct(action));
+        return;
+      }
+    });
+    return out;
   }
 
   function refersExistingProduct(text, files) {
@@ -1294,7 +1347,8 @@ Never delete products unless the user says delete/remove.`;
   }
 
   function convertAddToExistingActions(action, text, files, intent) {
-    // Never rewrite add → update/replace unless the user clearly asked to change an existing product.
+    // Hard rule: never rewrite add → update when photos mean "new listing"
+    if (shouldForceAddProducts(text, files)) return null;
     if (userWantsAddProduct(text, files)) return null;
     if (wantsMultipleDifferentProducts(text, files)) return null;
     if (!userExplicitlyWantsMutateExisting(text)) return null;
@@ -1617,7 +1671,7 @@ Never delete products unless the user says delete/remove.`;
   function normalizeActions(actions, text, files) {
     const intent = classifyIntent(text, files);
     const flat = [];
-    const preferAdd = userWantsAddProduct(text, files) || wantsMultipleDifferentProducts(text, files);
+    const preferAdd = shouldForceAddProducts(text, files);
 
     (actions || []).forEach((action) => {
       let a = { ...action };
@@ -1669,7 +1723,8 @@ Never delete products unless the user says delete/remove.`;
     });
 
     const rewritten = rewriteMisclassifiedActions(flat, text, files);
-    return expandMultiImageActions(rewritten, text, files);
+    const expanded = expandMultiImageActions(rewritten, text, files);
+    return sanitizeActionsForAddMode(expanded, text, files);
   }
 
   function expandMultiImageActions(actions, text, files) {
@@ -2119,7 +2174,7 @@ Never delete products unless the user says delete/remove.`;
   }
 
   async function executeAction(action, files, onProgress) {
-    const type = action.type;
+    let type = action.type;
     const imgIdx = action.imageIndex != null ? action.imageIndex : 0;
     const img = files[imgIdx] && files[imgIdx].dataUrl;
 
@@ -2160,6 +2215,9 @@ Never delete products unless the user says delete/remove.`;
     }
 
     if (type === 'delete_product' || type === 'remove_product') {
+      if (shouldForceAddProducts(sessionCtx.lastUserText || '', files)) {
+        return msg('admin-ai-err-no-delete', 'Add mode — will not delete existing products. Ask clearly to delete if needed.');
+      }
       const target = findProductFromContext(action.match || action.name || 'focused', sessionCtx.lastUserText || '');
       if (!target) return productNotFoundMessage();
       const products = S().getProducts().filter((p) => p.id !== target.id);
@@ -2175,6 +2233,9 @@ Never delete products unless the user says delete/remove.`;
     }
 
     if (type === 'generate_product_images' || type === 'append_product_images') {
+      if (shouldForceAddProducts(sessionCtx.lastUserText || '', files)) {
+        return executeAction(actionToAddProduct(action), files, onProgress);
+      }
       const target = findProductFromContext(action.match || action.name || 'focused', sessionCtx.lastUserText || '');
       if (!target) return productNotFoundMessage();
 
@@ -2279,6 +2340,9 @@ Never delete products unless the user says delete/remove.`;
     }
 
     if (type === 'replace_product_image' || type === 'regenerate_product_image') {
+      if (shouldForceAddProducts(sessionCtx.lastUserText || '', files)) {
+        return executeAction(actionToAddProduct(action), files, onProgress);
+      }
       const target = findProductFromContext(action.match || action.name || 'focused', sessionCtx.lastUserText || '');
       if (!target) return productNotFoundMessage();
 
@@ -2341,10 +2405,18 @@ Never delete products unless the user says delete/remove.`;
     }
 
     if (type === 'add_product' || type === 'update_product') {
+      const text = sessionCtx.lastUserText || '';
+      // Absolute safety: attached photos / add intent never update an existing row
+      if (type === 'update_product' && shouldForceAddProducts(text, files)) {
+        return executeAction(actionToAddProduct(action), files, onProgress);
+      }
+      if (type === 'add_product' || shouldForceAddProducts(text, files)) {
+        type = 'add_product';
+      }
       const products = S().getProducts();
       let target =
         type === 'update_product'
-          ? findProductFromContext(action.match || action.name || 'focused', sessionCtx.lastUserText || '')
+          ? findProductFromContext(action.match || action.name || 'focused', text)
           : null;
       const category = S().canonicalCategory(action.category || 'Mode');
       const sub = action.sub || 'Vêtements';
@@ -2352,12 +2424,12 @@ Never delete products unless the user says delete/remove.`;
       const stock = Math.max(0, parseInt(action.stock, 10) || 5);
       const desc = action.desc || action.description || '';
       let name = action.name || (target && target.name);
-      if (!name && type === 'add_product' && !target) {
+      if (!name && type === 'add_product') {
         if (wantsMultipleDifferentProducts(sessionCtx.lastUserText || '', files)) {
           const idx = (resolveImageIndices(action, files)[0] || 0) + 1;
           name = 'Product ' + idx;
         } else {
-          return msg('admin-ai-err-name', 'Product name missing.');
+          name = 'New product ' + new Date().toISOString().slice(5, 16).replace('T', ' ');
         }
       }
       if (!name) return msg('admin-ai-err-name', 'Product name missing.');
@@ -2396,8 +2468,12 @@ Never delete products unless the user says delete/remove.`;
         productImages = [productImages[0]].concat(extra);
       }
 
-      if (type === 'add_product' && !target) {
+      if (type === 'add_product') {
         const id = nextProductId(products);
+        // Guard: never write over an id that already exists locally
+        if (products.some((p) => Number(p.id) === Number(id))) {
+          throw new Error('Product id collision — retry add');
+        }
         const item = {
           id,
           name,
@@ -2419,8 +2495,15 @@ Never delete products unless the user says delete/remove.`;
         await S().saveProducts(products, { onlyIds: [id] });
         S().syncHomeFeaturedFlags();
         trackProduct(name);
+        sessionCtx.focusedProductId = id;
+        sessionCtx.focusedProductName = name;
+        sessionCtx.resolvedProductId = null;
         const imgNote = productImages.length > 1 ? ' (' + productImages.length + ' images)' : '';
         return msg('admin-ai-done-add', 'Product added: ') + esc(name) + imgNote;
+      }
+
+      if (shouldForceAddProducts(sessionCtx.lastUserText || '', files)) {
+        return executeAction(actionToAddProduct(action), files, onProgress);
       }
 
       if (!target) target = findProductFromContext(name, sessionCtx.lastUserText || '');
@@ -2462,6 +2545,9 @@ Never delete products unless the user says delete/remove.`;
     }
 
     if (type === 'update_product_image') {
+      if (shouldForceAddProducts(sessionCtx.lastUserText || '', files)) {
+        return executeAction(actionToAddProduct(action), files, onProgress);
+      }
       const target = findProductFromContext(action.name || action.match || 'focused', sessionCtx.lastUserText || '');
       if (!target) return productNotFoundMessage();
       const indices = resolveImageIndices(action, files);
@@ -2503,7 +2589,9 @@ Never delete products unless the user says delete/remove.`;
   async function executeAll(actions, files, onProgress) {
     const before = captureSnapshot();
     const lines = [];
-    for (const action of actions) {
+    const text = sessionCtx.lastUserText || '';
+    const safeActions = sanitizeActionsForAddMode(actions, text, files);
+    for (const action of safeActions) {
       try {
         const line = await executeAction(action, files, onProgress);
         if (line) lines.push(line);
