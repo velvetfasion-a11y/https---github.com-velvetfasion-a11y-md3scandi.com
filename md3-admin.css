@@ -1259,7 +1259,8 @@ body.admin-active #md3-site-header {
 }
 
 #page-admin .admin-ai-messages {
-  max-height: 220px;
+  max-height: min(52vh, 480px);
+  min-height: 280px;
   overflow-y: auto;
   padding: 0.9rem 1.1rem;
   display: flex;
@@ -1351,7 +1352,7 @@ body.admin-active #md3-site-header {
 
 #page-admin .admin-ai-compose {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 0.5rem;
   padding: 0.7rem 0.85rem 0.9rem;
   border-top: 1px solid var(--admin-sand);
@@ -1373,13 +1374,17 @@ body.admin-active #md3-site-header {
   flex: 1;
   min-width: 0;
   border: 1px solid var(--admin-mist);
-  border-radius: 999px;
+  border-radius: 14px;
   padding: 0.55rem 1rem;
   font-family: 'Jost', sans-serif;
   font-size: 0.85rem;
+  line-height: 1.4;
   background: #fff;
   color: var(--admin-charcoal);
   outline: none;
+  resize: none;
+  max-height: 140px;
+  min-height: 2.25rem;
 }
 
 #page-admin .admin-ai-input:focus {
@@ -1387,19 +1392,30 @@ body.admin-active #md3-site-header {
   box-shadow: 0 0 0 3px rgba(184, 148, 106, 0.12);
 }
 
+#page-admin .admin-ai-cancel,
 #page-admin .admin-ai-send {
   flex-shrink: 0;
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 999px;
   border: none;
-  background: var(--admin-wood);
-  color: #fff;
   font-size: 1rem;
   cursor: pointer;
 }
 
-#page-admin .admin-ai-send:disabled {
+#page-admin .admin-ai-send {
+  background: var(--admin-wood);
+  color: #fff;
+}
+
+#page-admin .admin-ai-cancel {
+  background: var(--admin-cream);
+  color: var(--admin-stone);
+  border: 1px solid var(--admin-mist);
+}
+
+#page-admin .admin-ai-send:disabled,
+#page-admin .admin-ai-cancel:disabled {
   opacity: 0.5;
 }
 

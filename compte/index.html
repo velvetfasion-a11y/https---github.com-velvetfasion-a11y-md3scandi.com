@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/md3-header.css?v=26" />
 <link rel="stylesheet" href="/md3-responsive.css?v=26" />
-<link rel="stylesheet" href="/md3-admin.css?v=22" />
+<link rel="stylesheet" href="/md3-admin.css?v=23" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" crossorigin="anonymous" />
 <style>
   :root {
@@ -1140,12 +1140,14 @@
         <button type="button" class="admin-ai-toggle" id="adminAiToggle" aria-label="Collapse">−</button>
       </div>
       <div class="admin-ai-key-warn" id="adminAiKeyWarn" hidden></div>
+      <div class="admin-ai-focus" id="adminAiFocus" hidden></div>
       <div class="admin-ai-messages" id="adminAiMessages"></div>
       <div class="admin-ai-attachments" id="adminAiAttachments" hidden></div>
       <div class="admin-ai-compose">
         <button type="button" class="admin-ai-plus" id="adminAiAttachBtn" title="Bifoga bilder" aria-label="+">+</button>
         <input type="file" id="adminAiFileInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden />
-        <input type="text" class="admin-ai-input" id="adminAiInput" data-i18n-placeholder="admin-ai-placeholder" placeholder="Bifoga bild med + och beskriv vad som ska ändras…" autocomplete="off" />
+        <textarea class="admin-ai-input" id="adminAiInput" rows="1" data-i18n-placeholder="admin-ai-placeholder" placeholder="Bifoga bild med + och beskriv vad som ska ändras…" autocomplete="off"></textarea>
+        <button type="button" class="admin-ai-cancel" id="adminAiCancelBtn" hidden aria-label="Cancel">✕</button>
         <button type="button" class="admin-ai-send" id="adminAiSendBtn" aria-label="Send">↑</button>
       </div>
     </div>
@@ -1310,7 +1312,7 @@
 <script src="/ai-config.js?v=3" onerror="window.MD3_AI_CONFIG=window.MD3_AI_CONFIG||{}"></script><!-- generated from .env via scripts/sync-ai-config.mjs -->
 <script src="/contact-config.js?v=3"></script>
 <script src="/md3-site-assets.js?v=14"></script>
-<script src="/md3-admin-ai.js?v=28"></script>
+<script src="/md3-admin-ai.js?v=30"></script>
 <script src="/md3-lang.js?v=45"></script>
 <script src="/md3-taxonomy.js?v=2"></script>
 <script src="/email-config.js?v=3"></script>
@@ -2824,6 +2826,9 @@ function openEditProduct(id) {
   const p = findAdminProduct(id);
   if (!p) return;
   adminEditingId = id;
+  if (window.MD3AdminAI && window.MD3AdminAI.setFocusedProduct) {
+    MD3AdminAI.setFocusedProduct(p.id, p.name);
+  }
   const titleEl = document.getElementById('adminEditTitle');
   if (titleEl) titleEl.textContent = p.name;
   const subEl = document.getElementById('adminEditSub');
@@ -3040,6 +3045,7 @@ function openConfirm(title, text, icon, onConfirm) {
   document.getElementById('confirmBtn').onclick = () => { onConfirm(); closeModal('confirmModal'); };
   document.getElementById('confirmModal').classList.add('open');
 }
+window.openConfirm = openConfirm;
 
 document.getElementById('confirmCancelBtn').addEventListener('click', () => closeModal('confirmModal'));
 

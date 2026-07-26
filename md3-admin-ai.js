@@ -36,6 +36,8 @@
   let turnSnapshots = [];
   let redoStack = [];
   let historySaveTimer = null;
+  let activeAbort = null;
+  let cancelRequested = false;
 
   function $(id) {
     return document.getElementById(id);
@@ -45,6 +47,20 @@
     const d = document.createElement('div');
     d.textContent = s == null ? '' : String(s);
     return d.innerHTML;
+  }
+
+  function sanitizeRestoredHtml(html) {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = String(html || '');
+    wrap.querySelectorAll('script,iframe,object,embed,link,meta').forEach((n) => n.remove());
+    wrap.querySelectorAll('*').forEach((el) => {
+      [...el.attributes].forEach((attr) => {
+        const n = attr.name.toLowerCase();
+        const v = String(attr.value || '');
+        if (n.startsWith('on') || /javascript:/i.test(v)) el.removeAttribute(attr.name);
+      });
+    });
+    return wrap.innerHTML;
   }
 
   function currentLangCode() {
@@ -69,8 +85,8 @@
     );
   }
 
-  function geminiFetchOptions(key, body) {
-    return {
+  function geminiFetchOptions(key, body, signal) {
+    const opts = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -78,6 +94,46 @@
       },
       body: JSON.stringify(body),
     };
+    if (signal) opts.signal = signal;
+    return opts;
+  }
+
+  function beginAbortableWork() {
+    cancelRequested = false;
+    if (activeAbort) {
+      try {
+        activeAbort.abort();
+      } catch (_) {}
+    }
+    activeAbort = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    setCancelUi(true);
+    return activeAbort ? activeAbort.signal : null;
+  }
+
+  function endAbortableWork() {
+    activeAbort = null;
+    cancelRequested = false;
+    setCancelUi(false);
+  }
+
+  function requestCancelAi() {
+    cancelRequested = true;
+    if (activeAbort) {
+      try {
+        activeAbort.abort();
+      } catch (_) {}
+    }
+  }
+
+  function throwIfCancelled() {
+    if (cancelRequested) throw new Error(msg('admin-ai-cancelled', 'Cancelled.'));
+  }
+
+  function setCancelUi(on) {
+    const btn = $('adminAiCancelBtn');
+    if (!btn) return;
+    btn.hidden = !on;
+    btn.disabled = !on;
   }
 
   function geminiKeyIssue() {
@@ -462,7 +518,13 @@ Never reuse or overwrite an existing product id.`;
         focusedProductName: sessionCtx.focusedProductName || '',
         adminVisibleIds: sessionCtx.adminVisibleIds || [],
       },
-      turnSnapshots: noSnapshots ? [] : turnSnapshots.slice(-MAX_PERSISTED_SNAPSHOTS),
+      turnSnapshots: noSnapshots
+        ? []
+        : turnSnapshots.slice(-MAX_PERSISTED_SNAPSHOTS).map((t) => ({
+            id: t.id,
+            before: slimSnapshotForStorage(t.before),
+            after: slimSnapshotForStorage(t.after),
+          })),
       messages: collectUiMessages(),
     };
   }
@@ -539,14 +601,15 @@ Never reuse or overwrite an existing product id.`;
       box.innerHTML = '';
       data.messages.forEach((m) => {
         const el = document.createElement('div');
-        el.className = 'admin-ai-msg admin-ai-msg--' + m.role;
-        el.innerHTML = m.html;
+        el.className = 'admin-ai-msg admin-ai-msg--' + (m.role === 'user' ? 'user' : 'assistant');
+        el.innerHTML = sanitizeRestoredHtml(m.html);
         box.appendChild(el);
       });
       box.scrollTop = box.scrollHeight;
 
       data.expiresAt = Date.now() + HISTORY_TTL_MS;
       sessionStorage.setItem(HISTORY_KEY, JSON.stringify(data));
+      updateFocusChip();
       return true;
     } catch (e) {
       console.warn('admin ai history restore', e);
@@ -755,7 +818,7 @@ Never reuse or overwrite an existing product id.`;
       }
     }
 
-    return best.score >= 0.8 ? best : null;
+    return best.score >= 0.92 ? best : null;
   }
 
   async function identifyProductWithGemini(files, text) {
@@ -792,7 +855,8 @@ Never reuse or overwrite an existing product id.`;
     for (const model of models) {
       const url = geminiModelUrl(model);
       try {
-        const res = await fetch(url, geminiFetchOptions(key, { contents: [{ parts }] }));
+        throwIfCancelled();
+        const res = await fetch(url, geminiFetchOptions(key, { contents: [{ parts }] }, activeAbort && activeAbort.signal));
         if (!res.ok) continue;
         const data = await res.json();
         const raw =
@@ -803,11 +867,12 @@ Never reuse or overwrite an existing product id.`;
           data.candidates[0].content.parts.map((p) => p.text).join('');
         const parsed = parseAiJson(raw);
         const id = parsed.productId != null ? parseInt(parsed.productId, 10) : null;
-        if (!id) return null;
+        const confidence = Number(parsed.confidence);
+        if (!id || !Number.isFinite(confidence) || confidence < 0.85) return null;
         return {
           productId: id,
           imageIndex: parsed.imageIndex != null ? parseInt(parsed.imageIndex, 10) : 0,
-          confidence: Number(parsed.confidence) || 0.75,
+          confidence: confidence,
           reason: parsed.reason || '',
         };
       } catch (_) {
@@ -1009,11 +1074,11 @@ Never reuse or overwrite an existing product id.`;
       const byId = products.find((p) => p.id === parseInt(raw, 10));
       if (byId) return byId;
     }
+    // Exact / case-insensitive only — fuzzy includes caused wrong product updates
     return (
       products.find((p) => p.name === raw) ||
-      products.find((p) => p.name.toLowerCase() === q) ||
-      products.find((p) => p.name.toLowerCase().includes(q)) ||
-      products.find((p) => q.includes(p.name.toLowerCase()))
+      products.find((p) => String(p.name || '').toLowerCase() === q) ||
+      null
     );
   }
 
@@ -1092,27 +1157,23 @@ Never reuse or overwrite an existing product id.`;
     const byName = findProductByName(match);
     if (byName) return byName;
 
-    if (/this product|different image|ce produit|den här|image of this product|the image of this|change this/i.test(text || '')) {
-      const visible = getVisibleProducts();
-      if (visible.length === 1) return visible[0];
-      const real = products.filter((p) => !/^New product(\s+\d+)?$/i.test(String(p.name || '').trim()));
-      if (real.length === 1) return real[0];
-    }
-
-    const fromKeywords = findProductFromKeywords(text);
-    if (fromKeywords) return fromKeywords;
-
-    const visibleOnly = getVisibleProducts();
-    if (visibleOnly.length === 1 && /(?:change|replace|update|image|photo|model|gallery)/i.test(text || '')) {
-      return visibleOnly[0];
-    }
-
+    // No silent "only one product in list" fallbacks — those caused wrong overwrites
     return null;
   }
 
   function updateFocusChip() {
     const el = $('adminAiFocus');
-    if (el) el.hidden = true;
+    if (!el) return;
+    const active = getActiveProduct();
+    const id = active ? active.id : sessionCtx.focusedProductId;
+    const name = active ? active.name : sessionCtx.focusedProductName;
+    if (id == null || !name) {
+      el.hidden = true;
+      el.textContent = '';
+      return;
+    }
+    el.hidden = false;
+    el.textContent = msg('admin-ai-focus', 'Target: ') + name + ' (#' + id + ')';
   }
 
   function setAdminListContext(ctx) {
@@ -1128,6 +1189,7 @@ Never reuse or overwrite an existing product id.`;
     sessionCtx.focusedProductId = id != null ? parseInt(id, 10) : null;
     sessionCtx.focusedProductName = name ? String(name) : '';
     if (name) trackProduct(name);
+    updateFocusChip();
     persistChatSession();
   }
 
@@ -1215,7 +1277,7 @@ Never reuse or overwrite an existing product id.`;
     if (inferSiteImageSlot(text)) return false;
     // Any clear "add/create new product" phrasing wins — never treat as mutate
     if (
-      /(?:add|create|ajoute|ajouter|lägg(?:\s+till)?|skapa|créer|cree|new)\b/.test(t) &&
+      /(?:add|create|make|build|ajoute|ajouter|lägg(?:\s+till)?|skapa|créer|cree|new)\b/.test(t) &&
       /(?:products?|produits?|produkter?|items?|listings?|artikel|articles?)/.test(t)
     ) {
       return false;
@@ -1243,18 +1305,24 @@ Never reuse or overwrite an existing product id.`;
   function userWantsAddProduct(text, files) {
     if (inferSiteImageSlot(text)) return false;
     if (userExplicitlyWantsMutateExisting(text)) return false;
+    if (explicitWantsNewProduct(text)) return true;
     const imgs = getEffectiveFiles(files, text);
+    // Attached product photos default to NEW catalogue entries
     if (imgs.length) return true;
     const t = normalizeUserIntentText(text).toLowerCase().trim();
     if (!t) return false;
     return (
-      /(?:add|create|ajoute|ajouter|lägg(?:\s+till)?|skapa|créer|cree|publish|list)\b/.test(t) &&
+      /(?:add|create|make|build|ajoute|ajouter|lägg(?:\s+till)?|skapa|créer|cree|publish|list)\b/.test(t) &&
       /(?:products?|produits?|produkter?|items?|listings?)/.test(t)
     );
   }
 
   function shouldForceAddProducts(text, files) {
-    return userWantsAddProduct(text, files) || wantsMultipleDifferentProducts(text, files);
+    return (
+      userWantsAddProduct(text, files) ||
+      explicitWantsNewProduct(text) ||
+      wantsMultipleDifferentProducts(text, files)
+    );
   }
 
   function actionToAddProduct(action) {
@@ -1321,9 +1389,12 @@ Never reuse or overwrite an existing product id.`;
     const t = normalizeUserIntentText(text).toLowerCase().trim();
     if (!t) return false;
     if (inferSiteImageSlot(text)) return false;
+    // Never treat "make/add a new product" as editing the open product
+    if (explicitWantsNewProduct(text) || userWantsAddProduct(text, [])) return false;
     return (
       /^(?:the\s+)?(?:image|photo|picture|model|shot|clothes?|garment)\s*\.?$/.test(t) ||
-      /(?:change|replace|swap|update|new|different|another)\s+(?:the\s+)?(?:model|mannequin|photo|image|picture|shot|product)/.test(t) ||
+      /(?:change|replace|swap|update|different|another)\s+(?:the\s+)?(?:model|mannequin|photo|image|picture|shot)/.test(t) ||
+      /(?:change|update|edit|modify)\s+this\s+product\b/.test(t) ||
       /(?:change|update|edit|modify)\s+this\b/.test(t) ||
       /(?:model|mannequin|portrait)\s+(?:for|of|on|with)/.test(t) ||
       /(?:for|of)\s+(?:the\s+)?(?:clothes?|clothing|garment|outfit|product)/.test(t) ||
@@ -1461,9 +1532,11 @@ Never reuse or overwrite an existing product id.`;
       return false;
     }
     return (
-      /(?:add|create|lägg till|ajouter|créer|ny)\s+(?:a\s+)?(?:new\s+)?(?:products?|produits?|produkter?|items?|listings?)/.test(t) ||
-      /\bnew products?\b/.test(t) ||
-      /(?:add|lägg till).*(?:shop|catalog|boutique|inventory|sortiment)/.test(t) ||
+      /(?:add|create|make|build|lägg till|ajouter|créer|skapa|ny)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:products?|produits?|produkter?|items?|listings?)/.test(
+        t
+      ) ||
+      /\b(?:a\s+|an\s+|the\s+)?new products?\b/.test(t) ||
+      /(?:add|make|create|lägg till).*(?:shop|catalog|boutique|inventory|sortiment)/.test(t) ||
       /(?:list|publish|catalogue|catalog).*(?:as\s+)?(?:products?|items?|listings?)/.test(t) ||
       /(?:these|those|all|each|every|both)\s+(?:as\s+)?(?:products?|items?|listings?)/.test(t)
     );
@@ -1558,31 +1631,47 @@ Never reuse or overwrite an existing product id.`;
     return addVerb && productWord && (multiCue || n > 1);
   }
 
+  function extractNewProductName(text, index, total) {
+    const raw = String(text || '').trim();
+    const named =
+      raw.match(/(?:named?|called|namn|nommé|nommee|nom)\s*[:\-]?\s*["']?([^"'\n,.]+?)["']?(?:\s*$|[.,])/i) ||
+      raw.match(
+        /(?:add|create|make|build|lägg till|ajouter|créer|skapa)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:products?|produits?|produkter?|items?)\s+(?:called|named|namn|nom)\s+["']?([^"'\n,.]+)/i
+      );
+    if (named && named[1] && named[1].trim().length >= 2) return named[1].trim().slice(0, 80);
+    // Strip command phrasing; leftover can be a title like "make a new product Linen Dress"
+    const stripped = raw
+      .replace(
+        /^(?:please\s+)?(?:add|create|make|build|lägg till|ajouter|créer|skapa)\s+(?:a\s+|an\s+|the\s+)?(?:new\s+)?(?:products?|produits?|produkter?|items?)\s*/i,
+        ''
+      )
+      .replace(/^(?:called|named|namn|nom)\s+/i, '')
+      .trim();
+    if (stripped && !/^(?:please|thanks|now|here|this|from|with|using)\b/i.test(stripped) && stripped.length >= 2) {
+      return stripped.slice(0, 80);
+    }
+    if (total > 1) return 'New product ' + (index + 1);
+    return 'New product';
+  }
+
   function buildAddProductActions(text, files, opts) {
     const imgs = files || [];
     const t = String(text || '').toLowerCase();
-    const nameMatch =
-      text.match(/(?:named?|called|namn|nom|name)\s*[:\-]\s*["']?([^"'\n]+?)["']?$/i) ||
-      text.match(/(?:product|produkt|produit)\s*[:\-]\s*["']?([^"'\n]+?)["']?$/i);
     const priceMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:kr|€|eur|sek)?/i);
     const catMatch = text.match(/\b(mode|maison|lifestyle|fashion|home|édition limitée|edition limitee)\b/i);
     const wantsGallery =
       (opts && opts.generateGallery) ||
       /(?:generate|make|create).*(?:gallery|display images|more images|extra images)|(?:ai|nano)\s+gallery/.test(t);
 
-    return imgs.map((_, i) => ({
+    const targets = imgs.length ? imgs : [null];
+    return targets.map((_, i) => ({
       type: 'add_product',
-      name:
-        nameMatch && imgs.length === 1
-          ? nameMatch[1].trim()
-          : imgs.length > 1
-            ? 'New product ' + (i + 1)
-            : text.trim().slice(0, 80) || 'New product',
+      name: extractNewProductName(text, i, targets.length),
       category: catMatch ? catMatch[1] : 'Mode',
-      price: priceMatch ? parseFloat(String(priceMatch[1]).replace(',', '.')) : 89,
+      price: priceMatch ? parseFloat(String(priceMatch[1]).replace(',', '.')) : null,
       stock: 5,
       desc: '',
-      imageIndex: i,
+      imageIndex: imgs.length ? i : undefined,
       generateGallery: wantsGallery && imgs.length === 1,
       galleryShots: wantsGallery
         ? [
@@ -1902,7 +1991,8 @@ Never reuse or overwrite an existing product id.`;
 
         if (onProgress) onProgress();
         try {
-          const res = await fetch(url, geminiFetchOptions(key, body));
+          throwIfCancelled();
+          const res = await fetch(url, geminiFetchOptions(key, body, activeAbort && activeAbort.signal));
 
           if (!res.ok) {
             const err = await res.text();
@@ -1997,6 +2087,15 @@ Never reuse or overwrite an existing product id.`;
         langOverrides: global.MD3Lang && global.MD3Lang.getOverrides ? global.MD3Lang.getOverrides() : {},
       };
     }
+  }
+
+  function slimSnapshotForStorage(snap) {
+    if (!snap) return snap;
+    return {
+      products: stripHeavyImagesFromProducts(snap.products || []),
+      siteAssets: snap.siteAssets || {},
+      langOverrides: snap.langOverrides || {},
+    };
   }
 
   function snapshotChangedIds(before, after) {
@@ -2173,6 +2272,112 @@ Never reuse or overwrite an existing product id.`;
     return null;
   }
 
+  function isDestructiveAction(action) {
+    const t = action && action.type;
+    return (
+      t === 'delete_product' ||
+      t === 'remove_product' ||
+      t === 'seed_defaults' ||
+      t === 'set_featured' ||
+      t === 'set_site_image' ||
+      t === 'set_hero_image' ||
+      t === 'set_fashion_image' ||
+      t === 'set_site_text' ||
+      t === 'update_site_text'
+    );
+  }
+
+  function summarizeActions(actions) {
+    return (actions || [])
+      .map((a) => {
+        const t = a.type || '?';
+        const name = a.name || a.match || a.key || a.slot || '';
+        return t + (name ? ' (' + name + ')' : '');
+      })
+      .join(', ');
+  }
+
+  function confirmAdminAi(title, text) {
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (ok) => {
+        if (settled) return;
+        settled = true;
+        resolve(!!ok);
+      };
+      if (typeof global.openConfirm === 'function') {
+        const overlay = document.getElementById('confirmModal');
+        const cancel = document.getElementById('confirmCancelBtn');
+        const onDismiss = () => finish(false);
+        global.openConfirm(title, text, '⚠️', () => finish(true));
+        if (cancel) cancel.addEventListener('click', onDismiss, { once: true });
+        if (overlay) {
+          const onOverlay = (e) => {
+            if (e.target === overlay) onDismiss();
+          };
+          overlay.addEventListener('click', onOverlay, { once: true });
+        }
+        return;
+      }
+      finish(window.confirm(title + '\n\n' + text));
+    });
+  }
+
+  async function cleanupDeletedProductRefs(id) {
+    try {
+      if (!S().getUsers || !S().saveUsers) return;
+      const users = S().getUsers();
+      let changed = false;
+      Object.values(users || {}).forEach((u) => {
+        if (u.liked) {
+          const next = u.liked.filter((i) => i !== id);
+          if (next.length !== u.liked.length) {
+            u.liked = next;
+            changed = true;
+          }
+        }
+        if (u.wishlist) {
+          const next = u.wishlist.filter((i) => i !== id);
+          if (next.length !== u.wishlist.length) {
+            u.wishlist = next;
+            changed = true;
+          }
+        }
+      });
+      if (changed) await S().saveUsers(users);
+    } catch (e) {
+      console.warn('cleanupDeletedProductRefs', e);
+    }
+  }
+
+  function sanitizeSiteTextValue(value) {
+    // Allow a small safe subset; strip scripts/events
+    return String(value == null ? '' : value)
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+      .replace(/\son\w+\s*=\s*(['"]).*?\1/gi, '')
+      .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
+      .replace(/javascript:/gi, '');
+  }
+
+  function stripHeavyImagesFromProducts(products) {
+    return (products || []).map((p) => {
+      const copy = { ...p };
+      const imgs = Array.isArray(copy.images) ? copy.images : copy.image ? [copy.image] : [];
+      const light = imgs
+        .filter((u) => typeof u === 'string' && u && !u.startsWith('data:'))
+        .slice(0, 8);
+      if (light.length) {
+        copy.images = light;
+        copy.image = light[0];
+      } else {
+        // Keep a marker so undo knows images existed but data URLs were too large to persist
+        delete copy.images;
+        delete copy.image;
+      }
+      return copy;
+    });
+  }
+
   async function executeAction(action, files, onProgress) {
     let type = action.type;
     const imgIdx = action.imageIndex != null ? action.imageIndex : 0;
@@ -2180,6 +2385,11 @@ Never reuse or overwrite an existing product id.`;
 
     if (type === 'set_site_image' || type === 'set_hero_image' || type === 'set_fashion_image') {
       if (!img) return msg('admin-ai-need-image', 'Attach an image with + first.');
+      const okSite = await confirmAdminAi(
+        msg('admin-ai-confirm-site-title', 'Update site image?'),
+        msg('admin-ai-confirm-site', 'This replaces a homepage / site image.')
+      );
+      if (!okSite) return msg('admin-ai-cancelled', 'Cancelled.');
       let slot = type === 'set_hero_image' ? 'hero' : type === 'set_fashion_image' ? 'fashion' : resolveSiteSlot(action);
       if (!slot) slot = resolveSiteSlot({ slot: sessionCtx.lastUserText || '' });
       if (!slot) return msg('admin-ai-err-slot', 'Which section? Try: hero, fashion, maison, lifestyle, limited, manifesto.');
@@ -2199,6 +2409,11 @@ Never reuse or overwrite an existing product id.`;
       const key = action.key || action.i18n || action.textKey;
       const value = action.value != null ? action.value : action.text;
       if (!key || value == null) return msg('admin-ai-err-text', 'Text key and value required.');
+      const okText = await confirmAdminAi(
+        msg('admin-ai-confirm-text-title', 'Update site text?'),
+        msg('admin-ai-confirm-text', 'Change ') + key + ' → ' + String(value).slice(0, 120)
+      );
+      if (!okText) return msg('admin-ai-cancelled', 'Cancelled.');
       const langs =
         !action.lang || action.lang === 'all'
           ? ['fr', 'en', 'ar']
@@ -2206,9 +2421,10 @@ Never reuse or overwrite an existing product id.`;
             ? [String(action.lang)]
             : [currentLangCode()];
       const all = global.MD3Lang.getOverrides();
+      const safeValue = sanitizeSiteTextValue(value);
       langs.forEach((lang) => {
         if (!all[lang]) all[lang] = {};
-        all[lang][key] = value;
+        all[lang][key] = safeValue;
       });
       if (global.MD3Lang.restoreOverrides) global.MD3Lang.restoreOverrides(all);
       return msg('admin-ai-done-site-text', 'Site text updated: ') + esc(key);
@@ -2220,14 +2436,37 @@ Never reuse or overwrite an existing product id.`;
       }
       const target = findProductFromContext(action.match || action.name || 'focused', sessionCtx.lastUserText || '');
       if (!target) return productNotFoundMessage();
+      const ok = await confirmAdminAi(
+        msg('admin-ai-confirm-delete-title', 'Delete product?'),
+        msg('admin-ai-confirm-delete', 'Permanently delete ') + target.name + '?'
+      );
+      if (!ok) return msg('admin-ai-cancelled', 'Cancelled.');
       const products = S().getProducts().filter((p) => p.id !== target.id);
-      await S().saveProducts(products);
+      await S().saveProducts(products, { deletedIds: [target.id], skipImages: true });
+      await cleanupDeletedProductRefs(target.id);
       S().syncHomeFeaturedFlags();
       return msg('admin-ai-done-delete', 'Product removed: ') + esc(target.name);
     }
 
     if (type === 'seed_defaults') {
-      await S().saveProducts(S().defaultProducts());
+      const ok = await confirmAdminAi(
+        msg('admin-ai-confirm-seed-title', 'Restore default catalogue?'),
+        msg(
+          'admin-ai-confirm-seed',
+          'This replaces the catalogue with default products and can remove custom items. Continue?'
+        )
+      );
+      if (!ok) return msg('admin-ai-cancelled', 'Cancelled.');
+      const defaults = S().defaultProducts();
+      const current = S().getProducts();
+      const defaultIds = new Set(defaults.map((p) => String(p.id)));
+      const orphanIds = current.filter((p) => !defaultIds.has(String(p.id))).map((p) => p.id);
+      // Write defaults by id only, then delete orphans — never a blind full-sync wipe
+      await S().saveProducts(defaults, { onlyIds: defaults.map((p) => p.id), skipImages: true });
+      if (orphanIds.length) {
+        const kept = S().getProducts().filter((p) => defaultIds.has(String(p.id)));
+        await S().saveProducts(kept, { deletedIds: orphanIds, skipImages: true });
+      }
       S().syncHomeFeaturedFlags();
       return msg('admin-ai-done-seed', 'All default products restored and featured items set.');
     }
@@ -2318,7 +2557,15 @@ Never reuse or overwrite an existing product id.`;
       } else if (replaceGallery) {
         nextImages = attachIdxs.length ? attachIdxs.concat(generated) : [reference].concat(generated);
       } else {
-        nextImages = [reference].concat(generated);
+        // Keep existing gallery; append AI shots after the reference/main image
+        const head = existing.length ? existing.slice() : reference ? [reference] : [];
+        if (reference && head[0] !== reference) {
+          head[0] = reference;
+        }
+        generated.forEach((g) => {
+          if (g && !head.includes(g)) head.push(g);
+        });
+        nextImages = head;
       }
 
       products[idx] = S().normalizeProductFields({
@@ -2420,7 +2667,8 @@ Never reuse or overwrite an existing product id.`;
           : null;
       const category = S().canonicalCategory(action.category || 'Mode');
       const sub = action.sub || 'Vêtements';
-      const price = Number(action.price) || 0;
+      const hasPrice = action.price != null && action.price !== '' && Number.isFinite(Number(action.price));
+      const price = hasPrice ? Number(action.price) : 0;
       const stock = Math.max(0, parseInt(action.stock, 10) || 5);
       const desc = action.desc || action.description || '';
       let name = action.name || (target && target.name);
@@ -2573,17 +2821,46 @@ Never reuse or overwrite an existing product id.`;
     }
 
     if (type === 'set_featured') {
+      const ok = await confirmAdminAi(
+        msg('admin-ai-confirm-featured-title', 'Update featured products?'),
+        msg('admin-ai-confirm-featured', 'This changes which products appear as featured on the homepage.')
+      );
+      if (!ok) return msg('admin-ai-cancelled', 'Cancelled.');
       const ids = Array.isArray(action.ids) ? action.ids : S().HOME_FEATURED_IDS;
       const idSet = new Set(ids.map((id) => Number(id)).filter((n) => Number.isFinite(n)));
-      const products = S().getProducts().map((p) => ({
+      const prev = S().getProducts();
+      const products = prev.map((p) => ({
         ...p,
         featured: idSet.has(Number(p.id)),
       }));
-      await S().saveProducts(products);
+      const onlyIds = products
+        .filter((p, i) => !!prev[i].featured !== !!p.featured)
+        .map((p) => p.id);
+      if (!onlyIds.length) return msg('admin-ai-done-featured', 'Featured products updated.');
+      await S().saveProducts(products, { onlyIds: onlyIds, skipImages: true });
       return msg('admin-ai-done-featured', 'Featured products updated.');
     }
 
     return null;
+  }
+
+  function actionsNeedPreview(actions) {
+    const list = (actions || []).filter((a) => a && a.type);
+    if (!list.length) return false;
+    // Adds always apply immediately (with or without photos)
+    if (list.every((a) => a.type === 'add_product')) return false;
+    if (list.every((a) => isDestructiveAction(a))) return false; // confirmed per-action
+    if (list.length > 1) return true;
+    const a = list[0];
+    // Image / field updates: short apply summary
+    return (
+      a.type === 'update_product' ||
+      a.type === 'replace_product_image' ||
+      a.type === 'generate_product_images' ||
+      a.type === 'append_product_images' ||
+      a.type === 'update_product_image' ||
+      a.type === 'regenerate_product_image'
+    );
   }
 
   async function executeAll(actions, files, onProgress) {
@@ -2591,13 +2868,40 @@ Never reuse or overwrite an existing product id.`;
     const lines = [];
     const text = sessionCtx.lastUserText || '';
     const safeActions = sanitizeActionsForAddMode(actions, text, files);
+    if (!safeActions.length) {
+      return {
+        html: msg(
+          'admin-ai-no-action',
+          'I could not find a matching action. Try attaching images and describing what to create or update.'
+        ),
+        before,
+        after: before,
+        changed: false,
+      };
+    }
+    if (actionsNeedPreview(safeActions)) {
+      const ok = await confirmAdminAi(
+        msg('admin-ai-confirm-apply-title', 'Apply AI changes?'),
+        msg('admin-ai-confirm-apply', 'About to run: ') + summarizeActions(safeActions)
+      );
+      if (!ok) {
+        return {
+          html: msg('admin-ai-cancelled', 'Cancelled.'),
+          before,
+          after: before,
+          changed: false,
+        };
+      }
+    }
     for (const action of safeActions) {
       try {
+        throwIfCancelled();
         const line = await executeAction(action, files, onProgress);
         if (line) lines.push(line);
       } catch (e) {
         console.error('admin ai action', e);
         lines.push((e && e.message) || String(e));
+        if (cancelRequested || /abort/i.test(String(e && e.message))) break;
       }
     }
     if (typeof renderAdminProducts === 'function') renderAdminProducts();
@@ -2795,8 +3099,10 @@ Never reuse or overwrite an existing product id.`;
       return actions;
     }
 
-    if ((intent.wantsAddMultiple || intent.wantsAdd) && imgs.length && explicitWantsNewProduct(text)) {
-      return buildAddProductActions(text, imgs);
+    if (intent.wantsAddMultiple || intent.wantsAdd || explicitWantsNewProduct(text) || userWantsAddProduct(text, imgs)) {
+      if (imgs.length || explicitWantsNewProduct(text) || userWantsAddProduct(text, imgs)) {
+        return buildAddProductActions(text, imgs);
+      }
     }
 
     const jsonBlock = text.match(/\[[\s\S]*?\]|\{[\s\S]*"products"[\s\S]*\}/);
@@ -2861,7 +3167,7 @@ Never reuse or overwrite an existing product id.`;
     if (imgs.length && wantsMultipleDifferentProducts(text, imgs)) {
       return buildAddProductActions(text, imgs);
     }
-    if (imgs.length && userWantsAddProduct(text, imgs)) {
+    if (userWantsAddProduct(text, imgs) || explicitWantsNewProduct(text)) {
       return buildAddProductActions(text, imgs);
     }
     if (imgs.length && userExplicitlyWantsMutateExisting(text) && (wantsCreateOrGenerateImage(text) || refersAttachedImageEdit(text, imgs))) {
@@ -2888,16 +3194,21 @@ Never reuse or overwrite an existing product id.`;
     for (const model of chatModels()) {
       const url = geminiModelUrl(model);
       try {
+        throwIfCancelled();
         const res = await fetch(
           url,
-          geminiFetchOptions(key, {
-            systemInstruction: { parts: [{ text: system }] },
-            contents,
-            generationConfig: {
-              temperature: 0.35,
-              responseMimeType: 'application/json',
+          geminiFetchOptions(
+            key,
+            {
+              systemInstruction: { parts: [{ text: system }] },
+              contents,
+              generationConfig: {
+                temperature: 0.35,
+                responseMimeType: 'application/json',
+              },
             },
-          })
+            activeAbort && activeAbort.signal
+          )
         );
 
         if (!res.ok) {
@@ -3007,6 +3318,7 @@ Never reuse or overwrite an existing product id.`;
     busy = true;
     const sendBtn = $('adminAiSendBtn');
     if (sendBtn) sendBtn.disabled = true;
+    beginAbortableWork();
 
     const files = attachments.slice();
     attachments = [];
@@ -3089,6 +3401,16 @@ Never reuse or overwrite an existing product id.`;
         actions = inferActionsWhenEmpty(text, workFiles, null);
       }
 
+      // Hard guarantee: "make/add a new product" always becomes add_product
+      if (shouldForceAddProducts(text, workFiles)) {
+        const hasAdd = (actions || []).some((a) => a && a.type === 'add_product');
+        if (!hasAdd) {
+          actions = buildAddProductActions(text, workFiles);
+        } else {
+          actions = sanitizeActionsForAddMode(actions, text, workFiles);
+        }
+      }
+
       if (!actions.length) {
         const intro = parsed && parsed.reply ? esc(parsed.reply) + '<br>' : '';
         let hint = '';
@@ -3120,6 +3442,7 @@ Never reuse or overwrite an existing product id.`;
           summary: replyHtml.replace(/<[^>]+>/g, ' ').slice(0, 400),
         });
         markOlderImageTurns();
+        endAbortableWork();
         busy = false;
         if (sendBtn) sendBtn.disabled = false;
         return;
@@ -3165,10 +3488,19 @@ Never reuse or overwrite an existing product id.`;
       markOlderImageTurns();
     } catch (e) {
       console.error('admin ai', e);
-      const fallback = inferActionsWhenEmpty(text, getEffectiveFiles(text, sessionCtx.lastFiles || []), null);
+      if (cancelRequested || (e && (e.name === 'AbortError' || /abort|cancel/i.test(String(e.message || e))))) {
+        setLastBubble(esc(msg('admin-ai-cancelled', 'Cancelled.')));
+        persistChatSession();
+        endAbortableWork();
+        busy = false;
+        if (sendBtn) sendBtn.disabled = false;
+        return;
+      }
+      const fallbackFiles = getEffectiveFiles(sessionCtx.lastFiles || [], text);
+      const fallback = inferActionsWhenEmpty(text, fallbackFiles, null);
       if (fallback.length) {
         try {
-          const exec = await executeAll(fallback, getEffectiveFiles([], text), true);
+          const exec = await executeAll(fallback, fallbackFiles, true);
           setLastBubble(finalizeAssistantReply(exec));
           persistChatSession();
           pushHistoryTurn({
@@ -3185,6 +3517,7 @@ Never reuse or overwrite an existing product id.`;
       }
     }
 
+    endAbortableWork();
     busy = false;
     if (sendBtn) sendBtn.disabled = false;
   }
@@ -3206,6 +3539,8 @@ Never reuse or overwrite an existing product id.`;
     }
 
     if (sendBtn) sendBtn.addEventListener('click', handleSend);
+    const cancelBtn = $('adminAiCancelBtn');
+    if (cancelBtn) cancelBtn.addEventListener('click', requestCancelAi);
     if (input) {
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -3213,6 +3548,12 @@ Never reuse or overwrite an existing product id.`;
           handleSend();
         }
       });
+      const autosize = () => {
+        if (input.tagName !== 'TEXTAREA') return;
+        input.style.height = 'auto';
+        input.style.height = Math.min(140, input.scrollHeight) + 'px';
+      };
+      input.addEventListener('input', autosize);
     }
 
     if (toggle && panel) {
@@ -3269,12 +3610,17 @@ Never reuse or overwrite an existing product id.`;
     const el = $('adminAiKeyWarn');
     if (!el) return;
     const issue = geminiKeyIssue();
-    if (!issue && hasGemini()) {
-      el.hidden = true;
+    if (issue || !hasGemini()) {
+      el.hidden = false;
+      el.textContent = cloudAISetupMessage();
       return;
     }
+    // Key works in the browser — warn that it is publicly readable without HTTP referrer restrictions
     el.hidden = false;
-    el.textContent = cloudAISetupMessage();
+    el.textContent = msg(
+      'admin-ai-key-public-warn',
+      'Gemini key is loaded in the browser. Restrict it to md3scandi.com HTTP referrers in Google AI Studio / Cloud Console, and rotate if leaked.'
+    );
   }
 
   function init() {
