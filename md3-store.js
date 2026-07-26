@@ -114,15 +114,15 @@
 
   function defaultProducts() {
     return [
-      { id: 1, name: 'Robe Lin Ivoire', category: 'Mode', sub: 'Vêtements', price: 149, emoji: '👗', image: 'images/cat-mode.jpg', sizeType: 'clothes', sizeStock: { XS: 1, S: 2, M: 3, L: 2, XL: 0 }, stock: 8, featured: false, desc: 'Robe en lin lavé, coupe fluide et intemporelle.' },
+      { id: 1, name: 'Robe Lin Ivoire', category: 'Mode', sub: 'Vêtements', price: 149, emoji: '👗', image: '/images/cat-mode.jpg', sizeType: 'clothes', sizeStock: { XS: 1, S: 2, M: 3, L: 2, XL: 0 }, stock: 8, featured: false, desc: 'Robe en lin lavé, coupe fluide et intemporelle.' },
       { id: 2, name: 'Sac Tote Naturel', category: 'Mode', sub: 'Sacs', price: 89, emoji: '👜', stock: 5, featured: false, desc: '' },
       { id: 3, name: 'Sneakers Blanches', category: 'Mode', sub: 'Chaussures', price: 195, emoji: '👟', sizeType: 'shoes', sizeStock: { 36: 0, 37: 1, 38: 2, 39: 2, 40: 1, 41: 0, 42: 0, 43: 0, 44: 0, 45: 0 }, stock: 6, featured: false, desc: '' },
-      { id: 4, name: 'Canapé Stockholm', category: 'Maison', sub: 'Canapés', price: 1290, emoji: '🛋️', image: 'images/cat-maison.jpg', stock: 3, featured: false, desc: 'Canapé scandinave en tissu naturel, lignes épurées.' },
+      { id: 4, name: 'Canapé Stockholm', category: 'Maison', sub: 'Canapés', price: 1290, emoji: '🛋️', image: '/images/cat-maison.jpg', stock: 3, featured: false, desc: 'Canapé scandinave en tissu naturel, lignes épurées.' },
       { id: 5, name: 'Lampe Bouleau', category: 'Maison', sub: 'Lampes', price: 245, emoji: '💡', stock: 12, featured: false, desc: '' },
       { id: 6, name: 'Vase Grès Gris', category: 'Maison', sub: 'Déco', price: 68, emoji: '🏺', stock: 0, featured: false, desc: '' },
-      { id: 7, name: 'Carafe Nordique', category: 'Lifestyle', sub: 'Vaisselle', price: 55, emoji: '🫙', image: 'images/cat-lifestyle.jpg', stock: 20, featured: false, desc: 'Carafe en verre soufflé, design minimal.' },
+      { id: 7, name: 'Carafe Nordique', category: 'Lifestyle', sub: 'Vaisselle', price: 55, emoji: '🫙', image: '/images/cat-lifestyle.jpg', stock: 20, featured: false, desc: 'Carafe en verre soufflé, design minimal.' },
       { id: 8, name: 'Bougie Hygge', category: 'Lifestyle', sub: 'Déco', price: 32, emoji: '🕯️', stock: 2, featured: false, desc: '' },
-      { id: 9, name: 'Set Lin Naturel', category: 'Édition limitée', sub: 'Textile', price: 320, emoji: '✨', image: 'images/journal-linen.jpg', stock: 1, featured: false, desc: 'Édition limitée — linge de maison en lin européen.' },
+      { id: 9, name: 'Set Lin Naturel', category: 'Édition limitée', sub: 'Textile', price: 320, emoji: '✨', image: '/images/journal-linen.jpg', stock: 1, featured: false, desc: 'Édition limitée — linge de maison en lin européen.' },
     ].map(normalizeProductFields);
   }
 
@@ -528,10 +528,10 @@
   function productVisualInner(p) {
     const image = p && normalizeProductImages(p)[0];
     const cat = String((p && p.category) || '');
-    let fallback = 'images/cat-mode.jpg';
-    if (/maison|home/i.test(cat)) fallback = 'images/cat-maison.jpg';
-    else if (/lifestyle/i.test(cat)) fallback = 'images/cat-lifestyle.jpg';
-    else if (/édition|edition|limit/i.test(cat)) fallback = 'images/journal-linen.jpg';
+    let fallback = '/images/cat-mode.jpg';
+    if (/maison|home/i.test(cat)) fallback = '/images/cat-maison.jpg';
+    else if (/lifestyle/i.test(cat)) fallback = '/images/cat-lifestyle.jpg';
+    else if (/édition|edition|limit/i.test(cat)) fallback = '/images/journal-linen.jpg';
     if (global.MD3Shop && typeof global.MD3Shop.progressiveImgHtml === 'function') {
       return global.MD3Shop.progressiveImgHtml(image || fallback, {
         fallback,
@@ -679,7 +679,7 @@
   }
 
   function productHref(id) {
-    return 'product.html?id=' + encodeURIComponent(String(id));
+    return '/product/?id=' + encodeURIComponent(String(id));
   }
 
   function boutiqueHref(cat, sub) {
@@ -687,7 +687,7 @@
     if (cat) params.set('cat', cat);
     if (sub) params.set('sub', sub);
     const q = params.toString();
-    return q ? 'boutique.html?' + q : 'boutique.html';
+    return q ? '/boutique/?' + q : '/boutique/';
   }
 
   function getUsers() {
@@ -790,8 +790,8 @@
     } catch (_) {}
   }
 
-  const PROFILE_PAGE = 'compte.html';
-  const LOGIN_PAGE = 'login.html';
+  const PROFILE_PAGE = '/compte/';
+  const LOGIN_PAGE = '/login/';
 
   function getProfileHref() {
     return PROFILE_PAGE;
@@ -1100,7 +1100,7 @@
   function isLiveAdminSurface() {
     try {
       const path = String((global.location && global.location.pathname) || '');
-      return /compte\.html$/i.test(path);
+      return /(^|\/)compte(\/|$|\.html)/i.test(path);
     } catch (_) {
       return false;
     }
@@ -1109,7 +1109,7 @@
   function pageProductId() {
     try {
       const path = String((global.location && global.location.pathname) || '');
-      if (!/product\.html$/i.test(path)) return null;
+      if (!/(^|\/)product(\/|$|\.html)/i.test(path)) return null;
       return new URLSearchParams(global.location.search).get('id');
     } catch (_) {
       return null;

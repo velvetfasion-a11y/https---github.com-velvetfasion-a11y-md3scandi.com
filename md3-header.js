@@ -12,17 +12,17 @@
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg>' +
     '</button></div>' +
     '<div class="header-center">' +
-    '<a href="index.html" class="logo" aria-label="MD3 Scandi">MD3<em>scandi</em></a>' +
+    '<a href="/" class="logo" aria-label="MD3 Scandi">MD3<em>scandi</em></a>' +
     '<nav class="header-nav" data-i18n-aria="nav-categories" aria-label="Catégories">' +
-    '<a href="boutique.html?cat=Mode" class="nav-cat-link link-underline" data-i18n="nav-fashion">Mode</a>' +
-    '<a href="boutique.html?cat=Maison" class="nav-cat-link link-underline" data-i18n="nav-home">Maison</a>' +
-    '<a href="boutique.html?cat=Lifestyle" class="nav-cat-link link-underline" data-i18n="nav-lifestyle">Lifestyle</a>' +
-    '<a href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" class="nav-cat-link link-underline" data-i18n="nav-limited">Édition limitée</a>' +
+    '<a href="/boutique/?cat=Mode" class="nav-cat-link link-underline" data-i18n="nav-fashion">Mode</a>' +
+    '<a href="/boutique/?cat=Maison" class="nav-cat-link link-underline" data-i18n="nav-home">Maison</a>' +
+    '<a href="/boutique/?cat=Lifestyle" class="nav-cat-link link-underline" data-i18n="nav-lifestyle">Lifestyle</a>' +
+    '<a href="/boutique/?cat=%C3%89dition%20limit%C3%A9e" class="nav-cat-link link-underline" data-i18n="nav-limited">Édition limitée</a>' +
     '</nav></div>' +
     '<div class="header-util">' +
     '<div class="header-icons">' +
-    '<a href="compte.html" class="header-icon-btn" id="navAccount" data-i18n-aria="nav-account" aria-label="Mon compte" title="Mon compte"></a>' +
-    '<a href="cart.html" class="header-icon-btn" id="navCart" data-i18n-aria="nav-cart" aria-label="Panier" title="Panier"></a>' +
+    '<a href="/compte/" class="header-icon-btn" id="navAccount" data-i18n-aria="nav-account" aria-label="Mon compte" title="Mon compte"></a>' +
+    '<a href="/cart/" class="header-icon-btn" id="navCart" data-i18n-aria="nav-cart" aria-label="Panier" title="Panier"></a>' +
     '</div>' +
     '<div class="lang lang-compact" role="group" data-i18n-aria="nav-lang" aria-label="Langue">' +
     '<button type="button" class="lang-btn active" data-lang="fr">FR</button>' +
@@ -37,13 +37,13 @@
     '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>' +
     '</button></div>' +
     '<nav class="mobile-drawer-nav">' +
-    '<a href="boutique.html?cat=Mode" data-i18n="nav-fashion">Mode</a>' +
-    '<a href="boutique.html?cat=Maison" data-i18n="nav-home">Maison</a>' +
-    '<a href="boutique.html?cat=Lifestyle" data-i18n="nav-lifestyle">Lifestyle</a>' +
-    '<a href="boutique.html?cat=%C3%89dition%20limit%C3%A9e" data-i18n="nav-limited">Édition limitée</a>' +
+    '<a href="/boutique/?cat=Mode" data-i18n="nav-fashion">Mode</a>' +
+    '<a href="/boutique/?cat=Maison" data-i18n="nav-home">Maison</a>' +
+    '<a href="/boutique/?cat=Lifestyle" data-i18n="nav-lifestyle">Lifestyle</a>' +
+    '<a href="/boutique/?cat=%C3%89dition%20limit%C3%A9e" data-i18n="nav-limited">Édition limitée</a>' +
     '<div class="mobile-drawer-extra">' +
-    '<a href="boutique.html" data-i18n="nav-shop-all">Toute la boutique</a>' +
-    '<a href="compte.html" data-i18n="nav-account">Compte</a>' +
+    '<a href="/boutique/" data-i18n="nav-shop-all">Toute la boutique</a>' +
+    '<a href="/compte/" data-i18n="nav-account">Compte</a>' +
     '<a href="mailto:info@md3scandi.com" data-i18n="footer-contact">Contact</a>' +
     '<div class="mobile-drawer-lang lang lang-compact" role="group" data-i18n-aria="nav-lang" aria-label="Langue">' +
     '<button type="button" class="lang-btn active" data-lang="fr">FR</button>' +
@@ -53,8 +53,9 @@
     '</div></nav></aside></div>';
 
   function isHomePage() {
-    const p = (global.location && global.location.pathname) || '';
-    return p === '/' || p.endsWith('/') || /index\.html$/i.test(p);
+    const raw = (global.location && global.location.pathname) || '/';
+    const p = raw.replace(/\/index\.html$/i, '').replace(/\/+$/, '') || '/';
+    return p === '/';
   }
 
   function mount() {
@@ -228,7 +229,7 @@
     if (S && S.syncAccountNav) {
       S.syncAccountNav(accountEl, S.getCurrentUser ? S.getCurrentUser() : null);
     }
-    cartEl.href = 'cart.html';
+    cartEl.href = '/cart/';
     if (global.MD3Lang && global.MD3Lang.t) {
       const cartLabel = global.MD3Lang.t('nav-cart');
       cartEl.setAttribute('aria-label', cartLabel);

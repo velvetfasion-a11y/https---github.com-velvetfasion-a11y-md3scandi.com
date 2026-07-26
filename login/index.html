@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<script src="/md3-lang-boot.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>MD3 Scandi — Connexion</title>
+<meta name="description" content="Connectez-vous à votre compte MD3 Scandi pour sauvegarder vos articles favoris." />
+<link rel="canonical" href="https://md3scandi.com/login/" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/md3-header.css?v=26" />
+<link rel="stylesheet" href="/md3-responsive.css?v=26" />
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --cream-deep: #ebe3d5;
+    --sand: #d9cdb6;
+    --bone: #ffffff;
+    --ink: #2b2620;
+    --ink-soft: #5a5247;
+    --gold: #b8935a;
+    --gold-soft: #e8d4a8;
+    --danger: #c0392b;
+    --shadow: 0 1px 2px rgba(43, 38, 32, 0.04), 0 8px 24px rgba(43, 38, 32, 0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    color: var(--ink);
+    background: var(--cream);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(184, 147, 90, 0.06) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(184, 148, 107, 0.05) 0%, transparent 40%);
+  }
+  .login-wrap {
+    position: relative;
+    z-index: 1;
+    min-height: calc(100vh - 120px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px 80px;
+  }
+  .login-card {
+    background: var(--bone);
+    border: 1px solid rgba(184, 147, 90, 0.2);
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 440px;
+    padding: 48px 40px 40px;
+  }
+  .login-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .login-eyebrow .line {
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+  }
+  .login-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 5vw, 2.5rem);
+    font-weight: 300;
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+  }
+  .login-title em { font-style: italic; color: var(--gold); }
+  .login-sub {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+  .error-msg {
+    display: none;
+    background: #fdf0ef;
+    border: 1px solid #e8c5c2;
+    color: var(--danger);
+    padding: 12px 16px;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .field { margin-bottom: 20px; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .field input {
+    width: 100%;
+    border: 1px solid rgba(184, 147, 90, 0.3);
+    padding: 14px 16px;
+    font-family: 'Jost', sans-serif;
+    font-size: 15px;
+    font-weight: 300;
+    background: var(--cream);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .field input:focus {
+    border-color: var(--gold);
+    background: var(--bone);
+  }
+  .btn-login {
+    width: 100%;
+    margin-top: 8px;
+    padding: 16px;
+    background: var(--ink);
+    color: var(--cream);
+    border: none;
+    font-family: 'Jost', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.25s;
+  }
+  .btn-login:hover { background: var(--ink-soft); }
+  .login-or {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0 16px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .login-or::before,
+  .login-or::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(184, 147, 90, 0.2);
+  }
+  .btn-google {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: #fff;
+    border: 1px solid rgba(60, 64, 67, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(60, 64, 67, 0.08), 0 2px 6px rgba(60, 64, 67, 0.06);
+    font-family: 'Jost', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: #3c4043;
+    cursor: pointer;
+    transition: box-shadow 0.2s, background 0.2s;
+  }
+  .btn-google:hover {
+    background: #fafafa;
+    box-shadow: 0 2px 4px rgba(60, 64, 67, 0.1), 0 4px 12px rgba(60, 64, 67, 0.08);
+  }
+  .btn-google:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
+  .btn-google svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+  .login-footer {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(184, 147, 90, 0.2);
+    text-align: center;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .login-footer a {
+    color: var(--ink);
+    font-weight: 400;
+    text-decoration: none;
+    border-bottom: 1px solid var(--gold);
+    transition: color 0.2s;
+  }
+  .login-footer a:hover { color: var(--gold); }
+  .login-hint {
+    margin-top: 20px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+  .field input.input-error {
+    border-color: var(--danger) !important;
+    background: #fdf5f4 !important;
+  }
+  .field label.label-error { color: var(--danger); }
+</style>
+</head>
+<body data-meta-title="meta-title-login" data-meta-desc="meta-desc-login">
+<script src="/md3-viewport.js"></script>
+
+<div id="md3-site-header"></div>
+
+<main class="login-wrap">
+  <div class="login-card">
+    <div class="login-eyebrow">
+      <span class="line"></span>
+      <span data-i18n="login-eyebrow">Connexion</span>
+      <span class="line"></span>
+    </div>
+    <h1 class="login-title" data-i18n="login-welcome-html">Bienvenue, <em>de retour</em></h1>
+    <p class="login-sub" data-i18n="login-sub">Connectez-vous pour retrouver vos articles sauvegardés et votre profil.</p>
+
+    <div class="error-msg" id="login-error" role="alert"></div>
+
+    <form id="login-form" novalidate onsubmit="return doLogin(event)">
+      <div class="field" id="field-email">
+        <label for="login-email" id="label-email" data-i18n="label-email-id">Email ou identifiant</label>
+        <input type="text" id="login-email" name="email" data-i18n-placeholder="ph-email" placeholder="votre@email.com" autocomplete="username" />
+      </div>
+      <div class="field" id="field-password">
+        <label for="login-password" id="label-password" data-i18n="label-password">Mot de passe</label>
+        <input type="password" id="login-password" name="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn-login" data-i18n="btn-connect">Se connecter</button>
+    </form>
+
+    <div class="login-or" data-i18n="login-or">ou</div>
+    <button type="button" class="btn-google" id="btnGoogle" onclick="doGoogleLogin()">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.63 3.5-2.5 6.47-5.33 8.43l8.5 6.59C43.98 37.21 46.98 31.3 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 010-9.18l-7.98-6.19a24.01 24.01 0 000 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-8.5-6.59c-2.37 1.6-5.4 2.53-7.39 2.53-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      <span data-i18n="btn-google">Continuer avec Google</span>
+    </button>
+
+    <div class="login-footer" data-i18n="login-footer-html">
+      Pas encore de compte ? <a href="/compte/?page=signup">Créer un compte</a>
+    </div>
+    <p class="login-hint" data-i18n="login-hint">Après connexion, vous serez redirigé vers votre profil ou la boutique.</p>
+  </div>
+</main>
+
+<script src="/recaptcha-config.js"></script>
+<script src="/md3-recaptcha.js"></script>
+<script src="/firebase-config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+<script src="/md3-firebase.js?v=11"></script>
+<script src="/md3-store.js?v=32"></script>
+<script src="/md3-auth.js?v=4"></script>
+<script src="/md3-nav-icons.js"></script>
+<script src="/md3-currency.js?v=6"></script>
+<script src="/md3-header.js?v=26"></script>
+<script src="/md3-lang.js?v=44"></script>
+<script>
+if (MD3Store.guardLoginPage('/compte/')) { /* redirecting */ }
+
+(function () {
+  function setNavAuth() {
+    MD3Header.updateAuth();
+  }
+
+  function updateCartBadge() {
+    MD3Header.updateCartBadge();
+  }
+
+  function bootLogin() {
+    const user = MD3Store.getCurrentUser();
+    setNavAuth(user);
+    MD3Lang.init({
+      onChange() {
+        setNavAuth(MD3Store.getCurrentUser());
+        MD3Lang.refreshUI();
+        const params = new URLSearchParams(location.search);
+        if (params.get('redirect') === 'boutique') {
+          const sub = document.querySelector('.login-sub');
+          if (sub) sub.innerHTML = MD3Lang.t('login-sub-boutique');
+        }
+      }
+    });
+
+    const params = new URLSearchParams(location.search);
+    const emailField = document.getElementById('login-email');
+    if (params.get('email')) emailField.value = params.get('email');
+    if (params.get('redirect') === 'boutique') {
+      const sub = document.querySelector('.login-sub');
+      if (sub) sub.innerHTML = MD3Lang.t('login-sub-boutique');
+    }
+
+    ['login-email', 'login-password'].forEach(id => {
+      document.getElementById(id).addEventListener('input', clearFieldErrors);
+    });
+
+    handleGoogleRedirectLogin();
+  }
+
+  async function handleGoogleRedirectLogin() {
+    if (!window.MD3Auth || typeof MD3Auth.handleGoogleRedirectResult !== 'function') return;
+    try {
+      await MD3Store.ready;
+      const firebaseUser = await MD3Auth.handleGoogleRedirectResult();
+      if (!firebaseUser) return;
+      const profile = await MD3Auth.ensureUserProfileFromFirebase(firebaseUser);
+      MD3Store.setCurrentUser({ email: profile.email, name: profile.name, isAdmin: false });
+      if (MD3Store.getCurrentUser()) redirectAfterLogin();
+    } catch (err) {
+      console.error('Google redirect login', err);
+      showErr(MD3Auth.firebaseAuthErrorMessage(err));
+    }
+  }
+
+  MD3Store.init().then(bootLogin).catch(function (e) {
+    console.error('MD3Store.init', e);
+    bootLogin();
+  });
+
+  window.addEventListener('md3-carts-updated', updateCartBadge);
+  window.addEventListener('md3-session-changed', function () {
+    setNavAuth(MD3Store.getCurrentUser());
+  });
+})();
+
+window.addEventListener('pageshow', function () {
+  MD3Store.guardLoginPage('/compte/');
+});
+
+function clearFieldErrors() {
+  document.getElementById('login-error').style.display = 'none';
+  ['login-email', 'login-password'].forEach(id => {
+    document.getElementById(id).classList.remove('input-error');
+  });
+  ['label-email', 'label-password'].forEach(id => {
+    document.getElementById(id).classList.remove('label-error');
+  });
+}
+
+function setFieldError(inputId, labelId) {
+  document.getElementById(inputId).classList.add('input-error');
+  if (labelId) document.getElementById(labelId).classList.add('label-error');
+}
+
+function showErr(msg, fields) {
+  clearFieldErrors();
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  (fields || []).forEach(([inputId, labelId]) => setFieldError(inputId, labelId));
+}
+
+async function verifyRecaptcha(action) {
+  if (!window.MD3Recaptcha || !MD3Recaptcha.isConfigured()) return true;
+  try {
+    const cap = await MD3Recaptcha.guard(action);
+    if (cap.ok || cap.skipped) return true;
+    showErr(MD3Lang.t('err-recaptcha'));
+    return false;
+  } catch (e) {
+    console.error('recaptcha', e);
+    showErr(MD3Lang.t('err-recaptcha'));
+    return false;
+  }
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  clearFieldErrors();
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass = document.getElementById('login-password').value;
+
+  if (!email) {
+    showErr(MD3Lang.t('err-email-req'), [['login-email', 'label-email']]);
+    return false;
+  }
+  if (!pass) {
+    showErr(MD3Lang.t('err-pass-req'), [['login-password', 'label-password']]);
+    return false;
+  }
+
+  if (!(await verifyRecaptcha('LOGIN'))) return false;
+
+  const S = MD3Store;
+
+  if (S.isAdminLogin(email, pass)) {
+    S.setCurrentUser({ email: S.ADMIN_EMAIL, isAdmin: true });
+    if (!S.getCurrentUser()) {
+      showErr(MD3Lang.t('err-save-session'));
+      return false;
+    }
+    window.location.replace('/compte/');
+    return false;
+  }
+
+  if (!email.includes('@')) {
+    showErr(MD3Lang.t('err-invalid-email'), [['login-email', 'label-email']]);
+    return false;
+  }
+
+  try {
+    await S.ready;
+    if (!window.MD3Auth) throw new Error('Authentication module not loaded.');
+    await MD3Auth.signIn(email, pass);
+
+    const users = S.getUsers();
+    const profile = users[email] || { name: email.split('@')[0], liked: [] };
+    S.setCurrentUser({ email, name: profile.name, isAdmin: false });
+    if (!S.getCurrentUser()) {
+      showErr(MD3Lang.t('err-save-session') || 'Could not save session. Check browser storage settings.');
+      return false;
+    }
+
+    redirectAfterLogin();
+  } catch (err) {
+    console.error(err);
+    showErr(window.MD3Auth ? MD3Auth.firebaseAuthErrorMessage(err) : err.message);
+  }
+  return false;
+}
+
+function redirectAfterLogin() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('redirect') === 'boutique') {
+    window.location.replace('/#boutique');
+  } else {
+    window.location.replace('/compte/');
+  }
+}
+
+async function doGoogleLogin() {
+  clearFieldErrors();
+  if (!(await verifyRecaptcha('GOOGLE_LOGIN'))) return;
+  const btn = document.getElementById('btnGoogle');
+  const label = MD3Lang.t('btn-google');
+
+  if (!window.MD3Auth || typeof MD3Auth.signInWithGoogle !== 'function') {
+    if (!sessionStorage.getItem('md3-auth-reload')) {
+      sessionStorage.setItem('md3-auth-reload', '1');
+      location.reload();
+      return;
+    }
+    showErr(MD3Lang.t('err-auth-stale'));
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.querySelector('span').textContent = MD3Lang.t('login-google-loading');
+  }
+
+  const S = MD3Store;
+  try {
+    await S.ready;
+    const firebaseUser = await MD3Auth.signInWithGoogle();
+    if (!firebaseUser) return;
+    const profile = await MD3Auth.ensureUserProfileFromFirebase(firebaseUser);
+    S.setCurrentUser({ email: profile.email, name: profile.name, isAdmin: false });
+    if (!S.getCurrentUser()) {
+      showErr(MD3Lang.t('err-save-session'));
+      return;
+    }
+    redirectAfterLogin();
+  } catch (err) {
+    console.error(err);
+    if (err && err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+      showErr(window.MD3Auth ? MD3Auth.firebaseAuthErrorMessage(err) : err.message);
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.querySelector('span').textContent = label;
+    }
+  }
+}
+</script>
+</body>
+</html>

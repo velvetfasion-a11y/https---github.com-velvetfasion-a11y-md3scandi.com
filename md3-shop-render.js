@@ -10,10 +10,10 @@
 
   function categoryFallbackImage(p) {
     const catKey = String((p && p.category) || '');
-    if (/maison|home/i.test(catKey)) return 'images/cat-maison.jpg';
-    if (/lifestyle/i.test(catKey)) return 'images/cat-lifestyle.jpg';
-    if (/édition|edition|limit/i.test(catKey)) return 'images/journal-linen.jpg';
-    return 'images/cat-mode.jpg';
+    if (/maison|home/i.test(catKey)) return '/images/cat-maison.jpg';
+    if (/lifestyle/i.test(catKey)) return '/images/cat-lifestyle.jpg';
+    if (/édition|edition|limit/i.test(catKey)) return '/images/journal-linen.jpg';
+    return '/images/cat-mode.jpg';
   }
 
   /**
@@ -22,9 +22,9 @@
    */
   function progressiveImgHtml(src, opts) {
     const o = opts || {};
-    const fallback = o.fallback || 'images/cat-mode.jpg';
+    const fallback = o.fallback || '/images/cat-mode.jpg';
     const real = String(src || fallback || '').trim() || fallback;
-    const ph = String(fallback || 'images/cat-mode.jpg');
+    const ph = String(fallback || '/images/cat-mode.jpg');
     const same = real === ph;
     const eager = !!o.eager;
     const alt = o.alt || '';
