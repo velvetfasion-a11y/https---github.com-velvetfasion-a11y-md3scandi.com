@@ -293,6 +293,8 @@
   /** Hidden from boutique / homepage / product URLs when true. */
   /** Brief lock so a late Firestore snapshot can't undo an admin visibility toggle. */
   const visibilityGuard = new Map();
+  /** Brief lock so undo/restore isn't immediately overwritten by a stale cloud catalog. */
+  const productRestoreGuard = new Map();
 
   function readHiddenMap() {
     try {
@@ -324,6 +326,24 @@
       hidden: !!hidden,
       until: Date.now() + (ms || 60000),
     });
+  }
+
+  function guardProductRestore(ids, ms) {
+    const until = Date.now() + (ms || 25000);
+    (ids || []).forEach((id) => {
+      if (id == null) return;
+      productRestoreGuard.set(String(id), { until });
+    });
+  }
+
+  function isProductRestoreGuarded(id) {
+    const g = productRestoreGuard.get(String(id));
+    if (!g) return false;
+    if (Date.now() > g.until) {
+      productRestoreGuard.delete(String(id));
+      return false;
+    }
+    return true;
   }
 
   function applyVisibilityGuard(p) {
@@ -512,7 +532,11 @@
     }
     try {
       if (global.MD3Firebase.muteProductWatch) {
-        global.MD3Firebase.muteProductWatch(opts && opts.skipImages ? 8000 : 4000);
+        const muteMs = Math.max(
+          Number(opts && opts.muteMs) || 0,
+          opts && opts.skipImages ? 8000 : 4000
+        );
+        global.MD3Firebase.muteProductWatch(muteMs);
       }
       const result = await global.MD3Firebase.saveProducts(list, opts);
       clearProductsPendingCloud();
@@ -1127,8 +1151,11 @@
   function mergeRemoteProduct(remote) {
     if (!remote || remote.id == null) return false;
     ensureCaches();
+    const id = String(remote.id);
+    if (isProductRestoreGuarded(id)) {
+      return true;
+    }
     const normalized = normalizeProductFields(remote);
-    const id = String(normalized.id);
     const idx = productsCache.findIndex((p) => String(p.id) === id);
     if (idx >= 0) {
       const local = productsCache[idx];
@@ -1191,10 +1218,13 @@
     const featuredPushIds = [];
     const merged = (remoteProducts || []).map((r) => {
       const local = localById.get(String(r.id));
+      const id = String(r.id);
+      if (local && isProductRestoreGuarded(id)) {
+        return applyVisibilityGuard(normalizeProductFields(local));
+      }
       const remoteFeat = isProductFeatured(r);
       const localFeat = isProductFeatured(local);
       const remoteHidden = !!(r && (r.hidden === true || r.hidden === 1 || r.hidden === '1' || r.hidden === 'true'));
-      const id = String(r.id);
       const g = visibilityGuard.get(id);
       const guardActive = !!(g && Date.now() <= g.until);
       const remembered = Object.prototype.hasOwnProperty.call(hiddenMap, id) ? !!hiddenMap[id] : null;
@@ -1522,6 +1552,7 @@
     isProductHidden,
     isProductVisible,
     guardProductVisibility,
+    guardProductRestore,
     rememberProductHidden,
     getVisibleProducts,
     sortProductsNewestFirst,

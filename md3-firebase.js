@@ -102,7 +102,8 @@
    * Compat SDK equivalent of modular uploadString(ref, data, 'data_url').
    */
   /**
-   * Shrink data-URL JPEGs before Storage upload so storefront cards stay light.
+   * Shrink data-URL JPEGs before Storage upload.
+   * Keep product photos sharp for PDP / retina shop cards (was 1000px @ 0.78 — too soft).
    */
   function compressDataUrlForUpload(dataUrl, maxEdge, quality) {
     if (!dataUrl || !dataUrl.startsWith('data:')) return Promise.resolve(dataUrl);
@@ -112,8 +113,13 @@
         try {
           let w = img.width;
           let h = img.height;
-          const cap = maxEdge || 1000;
+          const cap = maxEdge || 2200;
           const long = Math.max(w, h);
+          const q = quality != null ? quality : 0.92;
+          if (long <= cap && String(dataUrl).startsWith('data:image/jpeg') && q >= 0.9) {
+            resolve(dataUrl);
+            return;
+          }
           if (long > cap) {
             const scale = cap / long;
             w = Math.max(1, Math.round(w * scale));
@@ -123,8 +129,10 @@
           canvas.width = w;
           canvas.height = h;
           const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', quality != null ? quality : 0.78));
+          resolve(canvas.toDataURL('image/jpeg', q));
         } catch (_) {
           resolve(dataUrl);
         }
@@ -137,7 +145,7 @@
   async function uploadProductImage(productId, dataUrl, index) {
     if (!storage || !dataUrl) return dataUrl || null;
     if (!dataUrl.startsWith('data:')) return dataUrl;
-    const modest = await compressDataUrlForUpload(dataUrl, 1000, 0.78);
+    const modest = await compressDataUrlForUpload(dataUrl, 2200, 0.92);
     const suffix = index ? '-' + String(index + 1) : '';
     const storageRef = storage.ref('products/' + String(productId) + suffix + '.jpg');
     try {
@@ -175,7 +183,9 @@
   let productWatchMutedUntil = 0;
 
   function muteProductWatch(ms) {
-    productWatchMutedUntil = Date.now() + (ms || 2500);
+    // Never shorten an existing mute (undo / visibility toggles need a long quiet window)
+    const until = Date.now() + (ms || 2500);
+    if (until > productWatchMutedUntil) productWatchMutedUntil = until;
   }
 
   /**
@@ -352,7 +362,11 @@
   async function saveProducts(products, options) {
     if (!db) return products;
     const opts = options || {};
-    muteProductWatch(opts.skipImages ? 10000 : opts.muteMs || 5000);
+    const muteMs = Math.max(
+      Number(opts.muteMs) || 0,
+      opts.skipImages ? 10000 : 5000
+    );
+    muteProductWatch(muteMs);
     const saved = (products || []).map((p) => ({ ...p }));
     const ids = new Set(saved.map((p) => String(p.id)));
     const onlyIds = opts.onlyIds ? new Set(opts.onlyIds.map((id) => String(id))) : null;
@@ -392,7 +406,7 @@
     }
 
     // Keep listeners muted a bit after write so late snapshots can't undo toggles
-    muteProductWatch(opts.skipImages ? 4000 : 2000);
+    muteProductWatch(Math.max(Number(opts.muteMs) || 0, opts.skipImages ? 8000 : 3000));
     return saved;
   }
 

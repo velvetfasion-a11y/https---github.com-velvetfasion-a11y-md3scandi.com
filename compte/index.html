@@ -1139,7 +1139,6 @@
         <span data-i18n="admin-ai-title">AI-assistent</span>
         <button type="button" class="admin-ai-toggle" id="adminAiToggle" aria-label="Collapse">−</button>
       </div>
-      <div class="admin-ai-focus" id="adminAiFocus" hidden></div>
       <div class="admin-ai-key-warn" id="adminAiKeyWarn" hidden></div>
       <div class="admin-ai-messages" id="adminAiMessages"></div>
       <div class="admin-ai-attachments" id="adminAiAttachments" hidden></div>
@@ -1301,9 +1300,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-<script src="/md3-firebase.js?v=11"></script>
+<script src="/md3-firebase.js?v=13"></script>
 <script src="/md3-sizes.js?v=2"></script>
-<script src="/md3-store.js?v=34"></script>
+<script src="/md3-store.js?v=35"></script>
 <script src="/md3-auth.js?v=4"></script>
 <script src="/md3-nav-icons.js"></script>
 <script src="/md3-currency.js?v=6"></script>
@@ -1311,8 +1310,8 @@
 <script src="/ai-config.js?v=3" onerror="window.MD3_AI_CONFIG=window.MD3_AI_CONFIG||{}"></script><!-- generated from .env via scripts/sync-ai-config.mjs -->
 <script src="/contact-config.js?v=3"></script>
 <script src="/md3-site-assets.js?v=14"></script>
-<script src="/md3-admin-ai.js?v=23"></script>
-<script src="/md3-lang.js?v=44"></script>
+<script src="/md3-admin-ai.js?v=26"></script>
+<script src="/md3-lang.js?v=45"></script>
 <script src="/md3-taxonomy.js?v=2"></script>
 <script src="/email-config.js?v=3"></script>
 <script src="/md3-email.js?v=5"></script>
@@ -2650,7 +2649,6 @@ function paintAdminProductsList() {
   }
   const catBtnLabel = (c) => c === 'Tous' ? L('shop-all') : MD3Lang.translateCategory(c);
   const searchVal = esc(adminSearch);
-  const focusId = window.MD3AdminAI && MD3AdminAI.getFocusedProductId ? MD3AdminAI.getFocusedProductId() : null;
 
   host.innerHTML = `
     <h1>${L('admin-manage')}</h1>
@@ -2670,7 +2668,6 @@ function paintAdminProductsList() {
     <div class="admin-product-grid">
       ${filtered.length ? filtered.map(p => {
         const thumb = productImagesFor(p)[0];
-        const aiFocus = focusId === p.id;
         const isFeat = S.isProductFeatured ? S.isProductFeatured(p) : !!p.featured;
         const isVisible = S.isProductVisible ? S.isProductVisible(p) : !p.hidden;
         const label = esc(S.productDisplayName ? S.productDisplayName(p) : p.name);
@@ -2687,15 +2684,15 @@ function paintAdminProductsList() {
           ? `<img class="admin-product-card-img" src="${esc(thumb)}" alt="${label}" />`
           : `<span class="admin-product-card-placeholder">${esc(p.emoji || '✦')}</span>`;
         const visLabel = isVisible ? L('admin-visibility-on') : L('admin-visibility-off');
-        return `<article class="admin-product-card${aiFocus ? ' admin-product-card--focus' : ''}${isVisible ? '' : ' admin-product-card--hidden'}">
-          <div class="admin-product-card-media" onclick="adminFocusProduct(${p.id});openEditProduct(${p.id})">
+        return `<article class="admin-product-card${isVisible ? '' : ' admin-product-card--hidden'}">
+          <div class="admin-product-card-media" onclick="openEditProduct(${p.id})">
             ${thumbHtml}
             ${feat}
           </div>
           <div class="admin-product-card-meta">
             <div class="admin-product-card-price">${esc(priceHtml)}</div>
             <div class="admin-product-card-actions">
-              <button type="button" class="admin-btn-outline admin-btn-sm admin-product-card-edit" onclick="adminFocusProduct(${p.id});openEditProduct(${p.id})">${L('btn-modify')}</button>
+              <button type="button" class="admin-btn-outline admin-btn-sm admin-product-card-edit" onclick="openEditProduct(${p.id})">${L('btn-modify')}</button>
               <label class="admin-visibility" title="${esc(visLabel)}" onclick="event.stopPropagation()">
                 <input type="checkbox" ${isVisible ? 'checked' : ''} onchange="toggleProductVisibility(${p.id}, this.checked)" aria-label="${esc(visLabel)}" />
                 <span class="admin-visibility-track" aria-hidden="true"></span>
@@ -2827,9 +2824,6 @@ function openEditProduct(id) {
   const p = findAdminProduct(id);
   if (!p) return;
   adminEditingId = id;
-  if (window.MD3AdminAI && window.MD3AdminAI.setFocusedProduct) {
-    window.MD3AdminAI.setFocusedProduct(id, p.name);
-  }
   const titleEl = document.getElementById('adminEditTitle');
   if (titleEl) titleEl.textContent = p.name;
   const subEl = document.getElementById('adminEditSub');
@@ -2950,13 +2944,6 @@ function renderAdminSizeFields(product) {
     </label>`;
   }).join('');
   updateAdminSizeTotalNote();
-}
-
-function adminFocusProduct(id) {
-  const p = findAdminProduct(id);
-  if (p && window.MD3AdminAI && window.MD3AdminAI.setFocusedProduct) {
-    window.MD3AdminAI.setFocusedProduct(id, p.name);
-  }
 }
 
 async function saveProduct() {
@@ -3102,7 +3089,6 @@ window.adminGoProducts = adminGoProducts;
 window.openEditProduct = openEditProduct;
 window.setAdminSearch = setAdminSearch;
 window.setAdminFilter = setAdminFilter;
-window.adminFocusProduct = adminFocusProduct;
 window.closeAdminProductEdit = closeAdminProductEdit;
 window.updateAdminSizeTotalNote = updateAdminSizeTotalNote;
 window.refreshAdminProducts = refreshAdminProducts;

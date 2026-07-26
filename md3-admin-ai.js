@@ -6,11 +6,13 @@
   const L = (k) => (global.MD3Lang ? global.MD3Lang.t(k) : k);
   const MAX_ATTACH = 8;
   /** Longest edge for images shown in chat + sent to the planner model. */
-  const AI_ATTACH_MAX_EDGE = 1024;
+  const AI_ATTACH_MAX_EDGE = 1280;
   /** Longest edge for reference images sent to the image model. */
-  const AI_REF_MAX_EDGE = 1280;
-  /** Longest edge when saving AI-generated product photos. */
-  const AI_STORE_MAX_EDGE = 1600;
+  const AI_REF_MAX_EDGE = 1600;
+  /** Longest edge when saving AI-generated product photos (before Storage upload). */
+  const AI_STORE_MAX_EDGE = 2400;
+  /** JPEG quality for stored AI product photos (0–1). */
+  const AI_STORE_JPEG_QUALITY = 0.94;
   const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
   const MAX_HISTORY_TURNS = 24;
   const MAX_GALLERY_SHOTS = 4;
@@ -227,7 +229,8 @@
   function dataUrlToGeminiPart(dataUrl) {
     const m = String(dataUrl).match(/^data:([^;]+);base64,(.+)$/);
     if (!m) return null;
-    return { inline_data: { mime_type: m[1], data: m[2] } };
+    // REST accepts both casings; camelCase is what current image models return/expect
+    return { inlineData: { mimeType: m[1], data: m[2] } };
   }
 
   function geminiPartToDataUrl(part) {
@@ -237,6 +240,18 @@
     const data = inline.data;
     if (!data) return null;
     return 'data:' + mime + ';base64,' + data;
+  }
+
+  async function ensureDataUrl(url) {
+    if (!url) return null;
+    const s = String(url).trim();
+    if (!s) return null;
+    if (s.startsWith('data:')) return s;
+    if (typeof urlToComparableDataUrl === 'function') {
+      const via = await urlToComparableDataUrl(s);
+      if (via) return via;
+    }
+    return null;
   }
 
   function buildSystemPrompt() {
@@ -253,10 +268,16 @@
         imageCount: (p.images && p.images.length) || (p.image ? 1 : 0),
       }));
     const recent = sessionCtx.lastProductNames.slice(-6);
-    const focused =
-      sessionCtx.focusedProductId != null
-        ? products.find((p) => p.id === sessionCtx.focusedProductId) || { id: sessionCtx.focusedProductId, name: sessionCtx.focusedProductName }
-        : null;
+    const active = getActiveProduct();
+    const focused = active
+      ? {
+          id: active.id,
+          name: active.name,
+          category: active.category,
+          sub: active.sub,
+          price: active.price,
+        }
+      : null;
     const siteImages =
       global.MD3SiteAssets && global.MD3SiteAssets.getCatalog
         ? global.MD3SiteAssets.getCatalog()
@@ -266,7 +287,7 @@
         ? global.MD3Lang.getEditableTextCatalog().slice(0, 24)
         : [];
     return `You are MD3 Scandi admin assistant — full control over the MD3 Scandi website (homepage, shop, products).
-You remember the full conversation. Use prior messages to resolve "this product", "it", "them", follow-ups, and multi-step requests.
+You remember the full conversation. Use prior messages to resolve "this product", "change this", "it", "them", follow-ups, and multi-step requests.
 
 You can change ANYTHING on the site:
 - Site images (attach photo + say which section): hero, fashion/mode card, maison card, lifestyle card, limited edition card, manifesto background
@@ -276,7 +297,8 @@ You can change ANYTHING on the site:
 
 CRITICAL — read user intent before choosing actions:
 - "change / replace / different image for this product" → UPDATE existing product (never add_product).
-- User attaches a screenshot of an existing product card → identify product by visible name/price/id and UPDATE it.
+- User attaches a photo of an existing product (or shop screenshot) → identify that product and UPDATE it. Never ask the admin to click a product card.
+- "this product" / "change this" / "update it" → product from attached photo, last product in chat, or product open in the editor.
 - add_product ONLY when user clearly asks to ADD/CREATE a NEW product for the catalogue.
 - "change hero / header / mode section / maison image" → set_site_image with the right slot (not a product action).
 - "change headline / title / text / description on homepage" → set_site_text with the i18n key.
@@ -289,13 +311,13 @@ A) DIFFERENT PRODUCTS (one listing per photo):
    Analyze EACH photo separately for name, category, price, description.
 
 B) ONE PRODUCT, MANY IMAGES (gallery / same item):
-   User attaches 2+ photos of the SAME item OR says "this product", "same product", "add all images to…" OR a product is focused in editor
+   User attaches 2+ photos of the SAME item OR says "this product", "same product", "add all images to…" OR chat already targets one product
    → ONE action only: append_product_images { match:"focused", imageIndices:[0,1,2,…] }
    OR generate_product_images / update_product_image / replace_product_image — NEVER multiple add_product.
 
 C) If a product is OPEN in the editor and user attaches several photos WITHOUT saying "different/separate products" → mode B (one product).
 
-D) If user says "different products" or "each is a separate product" while a product is focused → mode A overrides focus.
+D) If user says "different products" or "each is a separate product" → mode A.
 
 Example A — 3 photos of 3 items + "add these to the shop":
   [{"type":"add_product","imageIndex":0,"name":"...","desc":"..."},{"type":"add_product","imageIndex":1,...},{"type":"add_product","imageIndex":2,...}]
@@ -306,7 +328,7 @@ Example B — 4 photos of same dress + "add all images to this product":
 MULTIPLE ATTACHMENTS (legacy detail):
 - User attaches several photos of DIFFERENT items and wants new catalogue entries → return ONE add_product per image, each with a unique imageIndex (0, 1, 2…). Analyze each photo separately for name, category, price, description.
 - User attaches several photos of the SAME item, or says "add these images to this product" / gallery / all photos to one product → return ONE append_product_images { match:"focused"|product name, imageIndices:[0,1,2,…] } OR update_product with appendImages:true. Never split into multiple products.
-- If a product is focused in the editor, multiple uploads default to that ONE product unless user clearly asks for multiple new products.
+- If chat already targets one product, multiple uploads default to that ONE product unless user clearly asks for multiple new products.
 - You may return several actions in one response (e.g. 3× add_product, or 1× append_product_images).
 
 Reply ONLY with valid JSON:
@@ -332,7 +354,7 @@ Action types (every action MUST include "type"):
 - When user wants AI images + title/description for an EXISTING product, return:
   update_product { match:"focused", name, desc, price } AND generate_product_images { match:"focused", galleryShots:[...] }
   OR replace_product_image if they want to replace the main photo only.
-- NEVER return add_product when user says "this product", "for this product", "change image", "make/generate images", or a product is focused in the editor.
+- NEVER return add_product when user says "this product", "for this product", "change this", "change image", "make/generate images", or chat already targets a product.
 
 Example — user: "for this product make display images and add description and title"
 → actions: [
@@ -365,15 +387,16 @@ Categories: Mode, Maison, Lifestyle, Édition limitée.
 Subs: Vêtements, Canapés, Vaisselle, Déco, Textile, Sacs, Chaussures, Lampes.
 Current products: ${JSON.stringify(products)}.
 Recently touched in this chat: ${JSON.stringify(recent)}.
-${focused ? 'Product currently open in editor (use match:"focused" for "this product"): ' + JSON.stringify(focused) + '.' : 'No product open in editor — use product name or "last" from chat.'}
+${focused ? 'Active product for "this product" / match:"focused" (photo match, last chat product, or open editor): ' + JSON.stringify(focused) + '.' : 'No active product yet — identify from attached photo, product name in the message, or recent chat.'}
 When the user attaches a product/catalog photo, identify which catalog product and which gallery image index (0=main) it matches — even if they say "this model" or "this image" without naming the product. Use replace_product_image with catalogImageIndex for that slot.
 User may write Swedish, French, English, or Arabic.
 Always return actions when the user wants products created/updated — never reply with only text if work can be done.
 NEVER default to add_product just because the user attached an image.
-An image alone is NOT a request to add a product — infer intent from words + chat context + whether a product is focused.
+An image alone is NOT a request to add a product — infer intent from words + chat context + photo match.
 If intent is unclear AND you cannot infer any action from chat + images, return {"reply":"short clarifying question","actions":[]} — do NOT guess add_product.
 NEVER return empty actions when the user asks to create/generate/make a new image (with or without the word "product") and an image is attached or was attached in the previous message — use replace_product_image or generate_product_images with match:"focused" after identifying the product from the photo.
 When user says "create a new image" / "generate image" / "make a new photo" → replace_product_image or generate_product_images on the product shown in the attached image.
+When user says "change this product" / "update this" / "change the image" with a photo → identify the product from the photo and update it (never require a card click).
 Product screenshots / admin UI shots → update existing product, never add_product.`;
   }
 
@@ -621,16 +644,48 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     if (String(url).startsWith('data:')) return url;
     const key = normalizeImageUrl(url);
     if (catalogImageDataUrlCache.has(key)) return catalogImageDataUrlCache.get(key);
+
+    // Prefer fetch (works for Firebase Storage when CORS is set)
     try {
       const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
-      if (!res.ok) return null;
-      const blob = await res.blob();
-      const dataUrl = await readFileAsDataUrl(blob);
-      catalogImageDataUrlCache.set(key, dataUrl);
-      return dataUrl;
-    } catch (_) {
-      return null;
-    }
+      if (res.ok) {
+        const blob = await res.blob();
+        const dataUrl = await readFileAsDataUrl(blob);
+        catalogImageDataUrlCache.set(key, dataUrl);
+        return dataUrl;
+      }
+    } catch (_) {}
+
+    // Canvas fallback when fetch is blocked but the image still loads with CORS
+    try {
+      const dataUrl = await new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            if (!canvas.width || !canvas.height) {
+              resolve(null);
+              return;
+            }
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/jpeg', 0.92));
+          } catch (_) {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = url;
+      });
+      if (dataUrl) {
+        catalogImageDataUrlCache.set(key, dataUrl);
+        return dataUrl;
+      }
+    } catch (_) {}
+
+    return null;
   }
 
   async function imageFingerprint(dataUrl) {
@@ -875,11 +930,9 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
   function buildImageGenerateAction(text, imgs) {
     const productRef =
-      sessionCtx.resolvedProductId != null
+      sessionCtx.resolvedProductId != null || getActiveProduct()
         ? 'focused'
-        : sessionCtx.focusedProductId != null
-          ? 'focused'
-          : 'last';
+        : 'last';
     const modelShot = /model|mannequin|portrait|wearing|background|studio/.test(normalizeUserIntentText(text).toLowerCase());
     return {
       type: 'replace_product_image',
@@ -903,6 +956,12 @@ Product screenshots / admin UI shots → update existing product, never add_prod
         let h = img.height;
         const cap = maxEdge || AI_ATTACH_MAX_EDGE;
         const long = Math.max(w, h);
+        const q = quality != null ? quality : 0.9;
+        // Already within size budget and high-quality JPEG — keep the original bytes
+        if (long <= cap && String(dataUrl).startsWith('data:image/jpeg') && q >= 0.9) {
+          resolve(dataUrl);
+          return;
+        }
         if (long > cap) {
           const scale = cap / long;
           w = Math.max(1, Math.round(w * scale));
@@ -912,8 +971,10 @@ Product screenshots / admin UI shots → update existing product, never add_prod
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', quality != null ? quality : 0.82));
+        resolve(canvas.toDataURL('image/jpeg', q));
       };
       img.onerror = () => resolve(dataUrl);
       img.src = dataUrl;
@@ -959,6 +1020,43 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     );
   }
 
+  function readEditorProduct() {
+    try {
+      const el = $('editId');
+      if (!el || !el.value) return null;
+      const id = parseInt(el.value, 10);
+      if (!Number.isFinite(id)) return null;
+      return S().getProducts().find((p) => p.id === id) || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /** Product for "this product" / match:"focused" — photo match, chat memory, or open editor. */
+  function getActiveProduct() {
+    const products = S().getProducts();
+    if (sessionCtx.resolvedProductId != null) {
+      const hit = products.find((p) => p.id === sessionCtx.resolvedProductId);
+      if (hit) return hit;
+    }
+    if (sessionCtx.focusedProductId != null) {
+      const hit = products.find((p) => p.id === sessionCtx.focusedProductId);
+      if (hit) return hit;
+    }
+    if (sessionCtx.focusedProductName) {
+      const byName = findProductByName(sessionCtx.focusedProductName);
+      if (byName) return byName;
+    }
+    const editor = readEditorProduct();
+    if (editor) return editor;
+    const last = sessionCtx.lastProductNames[sessionCtx.lastProductNames.length - 1];
+    if (last) {
+      const byLast = findProductByName(last);
+      if (byLast) return byLast;
+    }
+    return null;
+  }
+
   function findProductFromContext(match, text) {
     const products = S().getProducts();
 
@@ -970,35 +1068,20 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     const q = String(match || '')
       .trim()
       .toLowerCase();
+    const refersThis =
+      q === 'focused' ||
+      q === 'this' ||
+      q === 'current' ||
+      q === 'editor' ||
+      /(?:change|update|edit|modify|replace)\s+this\b/i.test(text || '') ||
+      /this product|den här produkten|det här|ce produit|cette produit|le produit|denna produkt|change this|update this|modifier ce|ändra den/i.test(
+        text || ''
+      ) ||
+      /\bthis\s+(?:model|image|photo|picture|shot)\b/i.test(text || '');
 
-    if (q === 'focused' || q === 'this' || q === 'current' || q === 'editor') {
-      if (sessionCtx.focusedProductId != null) {
-        const hit = products.find((p) => p.id === sessionCtx.focusedProductId);
-        if (hit) return hit;
-      }
-      if (sessionCtx.focusedProductName) {
-        const byName = findProductByName(sessionCtx.focusedProductName);
-        if (byName) return byName;
-      }
-    }
-
-    if (/this product|den här produkten|det här|ce produit|cette produit|le produit|denna produkt/i.test(text || '')) {
-      if (sessionCtx.focusedProductId != null) {
-        const hit = products.find((p) => p.id === sessionCtx.focusedProductId);
-        if (hit) return hit;
-      }
-      const last = sessionCtx.lastProductNames[sessionCtx.lastProductNames.length - 1];
-      if (last) {
-        const byLast = findProductByName(last);
-        if (byLast) return byLast;
-      }
-    }
-
-    if (/\bthis\s+(?:model|image|photo|picture|shot)\b/i.test(text || '')) {
-      if (sessionCtx.focusedProductId != null) {
-        const hit = products.find((p) => p.id === sessionCtx.focusedProductId);
-        if (hit) return hit;
-      }
+    if (refersThis) {
+      const active = getActiveProduct();
+      if (active) return active;
     }
 
     const nameMatch =
@@ -1012,7 +1095,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     const byName = findProductByName(match);
     if (byName) return byName;
 
-    if (/this product|different image|ce produit|den här|image of this product|the image of this/i.test(text || '')) {
+    if (/this product|different image|ce produit|den här|image of this product|the image of this|change this/i.test(text || '')) {
       const visible = getVisibleProducts();
       if (visible.length === 1) return visible[0];
       const real = products.filter((p) => !/^New product(\s+\d+)?$/i.test(String(p.name || '').trim()));
@@ -1030,50 +1113,25 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     return null;
   }
 
-  function getFocusedProductLabel() {
-    if (sessionCtx.focusedProductId == null) return '';
-    const p = S().getProducts().find((x) => x.id === sessionCtx.focusedProductId);
-    const name = String((p && p.name) || sessionCtx.focusedProductName || '').trim();
-    if (!name || name === '.' || name === '·') return p ? 'Product #' + p.id : '';
-    return name;
-  }
-
   function updateFocusChip() {
     const el = $('adminAiFocus');
-    if (!el) return;
-    const name = getFocusedProductLabel();
-    if (sessionCtx.focusedProductId != null && name) {
-      el.hidden = false;
-      el.textContent =
-        msg('admin-ai-focus-on', 'Focused: ') +
-        name +
-        ' — ' +
-        msg('admin-ai-focus-hint', 'AI commands apply to this product');
-    } else {
-      el.hidden = false;
-      el.textContent = msg(
-        'admin-ai-focus-none',
-        'No product selected — click a product card before saying "this product"'
-      );
-    }
+    if (el) el.hidden = true;
   }
 
   function setAdminListContext(ctx) {
     sessionCtx.adminVisibleIds = Array.isArray(ctx && ctx.visibleIds) ? ctx.visibleIds.slice() : [];
-    updateFocusChip();
   }
 
   function getFocusedProductId() {
-    return sessionCtx.focusedProductId;
+    const active = getActiveProduct();
+    return active ? active.id : sessionCtx.focusedProductId;
   }
 
   function setFocusedProduct(id, name) {
     sessionCtx.focusedProductId = id != null ? parseInt(id, 10) : null;
     sessionCtx.focusedProductName = name ? String(name) : '';
     if (name) trackProduct(name);
-    updateFocusChip();
     persistChatSession();
-    if (typeof global.renderAdminProducts === 'function') global.renderAdminProducts();
   }
 
   function wantsImagesOnOneProduct(text, files) {
@@ -1110,7 +1168,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       return true;
     }
 
-    if (sessionCtx.focusedProductId != null) {
+    if (getActiveProduct()) {
       return true;
     }
 
@@ -1150,7 +1208,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
     if (
       n > 1 &&
-      sessionCtx.focusedProductId == null &&
+      !getActiveProduct() &&
       /^(?:add|upload|import|publish|lägg till|ajouter)?\s*(?:these|those|all|them|photos?|images?|bilder)?\s*[!.]*$/i.test(
         t.trim()
       )
@@ -1171,12 +1229,13 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     const t = String(text || '').toLowerCase();
     if (
       /\bthis\s+product\b/.test(t) ||
+      /(?:change|update|edit|modify)\s+this\b/.test(t) ||
       /(?:for|on|to|of)\s+(?:this|the|that)\s+product/.test(t) ||
       /(?:den\s+här|denna|det\s+här|ce\s+produit|cette\s+produit|le\s+produit|same\s+product)/.test(t) ||
       /(?:change|replace|swap|update)\s+(?:the\s+)?(?:product\s+)?(?:image|photo|picture|bild)/.test(t) ||
       /(?:make|generate|create)\s+(?:other|more|extra|new|ai|display|additional)\s+(?:images?|photos?|pictures?)/.test(t) ||
       /(?:other|more|extra|display|additional)\s+(?:images?|photos?).*(?:product|produit|produkt)/.test(t) ||
-      (sessionCtx.focusedProductId != null && wantsFocusedProductImageEdit(text))
+      (getActiveProduct() && wantsFocusedProductImageEdit(text))
     ) {
       return true;
     }
@@ -1184,18 +1243,19 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   }
 
   function wantsFocusedProductImageEdit(text) {
-    if (sessionCtx.focusedProductId == null) return false;
+    if (!getActiveProduct()) return false;
     const t = normalizeUserIntentText(text).toLowerCase().trim();
     if (!t) return false;
     if (inferSiteImageSlot(text)) return false;
     return (
       /^(?:the\s+)?(?:image|photo|picture|model|shot|clothes?|garment)\s*\.?$/.test(t) ||
-      /(?:change|replace|swap|update|new|different|another)\s+(?:the\s+)?(?:model|mannequin|photo|image|picture|shot)/.test(t) ||
+      /(?:change|replace|swap|update|new|different|another)\s+(?:the\s+)?(?:model|mannequin|photo|image|picture|shot|product)/.test(t) ||
+      /(?:change|update|edit|modify)\s+this\b/.test(t) ||
       /(?:model|mannequin|portrait)\s+(?:for|of|on|with)/.test(t) ||
       /(?:for|of)\s+(?:the\s+)?(?:clothes?|clothing|garment|outfit|product)/.test(t) ||
       /(?:clothes?|clothing|garment|outfit).*(?:model|image|photo)/.test(t) ||
       /(?:change|replace).*(?:clothes?|clothing|garment|model)/.test(t) ||
-      /\bthis\s+(?:model|image|photo)\b/.test(t)
+      /\bthis\s+(?:model|image|photo|product)\b/.test(t)
     );
   }
 
@@ -1218,7 +1278,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
 
     const match =
       action.match ||
-      (refersExistingProduct(text, files) || sessionCtx.focusedProductId != null ? 'focused' : action.name || 'last');
+      (refersExistingProduct(text, files) || getActiveProduct() ? 'focused' : action.name || 'last');
     const refIdx = action.imageIndex != null ? action.imageIndex : 0;
     const out = [];
     const tl = String(text || '').toLowerCase();
@@ -1282,7 +1342,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       return out;
     }
 
-    if (refersExistingProduct(text, files) || findProductFromContext(match, text) || sessionCtx.focusedProductId != null) {
+    if (refersExistingProduct(text, files) || findProductFromContext(match, text) || getActiveProduct()) {
       if (files && files.length) {
         out.push({
           type: 'update_product_image',
@@ -1501,7 +1561,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       (refersExistingProduct(text, files) ||
         wantsImagesOnOneProduct(text, files) ||
         /(?:product|produit|produkt|this|focused|den här|ce produit)/.test(t) ||
-        sessionCtx.focusedProductId != null);
+        !!getActiveProduct());
 
     const wantsUseUpload =
       hasImages &&
@@ -1666,9 +1726,9 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   }
 
   function normalizeGeminiImageSize(size) {
-    const s = String(size || '1K').trim().toUpperCase();
+    const s = String(size || '2K').trim().toUpperCase();
     if (s === '512' || s === '1K' || s === '2K' || s === '4K') return s;
-    return '1K';
+    return '2K';
   }
 
   function normalizeGeminiAspectRatio(ratio) {
@@ -1694,46 +1754,85 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     const key = geminiKey();
     if (!key) throw new Error(cloudAISetupMessage());
     const models = imageModels();
-    const imageSize = getCfg().geminiImageSize || '2K';
+    const imageSize = normalizeGeminiImageSize(getCfg().geminiImageSize || '2K');
     const aspectRatio = getCfg().geminiImageAspect || '3:4';
-    const fullPrompt = brandPrefix() + prompt + ' Photorealistic, high-end catalog quality, no text or watermarks.';
+    const fullPrompt =
+      brandPrefix() +
+      prompt +
+      ' Photorealistic, sharp high-resolution catalog quality, crisp detail, no pixelation, no blur, no text or watermarks.';
 
     const parts = [{ text: fullPrompt }];
     if (referenceDataUrl) {
-      const modestRef = await compressImage(referenceDataUrl, AI_REF_MAX_EDGE, 0.85);
+      const asData = await ensureDataUrl(referenceDataUrl);
+      if (!asData) {
+        throw new Error(
+          msg(
+            'admin-ai-err-ref',
+            'Could not load the product reference image. Open the product, or attach a photo with +, then try again.'
+          )
+        );
+      }
+      const modestRef = await compressImage(asData, AI_REF_MAX_EDGE, 0.92);
       const ref = dataUrlToGeminiPart(modestRef);
-      if (ref) parts.push(ref);
+      if (!ref) {
+        throw new Error(
+          msg('admin-ai-err-ref', 'Could not prepare the reference image for AI. Attach a photo with + and try again.')
+        );
+      }
+      parts.push(ref);
     }
 
     let lastErr = null;
     for (const model of models) {
       const url = geminiModelUrl(model);
-      const body = buildGeminiImageRequest(parts, aspectRatio, imageSize);
+      // Prefer configured size (2K+). Only drop to 1K when the API rejects the size.
+      const sizesToTry = imageSize === '4K' ? ['4K', '2K'] : [imageSize];
 
-      if (onProgress) onProgress();
-      try {
-        const res = await fetch(url, geminiFetchOptions(key, body));
+      for (let si = 0; si < sizesToTry.length; si++) {
+        const size = sizesToTry[si];
+        const body = buildGeminiImageRequest(parts, aspectRatio, size);
 
-        if (!res.ok) {
-          const err = await res.text();
-          lastErr = new Error('Image model (' + model + '): ' + err.slice(0, 240));
-          if (res.status === 404 || /not found|invalid model/i.test(err)) continue;
-          if (res.status === 400 && /response_format|aspect_ratio|image_size/i.test(err)) continue;
-          throw lastErr;
+        if (onProgress) onProgress();
+        try {
+          const res = await fetch(url, geminiFetchOptions(key, body));
+
+          if (!res.ok) {
+            const err = await res.text();
+            lastErr = new Error('Image model (' + model + '): ' + err.slice(0, 240));
+            if (res.status === 404 || /not found|invalid model/i.test(err)) break;
+            if (
+              res.status === 400 &&
+              /image_size|imageSize|aspect/i.test(err) &&
+              size !== '1K' &&
+              size !== '512'
+            ) {
+              if (!sizesToTry.includes('1K')) sizesToTry.push('1K');
+              continue;
+            }
+            if (res.status === 400 && /request_format|aspect_ratio/i.test(err)) break;
+            if (res.status === 429 || res.status >= 500) continue;
+            throw lastErr;
+          }
+
+          const data = await res.json();
+          const candidate = data.candidates && data.candidates[0];
+          const respParts = (candidate && candidate.content && candidate.content.parts) || [];
+          for (const part of respParts) {
+            const dataUrl = geminiPartToDataUrl(part);
+            if (dataUrl) return compressImage(dataUrl, AI_STORE_MAX_EDGE, AI_STORE_JPEG_QUALITY);
+          }
+          lastErr = new Error('No image returned from ' + model);
+          // Don't fall back to a smaller size on empty responses — that looks soft/pixelated.
+          break;
+        } catch (e) {
+          lastErr = e;
+          if (/404|not found|invalid model/i.test(String(e && e.message))) break;
+          if (/image_size|imageSize/i.test(String(e && e.message)) && size !== '1K' && size !== '512') {
+            if (!sizesToTry.includes('1K')) sizesToTry.push('1K');
+            continue;
+          }
+          throw e;
         }
-
-        const data = await res.json();
-        const candidate = data.candidates && data.candidates[0];
-        const respParts = (candidate && candidate.content && candidate.content.parts) || [];
-        for (const part of respParts) {
-          const dataUrl = geminiPartToDataUrl(part);
-          if (dataUrl) return compressImage(dataUrl, AI_STORE_MAX_EDGE, 0.88);
-        }
-        lastErr = new Error('No image returned from ' + model);
-      } catch (e) {
-        lastErr = e;
-        if (/404|not found|invalid model/i.test(String(e.message))) continue;
-        throw e;
       }
     }
     throw lastErr || new Error('Image generation failed');
@@ -1742,14 +1841,19 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   async function buildGalleryImages(referenceDataUrl, shots, onProgress) {
     const prompts = (shots || []).slice(0, MAX_GALLERY_SHOTS);
     const out = [];
+    let lastErr = null;
     for (let i = 0; i < prompts.length; i++) {
       if (onProgress) onProgress(i + 1, prompts.length);
       try {
         const img = await generateProductImage(prompts[i], referenceDataUrl, null);
         if (img) out.push(img);
       } catch (e) {
+        lastErr = e;
         console.warn('gallery shot failed', i, e);
       }
+    }
+    if (!out.length) {
+      throw lastErr || new Error(msg('admin-ai-err-gen', 'Image generation failed. Try again in a moment.'));
     }
     return out;
   }
@@ -1763,18 +1867,76 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   }
 
   function captureSnapshot() {
-    return {
-      products: JSON.parse(JSON.stringify(S().getProducts())),
-      siteAssets: JSON.parse(JSON.stringify(global.MD3SiteAssets ? global.MD3SiteAssets.load() : {})),
-      langOverrides: JSON.parse(
-        JSON.stringify(global.MD3Lang && global.MD3Lang.getOverrides ? global.MD3Lang.getOverrides() : {})
-      ),
-    };
+    try {
+      return {
+        products: JSON.parse(JSON.stringify(S().getProducts())),
+        siteAssets: JSON.parse(JSON.stringify(global.MD3SiteAssets ? global.MD3SiteAssets.load() : {})),
+        langOverrides: JSON.parse(
+          JSON.stringify(global.MD3Lang && global.MD3Lang.getOverrides ? global.MD3Lang.getOverrides() : {})
+        ),
+      };
+    } catch (e) {
+      console.warn('admin ai snapshot', e);
+      return {
+        products: (S().getProducts() || []).map((p) => ({ ...p, images: (p.images || []).slice(), image: p.image })),
+        siteAssets: global.MD3SiteAssets ? global.MD3SiteAssets.load() : {},
+        langOverrides: global.MD3Lang && global.MD3Lang.getOverrides ? global.MD3Lang.getOverrides() : {},
+      };
+    }
+  }
+
+  function snapshotChangedIds(before, after) {
+    const a = new Map(((before && before.products) || []).map((p) => [String(p.id), p]));
+    const b = new Map(((after && after.products) || []).map((p) => [String(p.id), p]));
+    const ids = new Set([...a.keys(), ...b.keys()]);
+    const changed = [];
+    ids.forEach((id) => {
+      try {
+        if (JSON.stringify(a.get(id) || null) !== JSON.stringify(b.get(id) || null)) changed.push(id);
+      } catch (_) {
+        changed.push(id);
+      }
+    });
+    return changed;
+  }
+
+  function productHasDataImages(p) {
+    const imgs = [
+      ...(Array.isArray(p && p.images) ? p.images : []),
+      p && p.image,
+    ].filter((u) => typeof u === 'string' && u.trim());
+    return imgs.some((u) => u.startsWith('data:'));
   }
 
   async function applySnapshot(snap) {
     if (!snap) return;
-    await S().saveProducts(snap.products || []);
+    const products = snap.products || [];
+    const current = captureSnapshot();
+    const changedIds = snapshotChangedIds(current, snap);
+    const idsToSave = (changedIds.length ? changedIds : products.map((p) => p && p.id)).filter(
+      (id) => id != null
+    );
+    const changedProducts = products.filter((p) => idsToSave.some((id) => String(id) === String(p.id)));
+    const needsImageUpload = changedProducts.some(productHasDataImages);
+
+    if (global.MD3Firebase && global.MD3Firebase.muteProductWatch) {
+      global.MD3Firebase.muteProductWatch(30000);
+    }
+    if (S().guardProductRestore) {
+      S().guardProductRestore(idsToSave, 30000);
+    }
+
+    // https URLs → metadata merge; data: blobs → full upload so undo actually sticks in cloud
+    await S().saveProducts(products, {
+      onlyIds: idsToSave,
+      skipImages: !needsImageUpload,
+      muteMs: 30000,
+    });
+
+    if (global.MD3Firebase && global.MD3Firebase.muteProductWatch) {
+      global.MD3Firebase.muteProductWatch(30000);
+    }
+
     if (global.MD3SiteAssets) {
       global.MD3SiteAssets.save(snap.siteAssets || {});
       global.MD3SiteAssets.applyToDocument();
@@ -1782,13 +1944,25 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     if (global.MD3Lang && global.MD3Lang.restoreOverrides) {
       global.MD3Lang.restoreOverrides(snap.langOverrides || {});
     }
-    S().syncHomeFeaturedFlags();
-    if (typeof renderAdminProducts === 'function') renderAdminProducts();
-    if (typeof adminTab === 'function' && typeof adminTabActive !== 'undefined') adminTab(adminTabActive);
+    if (S().syncHomeFeaturedFlags) S().syncHomeFeaturedFlags();
+    if (typeof adminTab === 'function' && typeof adminTabActive !== 'undefined') {
+      adminTab(adminTabActive);
+    } else if (typeof paintAdminProductsList === 'function') {
+      paintAdminProductsList();
+    } else if (typeof renderAdminProducts === 'function') {
+      renderAdminProducts();
+    }
+    try {
+      window.dispatchEvent(new CustomEvent('md3-products-updated'));
+    } catch (_) {}
   }
 
   function snapshotsEqual(a, b) {
-    return JSON.stringify(a) === JSON.stringify(b);
+    try {
+      return JSON.stringify(a) === JSON.stringify(b);
+    } catch (_) {
+      return false;
+    }
   }
 
   function undoButtonHtml(turnId) {
@@ -1805,6 +1979,10 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   async function undoTurn(turnId) {
     const entry = turnSnapshots.find((t) => t.id === turnId);
     if (!entry || busy) return;
+    if (!entry.before) {
+      console.warn('admin ai undo missing before snapshot', turnId);
+      return;
+    }
     busy = true;
     try {
       redoStack.push({ turnId, snapshot: captureSnapshot() });
@@ -1826,6 +2004,12 @@ Product screenshots / admin UI shots → update existing product, never add_prod
         }
       }
       persistChatSession();
+    } catch (e) {
+      console.error('admin ai undo', e);
+      addBubble(
+        'assistant',
+        esc(msg('admin-ai-err-undo', 'Undo failed: ')) + esc((e && e.message) || String(e))
+      );
     } finally {
       busy = false;
     }
@@ -1834,9 +2018,12 @@ Product screenshots / admin UI shots → update existing product, never add_prod
   async function redoTurn(turnId) {
     const entry = turnSnapshots.find((t) => t.id === turnId);
     if (!entry || busy) return;
+    const redoEntry = redoStack.find((r) => r.turnId === turnId);
+    const snap = (redoEntry && redoEntry.snapshot) || entry.after;
+    if (!snap) return;
     busy = true;
     try {
-      await applySnapshot(entry.after);
+      await applySnapshot(snap);
       redoStack = redoStack.filter((r) => r.turnId !== turnId);
       const redoBtn = document.querySelector('.admin-ai-redo[data-turn="' + turnId + '"]');
       const undoBtn = document.querySelector('.admin-ai-undo[data-turn="' + turnId + '"]');
@@ -1846,6 +2033,12 @@ Product screenshots / admin UI shots → update existing product, never add_prod
         undoBtn.textContent = msg('admin-ai-undo', 'Undo');
       }
       persistChatSession();
+    } catch (e) {
+      console.error('admin ai redo', e);
+      addBubble(
+        'assistant',
+        esc(msg('admin-ai-err-redo', 'Redo failed: ')) + esc((e && e.message) || String(e))
+      );
     } finally {
       busy = false;
     }
@@ -1876,7 +2069,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       let slot = type === 'set_hero_image' ? 'hero' : type === 'set_fashion_image' ? 'fashion' : resolveSiteSlot(action);
       if (!slot) slot = resolveSiteSlot({ slot: sessionCtx.lastUserText || '' });
       if (!slot) return msg('admin-ai-err-slot', 'Which section? Try: hero, fashion, maison, lifestyle, limited, manifesto.');
-      const url = await compressImage(img, slot === 'hero' ? 1920 : AI_STORE_MAX_EDGE, 0.88);
+      const url = await compressImage(img, slot === 'hero' ? 2400 : AI_STORE_MAX_EDGE, AI_STORE_JPEG_QUALITY);
       if (global.MD3SiteAssets && global.MD3SiteAssets.setImage) {
         global.MD3SiteAssets.setImage(slot, url);
       } else if (slot === 'hero') {
@@ -2147,7 +2340,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       if (type === 'add_product' && !target) {
         const existingCtx = findProductFromContext(action.match || action.name || 'focused', sessionCtx.lastUserText || '');
         if (
-          (refersExistingProduct(sessionCtx.lastUserText || '', files) || sessionCtx.focusedProductId != null) &&
+          (refersExistingProduct(sessionCtx.lastUserText || '', files) || getActiveProduct()) &&
           existingCtx &&
           !explicitWantsNewProduct(sessionCtx.lastUserText || '') &&
           !wantsMultipleDifferentProducts(sessionCtx.lastUserText || '', files)
@@ -2509,7 +2702,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       } catch (_) {}
     }
 
-    if (!actions.length && imgs.length && sessionCtx.focusedProductId != null && !explicitWantsNewProduct(text)) {
+    if (!actions.length && imgs.length && getActiveProduct() && !explicitWantsNewProduct(text)) {
       if (imgs.length > 1) {
         actions.push({
           type: 'append_product_images',
@@ -2532,7 +2725,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
       return [buildImageGenerateAction(text, imgs)];
     }
 
-    if (!actions.length && sessionCtx.focusedProductId != null && wantsFocusedProductImageEdit(text)) {
+    if (!actions.length && getActiveProduct() && wantsFocusedProductImageEdit(text)) {
       const shortFollowUp = /^(?:the\s+)?(?:image|photo|picture|model|shot|clothes?|garment)\s*\.?$/i.test(t.trim());
       const promptText = shortFollowUp ? sessionCtx.lastUserText || text : text;
       return [buildImageGenerateAction(promptText, imgs)];
@@ -2551,7 +2744,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
     if (imgs.length && (wantsCreateOrGenerateImage(text) || refersAttachedImageEdit(text, imgs))) {
       return [buildImageGenerateAction(text, imgs)];
     }
-    if (sessionCtx.focusedProductId != null && wantsFocusedProductImageEdit(text)) {
+    if (getActiveProduct() && wantsFocusedProductImageEdit(text)) {
       const t = normalizeUserIntentText(text).toLowerCase().trim();
       const shortFollowUp = /^(?:the\s+)?(?:image|photo|picture|model|shot)\s*\.?$/.test(t);
       const promptText = shortFollowUp ? sessionCtx.lastUserText || text : text;
@@ -2778,7 +2971,7 @@ Product screenshots / admin UI shots → update existing product, never add_prod
             '<br><small class="admin-ai-hint admin-ai-hint--err">' +
             esc(formatCloudError(cloudErr)) +
             '</small>';
-        } else if (!hasCloudAI() && sessionCtx.focusedProductId != null) {
+        } else if (!hasCloudAI() && getActiveProduct()) {
           hint =
             '<br><small class="admin-ai-hint admin-ai-hint--err">' +
             esc(cloudAISetupMessage()) +
