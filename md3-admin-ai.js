@@ -73,14 +73,21 @@
     return Object.assign({}, pub, sec);
   }
 
+  var LIVE_ADMIN_AI_BASE = 'https://europe-west1-md3scadi.cloudfunctions.net';
+
   function adminAiBaseUrl() {
-    // Prefer local API when developing on this machine
+    // Localhost only → local API. Live domain always uses Cloud Functions.
     try {
-      if (/^(localhost|127\.0\.0\.1)$/i.test(location.hostname)) {
+      const host = String(location.hostname || '').toLowerCase();
+      if (host === 'localhost' || host === '127.0.0.1') {
         return 'http://127.0.0.1:8787';
       }
+      if (/(^|\.)md3scandi\.com$/i.test(host) || /(^|\.)md3scadi\.web\.app$/i.test(host)) {
+        const cfgLive = getCfg().adminAiBaseUrl || '';
+        return String(cfgLive || LIVE_ADMIN_AI_BASE).replace(/\/$/, '');
+      }
     } catch (_) {}
-    const cfg = getCfg().adminAiBaseUrl || '';
+    const cfg = getCfg().adminAiBaseUrl || LIVE_ADMIN_AI_BASE;
     return cfg ? String(cfg).replace(/\/$/, '') : '';
   }
 
@@ -90,9 +97,11 @@
     if (secret) headers['x-md3-admin-secret'] = String(secret);
     // MD3 admin session uses a local password gate — same gate the Functions verify
     try {
-      const user = S() && S().getCurrentUser && S().getCurrentUser();
+      const store = S();
+      const user = store && store.getCurrentUser && store.getCurrentUser();
+      const pass = (store && store.ADMIN_PASS) || '1111';
       if (user && user.isAdmin) {
-        headers.Authorization = 'Bearer md3-admin:1111';
+        headers.Authorization = 'Bearer md3-admin:' + pass;
       }
     } catch (_) {}
     return headers;
@@ -218,6 +227,26 @@
       return msg(
         'admin-ai-err-gemini-disabled',
         'Gemini API rejected this key. Create a new key at aistudio.google.com/apikey and enable the Generative Language API for your project.'
+      );
+    }
+    if (/404|NOT_FOUND|Admin AI HTTP 404/i.test(raw)) {
+      return msg(
+        'admin-ai-err-backend-missing',
+        'Admin AI Cloud Function is not deployed yet. Locally use http://127.0.0.1:8080 and run: node scripts/dev-admin-ai.mjs. Production: firebase deploy --only functions.'
+      );
+    }
+    if (/Failed to fetch|Load failed|NetworkError|CORS|network/i.test(raw)) {
+      try {
+        if (/^(localhost|127\.0\.0\.1)$/i.test(location.hostname)) {
+          return msg(
+            'admin-ai-err-local-offline',
+            'Local Admin AI server is offline. In a terminal run: node scripts/dev-admin-ai.mjs — then retry.'
+          );
+        }
+      } catch (_) {}
+      return msg(
+        'admin-ai-err-backend-unreachable',
+        'Could not reach Admin AI backend. If on the live site, Cloud Functions must be deployed. If on localhost, start: node scripts/dev-admin-ai.mjs'
       );
     }
     if (/Invalid value at.*aspect_ratio|Invalid value at.*image_size|response_format\.image/i.test(raw)) {
@@ -3330,12 +3359,26 @@ Never reuse or overwrite an existing product id.`;
     const base = adminAiBaseUrl();
     if (!base) throw new Error(cloudAISetupMessage());
     throwIfCancelled();
-    const res = await fetch(base + path, {
-      method: 'POST',
-      headers: adminAiAuthHeaders(),
-      body: JSON.stringify(body || {}),
-      signal: activeAbort && activeAbort.signal,
-    });
+    const headers = adminAiAuthHeaders();
+    if (!headers.Authorization && !headers['x-md3-admin-secret']) {
+      throw new Error(
+        msg('admin-ai-err-need-admin', 'Sign in as admin first (m3dadmin.com / 1111), then try again.')
+      );
+    }
+    let res;
+    try {
+      res = await fetch(base + path, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'omit',
+        headers,
+        body: JSON.stringify(body || {}),
+        signal: activeAbort && activeAbort.signal,
+      });
+    } catch (networkErr) {
+      const m = String((networkErr && networkErr.message) || networkErr || 'Load failed');
+      throw new Error(m);
+    }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       const err = new Error(data.error || data.message || 'Admin AI HTTP ' + res.status);

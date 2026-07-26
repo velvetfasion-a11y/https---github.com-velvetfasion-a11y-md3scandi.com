@@ -29,7 +29,7 @@ function withCors(handler) {
 
 exports.adminAiPrompt = onRequest(
   {
-    secrets: ['GEMINI_API_KEY', 'ADMIN_AI_SECRET'],
+    secrets: ['GEMINI_API_KEY'],
     invoker: 'public',
   },
   withCors(handleAdminAiPrompt)
@@ -37,7 +37,7 @@ exports.adminAiPrompt = onRequest(
 
 exports.adminAiImage = onRequest(
   {
-    secrets: ['GEMINI_API_KEY', 'ADMIN_AI_SECRET'],
+    secrets: ['GEMINI_API_KEY'],
     invoker: 'public',
   },
   withCors(handleAdminAiImage)
