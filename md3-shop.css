@@ -84,7 +84,7 @@
   transform: scale(1.03);
 }
 
-/* Instant photo preview until the real image fades in */
+/* Soft neutral fill only — never a different photo while the product loads */
 .md3-img {
   display: block;
   width: 100%;
@@ -92,9 +92,6 @@
   position: relative;
   overflow: hidden;
   background-color: #ebe6dc;
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
 }
 .md3-img__full {
   display: block;
@@ -102,8 +99,7 @@
   height: 100%;
   object-fit: cover;
   object-position: center center;
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  opacity: 1;
 }
 .md3-img__full.is-ready {
   opacity: 1;

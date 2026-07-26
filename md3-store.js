@@ -538,18 +538,15 @@
 
   function productVisualInner(p) {
     const image = p && normalizeProductImages(p)[0];
-    const cat = String((p && p.category) || '');
-    let fallback = '/images/cat-mode.jpg';
-    if (/maison|home/i.test(cat)) fallback = '/images/cat-maison.jpg';
-    else if (/lifestyle/i.test(cat)) fallback = '/images/cat-lifestyle.jpg';
-    else if (/édition|edition|limit/i.test(cat)) fallback = '/images/journal-linen.jpg';
     if (global.MD3Shop && typeof global.MD3Shop.progressiveImgHtml === 'function') {
-      return global.MD3Shop.progressiveImgHtml(image || fallback, {
-        fallback,
-        width: 168,
-        height: 224,
-        eager: false,
-      });
+      if (image) {
+        return global.MD3Shop.progressiveImgHtml(image, {
+          width: 168,
+          height: 224,
+          eager: false,
+        });
+      }
+      return `<span class="product-emoji-fallback">${(p && p.emoji) || '✦'}</span>`;
     }
     if (image) {
       const safe = String(image)

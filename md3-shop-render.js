@@ -17,8 +17,8 @@
   }
 
   /**
-   * Instant preview (local category shot as CSS background) + fade-in when the
-   * real product photo arrives — avoids empty beige boxes in the carousel.
+   * Product photo only — never a category stand-in while loading.
+   * Soft neutral fill until the real product image paints.
    */
   function progressiveImgHtml(src, opts) {
     const o = opts || {};
@@ -28,25 +28,19 @@
       if (/^(https?:|data:|blob:)/i.test(s) || s.startsWith('/') || s.startsWith('//')) return s;
       return '/' + s.replace(/^\.\//, '');
     }
-    const fallback = abs(o.fallback || '/images/cat-mode.jpg');
-    const real = abs(String(src || fallback || '').trim() || fallback);
-    const ph = abs(fallback || '/images/cat-mode.jpg');
-    const same = real === ph;
+    const real = abs(String(src || '').trim());
+    if (!real) return '';
     const eager = !!o.eager;
     const alt = o.alt || '';
     const width = o.width || 600;
     const height = o.height || 800;
     const extraClass = o.className ? ' ' + o.className : '';
-    const readyClass = same ? ' is-ready' : '';
     const loading = eager ? 'eager' : 'lazy';
     const prio = eager ? ' fetchpriority="high"' : '';
-    const phCss = esc(ph).replace(/'/g, '%27');
     return (
-      `<span class="md3-img" style="background-image:url('${phCss}')">` +
-      `<img class="md3-img__full${readyClass}${extraClass}" src="${esc(real)}" alt="${esc(alt)}" width="${width}" height="${height}" ` +
-      `loading="${loading}" decoding="async"${prio} ` +
-      `onload="this.classList.add('is-ready')" ` +
-      `onerror="this.onerror=null;this.src='${esc(ph)}';this.classList.add('is-ready')" />` +
+      `<span class="md3-img">` +
+      `<img class="md3-img__full is-ready${extraClass}" src="${esc(real)}" alt="${esc(alt)}" width="${width}" height="${height}" ` +
+      `loading="${loading}" decoding="async"${prio} />` +
       `</span>`
     );
   }
@@ -55,7 +49,7 @@
     const scope = root && root.querySelectorAll ? root : document;
     try {
       scope.querySelectorAll('.md3-img__full').forEach(function (img) {
-        if (img.complete && img.naturalWidth > 0) img.classList.add('is-ready');
+        img.classList.add('is-ready');
       });
     } catch (_) {}
   }
@@ -65,10 +59,8 @@
       global.MD3Store && global.MD3Store.normalizeProductImages
         ? global.MD3Store.normalizeProductImages(p)[0]
         : p && p.image;
-    const fallback = categoryFallbackImage(p);
-    if (image || fallback) {
-      return progressiveImgHtml(image || fallback, {
-        fallback,
+    if (image) {
+      return progressiveImgHtml(image, {
         eager: opts && opts.eager,
         className: 'product-photo-wrap',
         width: 600,
@@ -86,7 +78,6 @@
   }
 
   function pickHomeImage(p) {
-    const fallback = categoryFallbackImage(p);
     const imgs =
       global.MD3Store && global.MD3Store.normalizeProductImages
         ? global.MD3Store.normalizeProductImages(p)
@@ -103,13 +94,12 @@
     if (local) return local;
     const data = list.find((s) => s.startsWith('data:image'));
     if (data) return data;
-    return fallback;
+    return '';
   }
 
   function storeCardHomeHtml(p, labels, opts) {
     const href = global.MD3Store.productHref(p.id);
     const name = localizedName(p);
-    const fallback = categoryFallbackImage(p);
     const image = pickHomeImage(p);
     const cat = labels.catLabel ? labels.catLabel(p.category) : p.category;
     const isLimited = /édition|edition|limit/i.test(String(p.category || ''));
@@ -119,7 +109,6 @@
     const eager = opts && opts.eager;
     const imgHtml = image
       ? progressiveImgHtml(image, {
-          fallback,
           alt: name,
           eager,
           width: 600,
@@ -140,12 +129,10 @@
   function storeCardMinimalHtml(p, labels, opts) {
     const href = global.MD3Store.productHref(p.id);
     const name = localizedName(p);
-    const fallback = categoryFallbackImage(p);
     const image = pickHomeImage(p);
     const eager = opts && opts.eager;
     const imgHtml = image
       ? progressiveImgHtml(image, {
-          fallback,
           alt: name,
           eager,
           width: 600,

@@ -219,9 +219,6 @@
                     ${
                       MD3Shop.progressiveImgHtml
                         ? MD3Shop.progressiveImgHtml(src, {
-                            fallback:
-                              (MD3Shop.categoryFallbackImage && MD3Shop.categoryFallbackImage(p)) ||
-                              '/images/cat-mode.jpg',
                             alt: displayName + (multi ? ' — ' + (idx + 1) : ''),
                             className: 'product-photo' + (idx === 0 ? ' product-photo--hero' : ''),
                             eager: idx === 0,
