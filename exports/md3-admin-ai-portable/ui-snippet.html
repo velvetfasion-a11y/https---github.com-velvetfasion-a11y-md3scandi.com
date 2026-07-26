@@ -1,0 +1,16 @@
+<div class="admin-ai" id="adminAi">
+  <div class="admin-ai-head">
+    <span>AI assistant</span>
+    <button type="button" class="admin-ai-toggle" id="adminAiToggle" aria-label="Collapse">−</button>
+  </div>
+  <div class="admin-ai-focus" id="adminAiFocus" hidden></div>
+  <div class="admin-ai-key-warn" id="adminAiKeyWarn" hidden></div>
+  <div class="admin-ai-messages" id="adminAiMessages"></div>
+  <div class="admin-ai-attachments" id="adminAiAttachments" hidden></div>
+  <div class="admin-ai-compose">
+    <button type="button" class="admin-ai-plus" id="adminAiAttachBtn" title="Attach images" aria-label="+">+</button>
+    <input type="file" id="adminAiFileInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden />
+    <input type="text" class="admin-ai-input" id="adminAiInput" placeholder="Attach an image with + and describe what to change…" autocomplete="off" />
+    <button type="button" class="admin-ai-send" id="adminAiSendBtn" aria-label="Send">↑</button>
+  </div>
+</div>
