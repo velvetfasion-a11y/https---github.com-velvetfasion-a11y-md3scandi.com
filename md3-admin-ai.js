@@ -660,6 +660,44 @@ Never reuse or overwrite an existing product id.`;
     if (last) last.innerHTML = html;
   }
 
+  /** Short status only — never dump prompts / JSON into the chat. */
+  function photoProgressHtml(done, total) {
+    const n = Math.max(0, Number(done) || 0);
+    const t = Math.max(1, Number(total) || 1);
+    const label = msg('admin-ai-photos-loading', 'example photos loading');
+    return (
+      '<span class="admin-ai-typing">' +
+      esc(String(n) + '/' + String(t) + ' ' + label) +
+      '</span>'
+    );
+  }
+
+  function cleanCloudReply(reply) {
+    let s = String(reply == null ? '' : reply).trim();
+    if (!s) return '';
+    // Drop anything that looks like action JSON / gallery prompts
+    if (/[\[{]\s*"?(?:type|actions|galleryShots|prompt|imageIndex)"?/i.test(s)) return '';
+    if (/flat lay|close-up|lifestyle|studio|photorealistic|catalog shot/i.test(s) && s.length > 120) {
+      return '';
+    }
+    // One short sentence max
+    s = s.replace(/\s+/g, ' ');
+    if (s.length > 140) s = s.slice(0, 137).trim() + '…';
+    return s;
+  }
+
+  function formatActionSummary(lines) {
+    return (lines || [])
+      .map((line) => String(line || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
+      .filter(Boolean)
+      .map((line) => {
+        // Keep done lines short if a model somehow leaked prompts into errors
+        if (line.length > 160) return line.slice(0, 157).trim() + '…';
+        return line;
+      })
+      .join('<br>');
+  }
+
   function renderAttachments() {
     const row = $('adminAiAttachments');
     if (!row) return;
@@ -2498,8 +2536,7 @@ Never reuse or overwrite an existing product id.`;
         await S().saveProducts(products, { onlyIds: [target.id] });
         trackProduct(target.name);
         return (
-          msg('admin-ai-done-gallery', 'Gallery updated for ') +
-          esc(target.name) +
+          esc(msg('admin-ai-done-photos', 'Photos ready')) + ' — ' + esc(target.name) +
           ' (' +
           nextImages.length +
           ' ' +
@@ -2526,28 +2563,11 @@ Never reuse or overwrite an existing product id.`;
         ];
 
       if (onProgress) {
-        setLastBubble(
-          esc(msg('admin-ai-generating', 'Generating product images…')) +
-            ' <span class="admin-ai-typing">' +
-            esc(target.name) +
-            ' (' +
-            shots.length +
-            ')</span>'
-        );
+        setLastBubble(photoProgressHtml(0, shots.length));
       }
 
       const generated = await buildGalleryImages(reference, shots, (n, total) => {
-        if (onProgress) {
-          setLastBubble(
-            esc(msg('admin-ai-generating', 'Generating product images…')) +
-              ' ' +
-              esc(target.name) +
-              ' — ' +
-              n +
-              '/' +
-              total
-          );
-        }
+        if (onProgress) setLastBubble(photoProgressHtml(n, total));
       });
 
       const replaceGallery = action.replaceGallery || action.replaceImages;
@@ -2576,12 +2596,13 @@ Never reuse or overwrite an existing product id.`;
       await S().saveProducts(products, { onlyIds: [target.id] });
       trackProduct(target.name);
       return (
-        msg('admin-ai-done-gallery', 'Gallery updated for ') +
+        esc(msg('admin-ai-done-photos', 'Photos ready')) +
+        ' — ' +
         esc(target.name) +
         ' (' +
-        nextImages.length +
-        ' ' +
-        msg('admin-ai-images', 'images') +
+        generated.length +
+        '/' +
+        Math.max(generated.length, shots.length) +
         ')'
       );
     }
@@ -2617,20 +2638,11 @@ Never reuse or overwrite an existing product id.`;
         'Same product as the reference, fresh professional e-commerce catalog photo with different angle, lighting, and Scandinavian minimal styling';
 
       if (onProgress) {
-        setLastBubble(
-          esc(msg('admin-ai-generating', 'Generating product images…')) +
-            ' <span class="admin-ai-typing">' +
-            esc(target.name) +
-            '</span>'
-        );
+        setLastBubble(photoProgressHtml(0, 1));
       }
 
       const newImg = await generateProductImage(prompt, reference, () => {
-        if (onProgress) {
-          setLastBubble(
-            esc(msg('admin-ai-generating', 'Generating product images…')) + ' ' + esc(target.name)
-          );
-        }
+        if (onProgress) setLastBubble(photoProgressHtml(1, 1));
       });
 
       const nextImages = existing.length ? existing.slice() : [];
@@ -2644,11 +2656,12 @@ Never reuse or overwrite an existing product id.`;
       });
       await S().saveProducts(products, { onlyIds: [target.id] });
       trackProduct(target.name);
-      const slotNote =
-        existing.length > 1
-          ? ' (' + msg('admin-ai-image-slot', 'image') + ' ' + (catalogSlot + 1) + '/' + nextImages.length + ')'
-          : '';
-      return msg('admin-ai-done-image', 'Image updated for ') + esc(target.name) + slotNote;
+      return (
+        esc(msg('admin-ai-done-photo', 'Photo ready')) +
+        ' — ' +
+        esc(target.name) +
+        (existing.length > 1 ? ' (' + (catalogSlot + 1) + '/' + nextImages.length + ')' : '')
+      );
     }
 
     if (type === 'add_product' || type === 'update_product') {
@@ -2692,26 +2705,10 @@ Never reuse or overwrite an existing product id.`;
       const galleryShots = action.galleryShots || action.shots || [];
 
       if (wantsGallery && productImages.length) {
-        if (onProgress) {
-          setLastBubble(
-            esc(msg('admin-ai-generating', 'Generating product images…')) +
-              ' <span class="admin-ai-typing">' +
-              esc(name) +
-              '</span>'
-          );
-        }
+        const shotTotal = Math.max(1, (galleryShots && galleryShots.length) || MAX_GALLERY_SHOTS);
+        if (onProgress) setLastBubble(photoProgressHtml(0, shotTotal));
         const extra = await buildGalleryImages(productImages[0], galleryShots, (n, total) => {
-          if (onProgress) {
-            setLastBubble(
-              esc(msg('admin-ai-generating', 'Generating product images…')) +
-                ' ' +
-                esc(name) +
-                ' — ' +
-                n +
-                '/' +
-                total
-            );
-          }
+          if (onProgress) setLastBubble(photoProgressHtml(n, total));
         });
         productImages = [productImages[0]].concat(extra);
       }
@@ -2908,7 +2905,7 @@ Never reuse or overwrite an existing product id.`;
     if (typeof adminTab === 'function' && typeof adminTabActive !== 'undefined') adminTab(adminTabActive);
     const after = captureSnapshot();
     const html = lines.length
-      ? lines.join('<br>')
+      ? formatActionSummary(lines)
       : msg(
           'admin-ai-no-action',
           'I could not find a matching action. Try attaching images and describing what to create or update.'
@@ -3412,7 +3409,10 @@ Never reuse or overwrite an existing product id.`;
       }
 
       if (!actions.length) {
-        const intro = parsed && parsed.reply ? esc(parsed.reply) + '<br>' : '';
+        const intro = (() => {
+          const c = cleanCloudReply(parsed && parsed.reply);
+          return c ? esc(c) + '<br>' : '';
+        })();
         let hint = '';
         if (cloudErr) {
           hint =
@@ -3449,7 +3449,8 @@ Never reuse or overwrite an existing product id.`;
       }
 
       const exec = await executeAll(actions, workFiles, true);
-      const intro = parsed && parsed.reply ? esc(parsed.reply) + '<br>' : '';
+      const cleanReply = cleanCloudReply(parsed && parsed.reply);
+      const intro = cleanReply ? esc(cleanReply) + '<br>' : '';
       replyHtml = finalizeAssistantReply({ ...exec, html: intro + exec.html });
 
       if (!hasCloudAI() && !$('adminAiMessages').dataset.hinted) {
