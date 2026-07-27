@@ -312,22 +312,21 @@ html.is-mobile .product-page-wrap {
 html[data-viewport='mobile'] body.product-page .product-page-wrap,
 html.is-mobile body.product-page .product-page-wrap {
   display: block;
-  padding: 0 0 calc(3.75rem + env(safe-area-inset-bottom, 0px));
+  padding: 0;
   max-width: 100%;
+  isolation: isolate;
 }
 
+/* Keep locale bar in page flow under the product sheet (not under its paint) */
 html[data-viewport='mobile'] body.product-page .site-mobile-locale,
 html.is-mobile body.product-page .site-mobile-locale {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 25;
+  position: relative;
+  z-index: 1;
 }
 
 html[data-viewport='mobile'] .md3-shop-toast,
 html.is-mobile .md3-shop-toast {
-  bottom: max(4.5rem, calc(3.5rem + env(safe-area-inset-bottom)));
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
   max-width: calc(100vw - 2rem);
   white-space: normal;
   text-align: center;
@@ -382,12 +381,17 @@ html.is-mobile .md3-shop-toast {
   }
 
   /* Cart / checkout / account pages (not homepage — keep full-bleed hero) */
-  body:not(.home-page) main {
+  body:not(.home-page):not(.product-page) main {
     padding-left: max(1rem, env(safe-area-inset-left, 0px)) !important;
     padding-right: max(1rem, env(safe-area-inset-right, 0px)) !important;
     padding-bottom: max(3rem, calc(env(safe-area-inset-bottom, 0px) + 2rem));
     max-width: 100%;
     box-sizing: border-box;
+  }
+
+  /* Product page: no side/bottom pad on main — locale bar follows the sheet in flow */
+  body.product-page main.product-page-wrap {
+    padding: 0 !important;
   }
 
   .checkout-grid {

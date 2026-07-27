@@ -706,6 +706,8 @@
   /*
    * Versace-style phone PDP:
    * gallery sticks in place; product sheet slides up over the image.
+   * Isolate the sheet stacking so the page locale bar (after <main>)
+   * stays in normal document flow underneath — not painted behind the sheet.
    */
   body.product-page {
     background: #fff;
@@ -723,7 +725,8 @@
     max-width: none;
     width: 100%;
     gap: 0;
-    padding: 0 0 64px;
+    padding: 0;
+    isolation: isolate;
   }
 
   .product-gallery {
@@ -801,24 +804,11 @@
     position: relative;
     z-index: 3;
     margin-top: -28px;
-    padding: 12px 20px calc(28px + 3.75rem + env(safe-area-inset-bottom, 0px));
+    padding: 12px 20px 36px;
     background: #fff;
     border-radius: 22px 22px 0 0;
     box-shadow: 0 -16px 40px rgba(26, 24, 22, 0.12);
     min-height: 58vh;
-  }
-
-  /* Language / currency bar sits under the product sheet (never behind it) */
-  body.product-page .site-mobile-locale {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 25;
-  }
-
-  body.product-page .product-page-wrap {
-    padding-bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px));
   }
 
   .product-info::before {
@@ -833,6 +823,13 @@
 
   .product-ptitle {
     font-size: 28px;
+  }
+
+  /* Language / currency bar: after the sheet in page flow (like homepage footer) */
+  body.product-page .site-mobile-locale {
+    position: relative;
+    z-index: 1;
+    margin: 0;
   }
 }
 
