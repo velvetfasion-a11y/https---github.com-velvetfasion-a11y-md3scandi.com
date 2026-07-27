@@ -1304,7 +1304,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 <script src="/md3-firebase.js?v=13"></script>
 <script src="/md3-sizes.js?v=2"></script>
-<script src="/md3-store.js?v=35"></script>
+<script src="/md3-store.js?v=36"></script>
 <script src="/md3-auth.js?v=4"></script>
 <script src="/md3-nav-icons.js"></script>
 <script src="/md3-currency.js?v=6"></script>
@@ -3023,14 +3023,24 @@ function confirmDeleteProduct(id) {
   const delMsg = L('confirm-delete-product-named').replace('%s', p.name);
   openConfirm(L('confirm-delete-product'), delMsg, '🗑️', async () => {
     const updated = S.getProducts().filter(x => x.id !== id);
-    await S.saveProducts(updated, { deletedIds: [id] });
+    try {
+      await S.saveProducts(updated, { deletedIds: [id], skipImages: true });
+    } catch (e) {
+      console.error('confirmDeleteProduct', e);
+    }
     const users = S.getUsers();
     Object.values(users).forEach(u => {
       if (u.liked) u.liked = u.liked.filter(i => i !== id);
       if (u.wishlist) u.wishlist = u.wishlist.filter(i => i !== id);
     });
-    await S.saveUsers(users);
+    try {
+      await S.saveUsers(users);
+    } catch (_) {}
     closeAdminProductEdit();
+    paintAdminProductsList();
+    try {
+      window.dispatchEvent(new CustomEvent('md3-products-updated'));
+    } catch (_) {}
   });
 }
 

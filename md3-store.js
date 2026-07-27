@@ -7,11 +7,14 @@
   const PRODUCTS_KEY = 'md3_products';
   const PENDING_PRODUCTS_KEY = 'md3_products_pending_cloud';
   const PRODUCT_HIDDEN_KEY = 'md3_product_hidden';
+  const PRODUCT_DELETED_KEY = 'md3_product_deleted';
   const USERS_KEY = 'md3_users';
   const CARTS_KEY = 'md3_carts';
   const SESSION_KEY = 'md3_session';
   /** Guest carts stay in localStorage only — never sync to Firestore (shared doc caused removals to revert). */
   const GUEST_CART_KEY = '_guest';
+  /** Keep tombstones long enough that stale tabs/devices cannot resurrect deletes. */
+  const DELETED_TOMBSTONE_MS = 1000 * 60 * 60 * 24 * 30;
 
   let productsCache = null;
   let usersCache = null;
@@ -178,7 +181,9 @@
   }
 
   function ensureCaches() {
-    if (!productsCache) productsCache = loadProductsLocal();
+    if (!productsCache) {
+      productsCache = loadProductsLocal().filter((p) => p && !isRememberedDeleted(p.id));
+    }
     if (!usersCache) usersCache = loadUsersLocal();
     if (!cartsCache) cartsCache = loadCartsLocal();
   }
@@ -313,6 +318,71 @@
     } catch (_) {}
   }
 
+  function readDeletedMap() {
+    try {
+      const raw = localStorage.getItem(PRODUCT_DELETED_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function writeDeletedMap(map) {
+    try {
+      localStorage.setItem(PRODUCT_DELETED_KEY, JSON.stringify(map || {}));
+    } catch (_) {}
+  }
+
+  function pruneDeletedMap(map) {
+    const now = Date.now();
+    const out = {};
+    Object.keys(map || {}).forEach((id) => {
+      const ts = Number(map[id]) || 0;
+      if (ts && now - ts < DELETED_TOMBSTONE_MS) out[id] = ts;
+    });
+    return out;
+  }
+
+  function rememberDeletedIds(ids) {
+    if (!ids || !ids.length) return;
+    const map = pruneDeletedMap(readDeletedMap());
+    const now = Date.now();
+    ids.forEach((id) => {
+      if (id == null) return;
+      map[String(id)] = now;
+    });
+    writeDeletedMap(map);
+    // Drop off-site memory for gone products
+    try {
+      const hidden = readHiddenMap();
+      let changed = false;
+      ids.forEach((id) => {
+        if (id == null) return;
+        if (Object.prototype.hasOwnProperty.call(hidden, String(id))) {
+          delete hidden[String(id)];
+          changed = true;
+        }
+      });
+      if (changed) writeHiddenMap(hidden);
+    } catch (_) {}
+  }
+
+  function clearDeletedId(id) {
+    if (id == null) return;
+    const map = readDeletedMap();
+    if (!Object.prototype.hasOwnProperty.call(map, String(id))) return;
+    delete map[String(id)];
+    writeDeletedMap(map);
+  }
+
+  function isRememberedDeleted(id) {
+    const map = pruneDeletedMap(readDeletedMap());
+    writeDeletedMap(map);
+    return Object.prototype.hasOwnProperty.call(map, String(id));
+  }
+
   function rememberProductHidden(id, hidden) {
     if (id == null) return;
     const map = readHiddenMap();
@@ -358,7 +428,7 @@
     return { ...p, hidden: !!g.hidden };
   }
 
-  /** Apply durable off-site memory only when no live guard is active. */
+  /** Apply durable off-site memory only on admin — shop always trusts cloud `hidden`. */
   function applyRememberedHidden(p) {
     if (!p || p.id == null) return p;
     const id = String(p.id);
@@ -366,6 +436,8 @@
     if (g && Date.now() <= g.until) {
       return { ...p, hidden: !!g.hidden };
     }
+    // Storefront / product pages: never let a stale local map unhide a cloud-hidden product
+    if (!isLiveAdminSurface()) return p;
     const map = readHiddenMap();
     if (!Object.prototype.hasOwnProperty.call(map, id)) return p;
     return { ...p, hidden: !!map[id] };
@@ -405,9 +477,17 @@
 
   function markProductsPendingCloud(list, opts) {
     try {
+      const prev = readProductsPendingCloud();
+      const deletedIds = [
+        ...new Set([
+          ...((prev && prev.deletedIds) || []),
+          ...((opts && opts.deletedIds) || []).map(String),
+        ]),
+      ].filter(Boolean);
       const payload = {
         products: list || productsCache || [],
         onlyIds: opts && opts.onlyIds ? opts.onlyIds.map(String) : null,
+        deletedIds,
         savedAt: Date.now(),
       };
       localStorage.setItem(PENDING_PRODUCTS_KEY, JSON.stringify(payload));
@@ -427,12 +507,13 @@
       const parsed = JSON.parse(raw);
       // Legacy: bare product array
       if (Array.isArray(parsed)) {
-        return { products: parsed.map(normalizeProductFields), onlyIds: null };
+        return { products: parsed.map(normalizeProductFields), onlyIds: null, deletedIds: [] };
       }
       if (parsed && Array.isArray(parsed.products)) {
         return {
           products: parsed.products.map(normalizeProductFields),
           onlyIds: Array.isArray(parsed.onlyIds) ? parsed.onlyIds.map(String) : null,
+          deletedIds: Array.isArray(parsed.deletedIds) ? parsed.deletedIds.map(String) : [],
         };
       }
       return null;
@@ -452,10 +533,13 @@
    * - never full-replace the cloud catalog (that wiped featured stars)
    * - preserve remote featured:true when a stale pending copy has featured:false
    * - only write the pending ids (or intersection), never delete remote-only products
+   * - retry pending deletedIds so deletes survive offline / failed writes
    */
   async function flushPendingProductsCloud() {
     const pending = readProductsPendingCloud();
-    if (!pending || !pending.products || !pending.products.length) return false;
+    const hasProducts = !!(pending && pending.products && pending.products.length);
+    const hasDeletes = !!(pending && pending.deletedIds && pending.deletedIds.length);
+    if (!pending || (!hasProducts && !hasDeletes)) return false;
     const ok = await ensureCloudReady();
     if (!ok || !global.MD3Firebase.isEnabled()) return false;
 
@@ -467,14 +551,34 @@
     }
     const remoteById = new Map(remote.map((p) => [String(p.id), p]));
 
+    const deletedIds = (pending.deletedIds || []).filter(Boolean);
+    if (deletedIds.length) {
+      rememberDeletedIds(deletedIds);
+      const kept = (productsCache || []).filter((p) => !deletedIds.includes(String(p.id)));
+      await global.MD3Firebase.saveProducts(kept, {
+        deletedIds,
+        skipImages: true,
+      });
+      setProductsCache(kept);
+      remote = kept.slice();
+      remoteById.clear();
+      remote.forEach((p) => remoteById.set(String(p.id), p));
+    }
+
+    if (!hasProducts) {
+      clearProductsPendingCloud();
+      return !!deletedIds.length;
+    }
+
     const idsToWrite = pending.onlyIds
-      ? pending.onlyIds
-      : pending.products.map((p) => String(p.id));
+      ? pending.onlyIds.filter((id) => !deletedIds.includes(String(id)))
+      : pending.products.map((p) => String(p.id)).filter((id) => !deletedIds.includes(id));
 
     const toSave = [];
     idsToWrite.forEach((id) => {
       const local = pending.products.find((p) => String(p.id) === String(id));
       if (!local) return;
+      clearDeletedId(local.id);
       const cloud = remoteById.get(String(id));
       if (cloud && isProductFeatured(cloud) && !isProductFeatured(local)) {
         toSave.push({ ...local, featured: true });
@@ -485,7 +589,7 @@
 
     if (!toSave.length) {
       clearProductsPendingCloud();
-      return false;
+      return !!deletedIds.length;
     }
 
     // Merge into full list for local cache coherence, but only write changed ids
@@ -504,6 +608,13 @@
   async function saveProducts(p, opts) {
     ensureCaches();
     const list = p.map((x) => ({ ...x }));
+    if (opts && opts.deletedIds && opts.deletedIds.length) {
+      rememberDeletedIds(opts.deletedIds);
+    }
+    // Creating / updating a product clears any delete tombstone for that id
+    list.forEach((item) => {
+      if (item && item.id != null) clearDeletedId(item.id);
+    });
     // Persist off-site flags in a tiny key so they survive quota failures on the full catalog
     try {
       const map = readHiddenMap();
@@ -534,7 +645,8 @@
       if (global.MD3Firebase.muteProductWatch) {
         const muteMs = Math.max(
           Number(opts && opts.muteMs) || 0,
-          opts && opts.skipImages ? 8000 : 4000
+          opts && opts.skipImages ? 8000 : 4000,
+          opts && opts.deletedIds && opts.deletedIds.length ? 12000 : 0
         );
         global.MD3Firebase.muteProductWatch(muteMs);
       }
@@ -542,16 +654,19 @@
       clearProductsPendingCloud();
       if (result && Array.isArray(result)) {
         const byId = new Map(result.map((x) => [String(x.id), x]));
-        const merged = list.map((item) => {
-          const u = byId.get(String(item.id));
-          if (!u) return item;
-          return normalizeProductFields({
-            ...item,
-            ...u,
-            featured: item.featured,
-            hidden: item.hidden,
+        const deleted = new Set(((opts && opts.deletedIds) || []).map(String));
+        const merged = list
+          .filter((item) => !deleted.has(String(item.id)))
+          .map((item) => {
+            const u = byId.get(String(item.id));
+            if (!u) return item;
+            return normalizeProductFields({
+              ...item,
+              ...u,
+              featured: item.featured,
+              hidden: item.hidden,
+            });
           });
-        });
         setProductsCache(merged);
       }
     } catch (e) {
@@ -1152,6 +1267,10 @@
     if (!remote || remote.id == null) return false;
     ensureCaches();
     const id = String(remote.id);
+    if (isRememberedDeleted(id)) {
+      // Cloud still has a doc that we intentionally deleted — do not rehydrate it
+      return false;
+    }
     if (isProductRestoreGuarded(id)) {
       return true;
     }
@@ -1244,6 +1363,10 @@
         hidden = g.hidden;
         if (hidden !== remoteHidden) featuredPushIds.push(r.id);
         hiddenMap[id] = !!hidden;
+      } else if (!isLiveAdminSurface()) {
+        // Boutique / home / product: cloud visibility wins
+        hidden = remoteHidden;
+        hiddenMap[id] = !!remoteHidden;
       } else {
         const localTs = Number(local && local.updatedAt) || 0;
         const remoteTs = Number(r && r.updatedAt) || 0;
@@ -1279,30 +1402,52 @@
     if (!remoteProducts || !remoteProducts.length) return false;
     const { merged: reconciled, featuredPushIds } = reconcileRemoteWithLocalFeatured(remoteProducts);
     const remoteIds = new Set(reconciled.map((p) => String(p.id)));
-    const localOnly = (productsCache || []).filter((p) => !remoteIds.has(String(p.id)));
-    let next = reconciled;
+    // Drop tombstoned ids that somehow still appear in remote (stale push race)
+    const cleanedRemote = reconciled.filter((p) => !isRememberedDeleted(p.id));
+    cleanedRemote.forEach((p) => remoteIds.add(String(p.id)));
+
+    const pending = readProductsPendingCloud();
+    const pendingIds = new Set(
+      [
+        ...((pending && pending.onlyIds) || []),
+        ...((pending && pending.products) || []).map((p) => String(p.id)),
+      ].filter(Boolean)
+    );
+
+    // CRITICAL: never resurrect products that were deleted from cloud.
+    // Old localStorage catalogs used to be merged back (and even re-uploaded from admin).
+    let localOnly = (productsCache || []).filter((p) => !remoteIds.has(String(p.id)));
+    localOnly = localOnly.filter((p) => {
+      if (!p || p.id == null) return false;
+      if (isRememberedDeleted(p.id)) return false;
+      // Shop / product pages: Firebase catalog is the source of truth
+      if (!liveWatch) return false;
+      // Admin: keep only brand-new / pending uploads that cloud has not caught yet
+      if (isProductRestoreGuarded(p.id)) return true;
+      if (pendingIds.has(String(p.id))) return true;
+      const age = Date.now() - (Number(p.updatedAt) || Number(p.createdAt) || 0);
+      return age >= 0 && age < 120000;
+    });
+
+    let next = cleanedRemote.length ? cleanedRemote : reconciled.filter((p) => !isRememberedDeleted(p.id));
     if (localOnly.length) {
-      next = [...reconciled, ...localOnly];
+      next = [...next, ...localOnly];
       next.sort((a, b) => Number(a.id) - Number(b.id));
     }
     setProductsCache(next);
 
     const pushIds = [];
-    featuredPushIds.forEach((id) => pushIds.push(id));
-    localOnly.forEach((p) => {
-      if (isProductFeatured(p)) pushIds.push(p.id);
+    featuredPushIds.forEach((id) => {
+      if (!isRememberedDeleted(id)) pushIds.push(id);
     });
-    // Always try to push local-only products on admin; featured ★ from any surface
+    localOnly.forEach((p) => {
+      if (pendingIds.has(String(p.id)) || isProductRestoreGuarded(p.id)) pushIds.push(p.id);
+    });
     const idsToPush = [...new Set(pushIds.map(String))];
-    if (ok && FB && FB.saveProducts && idsToPush.length) {
+    if (ok && liveWatch && FB && FB.saveProducts && idsToPush.length) {
       FB.saveProducts(next, { onlyIds: idsToPush, skipImages: true }).catch((e) =>
         console.error('syncCloud push featured/local-only', e)
       );
-    } else if (ok && liveWatch && localOnly.length && FB && FB.saveProducts) {
-      FB.saveProducts(next, {
-        onlyIds: localOnly.map((p) => p.id),
-        skipImages: true,
-      }).catch((e) => console.error('syncCloud push local-only products', e));
     }
     return true;
   }
@@ -1359,7 +1504,26 @@
       if (remoteProducts && remoteProducts.length) {
         applyRemoteProductsList(remoteProducts, ok, liveWatch, FB);
       } else if (ok && liveWatch && productsCache && productsCache.length) {
-        await FB.saveProducts(productsCache);
+        // Never full-replace cloud from a possibly stale local cache (resurrects deletes).
+        // Only push ids that are pending upload.
+        const pending = readProductsPendingCloud();
+        const pendingIds = pending && pending.onlyIds && pending.onlyIds.length
+          ? pending.onlyIds
+          : pending && pending.products
+            ? pending.products.map((p) => String(p.id))
+            : [];
+        if (pendingIds.length) {
+          await FB.saveProducts(productsCache, {
+            onlyIds: pendingIds,
+            skipImages: true,
+          });
+        }
+        if (pending && pending.deletedIds && pending.deletedIds.length) {
+          await FB.saveProducts(productsCache, {
+            deletedIds: pending.deletedIds,
+            skipImages: true,
+          });
+        }
       }
 
       // Catalog is ready — unblock product "Loading…" before users/carts/taxonomy
