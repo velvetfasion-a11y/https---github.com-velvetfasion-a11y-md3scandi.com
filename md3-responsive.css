@@ -381,9 +381,14 @@ html.is-mobile .md3-shop-toast {
     box-sizing: border-box;
   }
 
-  /* Product page: no side/bottom pad on main — locale bar follows the sheet in flow */
+  /* Product page: full-bleed main; locale bar is a sibling footer after </main> */
   body.product-page main.product-page-wrap {
     padding: 0 !important;
+  }
+
+  body.product-page .product-page-locale-mount {
+    position: static !important;
+    z-index: auto !important;
   }
 
   .checkout-grid {

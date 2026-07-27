@@ -705,7 +705,7 @@
 
   /*
    * Versace-style phone PDP:
-   * gallery sticks while the sheet scrolls; locale bar sits after the sheet in page flow.
+   * gallery sticks while the sheet scrolls; locale bar is after </main> at page end.
    */
   body.product-page {
     background: #fff;
@@ -726,12 +726,19 @@
     padding: 0;
   }
 
-  /* Locale bar: end of <main>, under the product sheet — scroll to reach it */
-  .product-page-locale-mount {
+  /* Gallery + sheet only — isolate so sheet z-index never paints over page footer */
+  #productRoot {
+    isolation: isolate;
     position: relative;
-    z-index: 2;
+  }
+
+  /* Page footer: after <main>, end of document — never stacked under the white sheet */
+  .product-page-locale-mount {
+    position: static;
     width: 100%;
+    z-index: auto;
     flex-shrink: 0;
+    margin: 0;
   }
 
   body.product-page .product-page-locale-mount .site-mobile-locale {
@@ -749,7 +756,6 @@
     z-index: 1;
     gap: 0;
     margin: 0;
-    /* Keep sticky while the sheet scrolls past */
     align-self: start;
   }
 
@@ -816,13 +822,13 @@
 
   .product-info {
     position: relative;
-    z-index: 3;
+    z-index: 2;
     margin-top: -28px;
     padding: 12px 20px 36px;
     background: #fff;
     border-radius: 22px 22px 0 0;
     box-shadow: 0 -16px 40px rgba(26, 24, 22, 0.12);
-    min-height: 58vh;
+    min-height: 0;
   }
 
   .product-info::before {
