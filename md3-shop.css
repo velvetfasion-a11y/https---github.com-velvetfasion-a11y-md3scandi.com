@@ -38,6 +38,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2px;
   padding: 0 0 3rem;
+  align-items: stretch;
 }
 
 @media (min-width: 768px) {
@@ -53,6 +54,10 @@
   cursor: pointer;
   content-visibility: auto;
   contain-intrinsic-size: auto 480px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
 }
 
 .cimgw {
@@ -62,6 +67,7 @@
   background: #ebe6dc;
   cursor: pointer;
   contain: layout paint style;
+  flex-shrink: 0;
 }
 
 .cimgw .md3-img,
@@ -131,6 +137,10 @@
 .cinf {
   padding: 14px 18px 20px;
   background: #fff;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .ccat {
@@ -145,9 +155,16 @@
   font-family: 'Cormorant Garamond', serif;
   font-size: 19px;
   font-weight: 400;
+  line-height: 1.25;
   margin-bottom: 4px;
   cursor: pointer;
   color: #1a1816;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  min-height: calc(1.25em * 2);
 }
 
 .cprice {
@@ -178,6 +195,7 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
+  margin-top: auto;
   padding: 12px;
   background: transparent;
   color: #1a1816;
