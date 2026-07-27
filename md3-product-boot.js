@@ -93,7 +93,7 @@
 
   function renderProduct() {
     const id = productIdFromUrl();
-    const wrap = document.getElementById('productWrap');
+    const wrap = document.getElementById('productRoot') || document.getElementById('productWrap');
     if (!wrap) return false;
     const p = MD3Store.getProductById(id);
     const cloudDone = MD3Store.isCloudSynced && MD3Store.isCloudSynced();

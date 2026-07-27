@@ -89,9 +89,9 @@
 
   /** On phones, pages without the home footer still need FR/EN/AR (+ currency) at the bottom. */
   function mountMobileLocaleBar() {
-    if (document.querySelector('.site-footer-locale') || document.getElementById('md3MobileLocale')) {
-      return;
-    }
+    if (document.querySelector('.site-footer-locale')) return;
+    if (document.getElementById('md3MobileLocale')) return;
+    const mount = document.getElementById('md3MobileLocaleMount');
     const bar = document.createElement('div');
     bar.id = 'md3MobileLocale';
     bar.className = 'site-mobile-locale';
@@ -105,7 +105,12 @@
       '<span class="visually-hidden" data-i18n="nav-currency">Currency</span>' +
       '<select class="currency-select currency-select--footer" data-md3-currency data-i18n-aria="nav-currency" aria-label="Currency"></select>' +
       '</label>';
-    document.body.appendChild(bar);
+    if (mount) {
+      mount.appendChild(bar);
+      mount.setAttribute('aria-hidden', 'false');
+    } else {
+      document.body.appendChild(bar);
+    }
     if (global.MD3Lang) {
       if (typeof global.MD3Lang.bindLangButtons === 'function') {
         global.MD3Lang.bindLangButtons(bar);

@@ -314,14 +314,6 @@ html.is-mobile body.product-page .product-page-wrap {
   display: block;
   padding: 0;
   max-width: 100%;
-  isolation: isolate;
-}
-
-/* Keep locale bar in page flow under the product sheet (not under its paint) */
-html[data-viewport='mobile'] body.product-page .site-mobile-locale,
-html.is-mobile body.product-page .site-mobile-locale {
-  position: relative;
-  z-index: 1;
 }
 
 html[data-viewport='mobile'] .md3-shop-toast,

@@ -11,8 +11,8 @@
 <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Cinzel:wght@400;500&family=Jost:wght@300;400;500;600&family=Noto+Sans+Arabic:wght@300;400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/md3-header.css?v=26" />
-<link rel="stylesheet" href="/md3-responsive.css?v=27" />
-<link rel="stylesheet" href="/md3-shop.css?v=31" />
+<link rel="stylesheet" href="/md3-responsive.css?v=28" />
+<link rel="stylesheet" href="/md3-shop.css?v=32" />
 <style>
   body { font-family: 'Jost', sans-serif; background: #fff; color: #1a1816; min-height: 100vh; }
   .product-size-row { margin: 1.25rem 0 0.5rem; }
@@ -84,7 +84,10 @@
 </button>
 
 <main class="product-page-wrap" id="productWrap">
-  <p class="shop-empty-state" style="grid-column:1/-1" data-i18n="product-loading">Chargement…</p>
+  <div id="productRoot">
+    <p class="shop-empty-state" style="grid-column:1/-1" data-i18n="product-loading">Chargement…</p>
+  </div>
+  <div id="md3MobileLocaleMount" class="product-page-locale-mount" aria-hidden="false"></div>
 </main>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -95,10 +98,10 @@
 <script defer src="/md3-store.js?v=36"></script>
 <script defer src="/md3-nav-icons.js"></script>
 <script defer src="/md3-currency.js?v=6"></script>
-<script defer src="/md3-header.js?v=26"></script>
+<script defer src="/md3-header.js?v=27"></script>
 <script defer src="/md3-lang.js?v=45"></script>
 
 <script defer src="/md3-shop-render.js?v=36"></script>
-<script defer src="/md3-product-boot.js?v=13"></script>
+<script defer src="/md3-product-boot.js?v=14"></script>
 </body>
 </html>
