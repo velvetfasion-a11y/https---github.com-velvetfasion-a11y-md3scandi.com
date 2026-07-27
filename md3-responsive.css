@@ -312,7 +312,7 @@ html.is-mobile .product-page-wrap {
 html[data-viewport='mobile'] body.product-page .product-page-wrap,
 html.is-mobile body.product-page .product-page-wrap {
   display: block;
-  padding: 0 0 4rem;
+  padding: 0 0 8px;
   max-width: 100%;
 }
 

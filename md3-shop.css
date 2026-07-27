@@ -723,7 +723,8 @@
     max-width: none;
     width: 100%;
     gap: 0;
-    padding: 0 0 64px;
+    /* Clear space so the mobile locale bar is never under the sheet */
+    padding: 0 0 8px;
   }
 
   .product-gallery {
@@ -801,11 +802,18 @@
     position: relative;
     z-index: 3;
     margin-top: -28px;
-    padding: 12px 20px 48px;
+    padding: 12px 20px 36px;
     background: #fff;
     border-radius: 22px 22px 0 0;
     box-shadow: 0 -16px 40px rgba(26, 24, 22, 0.12);
     min-height: 58vh;
+  }
+
+  /* Keep FR / EN / AR bar above the sticky gallery + product sheet */
+  body.product-page .site-mobile-locale {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
   }
 
   .product-info::before {

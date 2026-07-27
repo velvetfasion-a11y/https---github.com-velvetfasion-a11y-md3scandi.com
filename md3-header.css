@@ -536,6 +536,8 @@ body.home-page .site-header--solid {
 /* Mobile-only locale bar (pages without the home footer) */
 .site-mobile-locale {
   display: none;
+  position: relative;
+  z-index: 20;
 }
 
 @media (max-width: 767px) {
@@ -544,7 +546,7 @@ body.home-page .site-header--solid {
     align-items: center;
     justify-content: center;
     gap: 1.25rem;
-    padding: 0.85rem 1rem 1.15rem;
+    padding: 0.85rem 1rem max(1.15rem, env(safe-area-inset-bottom, 0px));
     background: var(--md3-ink);
     color: var(--md3-cream);
     border-top: 1px solid rgba(248, 245, 240, 0.08);
@@ -585,10 +587,12 @@ html.is-mobile .site-mobile-locale {
   align-items: center;
   justify-content: center;
   gap: 1.25rem;
-  padding: 0.85rem 1rem 1.15rem;
+  padding: 0.85rem 1rem max(1.15rem, env(safe-area-inset-bottom, 0px));
   background: var(--md3-ink);
   color: var(--md3-cream);
   border-top: 1px solid rgba(248, 245, 240, 0.08);
+  position: relative;
+  z-index: 20;
 }
 
 html[data-viewport='mobile'] .site-mobile-locale .lang.lang-compact,
