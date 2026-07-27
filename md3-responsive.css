@@ -312,13 +312,22 @@ html.is-mobile .product-page-wrap {
 html[data-viewport='mobile'] body.product-page .product-page-wrap,
 html.is-mobile body.product-page .product-page-wrap {
   display: block;
-  padding: 0 0 8px;
+  padding: 0 0 calc(3.75rem + env(safe-area-inset-bottom, 0px));
   max-width: 100%;
+}
+
+html[data-viewport='mobile'] body.product-page .site-mobile-locale,
+html.is-mobile body.product-page .site-mobile-locale {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25;
 }
 
 html[data-viewport='mobile'] .md3-shop-toast,
 html.is-mobile .md3-shop-toast {
-  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  bottom: max(4.5rem, calc(3.5rem + env(safe-area-inset-bottom)));
   max-width: calc(100vw - 2rem);
   white-space: normal;
   text-align: center;
